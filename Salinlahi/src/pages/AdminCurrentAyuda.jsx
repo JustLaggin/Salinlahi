@@ -29,25 +29,26 @@ function AdminCurrentAyuda() {
   }, []);
 
   const approveApplicant = async (applicant) => {
-  const ayudaRef = doc(db, "ayudas", selectedAyuda.id);
+    const ayudaRef = doc(db, "ayudas", selectedAyuda.id);
 
-  await updateDoc(ayudaRef, {
-    applicants: arrayRemove(applicant),
-    beneficiaries: arrayUnion(applicant)
-  });
+    await updateDoc(ayudaRef, {
+      applicants: arrayRemove(applicant),
+      beneficiaries: arrayUnion(applicant)
+    });
 
-  setModalList(prev => prev.filter(a => a !== applicant));
-};
+    setModalList(prev => prev.filter(a => a !== applicant));
+  };
 
   const rejectApplicant = async (applicant) => {
-  const ayudaRef = doc(db, "ayudas", selectedAyuda.id);
+    const ayudaRef = doc(db, "ayudas", selectedAyuda.id);
 
-  await updateDoc(ayudaRef, {
-    applicants: arrayRemove(applicant)
-  });
+    await updateDoc(ayudaRef, {
+      applicants: arrayRemove(applicant)
+    });
 
-  setModalList(prev => prev.filter(a => a !== applicant));
-};
+    setModalList(prev => prev.filter(a => a !== applicant));
+  };
+
   const openListModal = (title, list) => {
     setModalTitle(title);
     setModalList(list || []);
@@ -94,76 +95,80 @@ function AdminCurrentAyuda() {
   };
 
   return (
-    <div style={styles.container}>
-      {ayudas.map((ayuda) => (
-        <div key={ayuda.id} style={styles.card}>
-          <div style={styles.title}>{ayuda.title}</div>
+    <div style={styles.pageWrapper}>
+      <div style={styles.container}>
+        {ayudas.map((ayuda) => (
+          <div key={ayuda.id} className="base-card" style={styles.card}>
+            <div className="soft-white-glow" style={styles.title}>{ayuda.title}</div>
 
-          <div style={styles.text}><b>Description:</b> {ayuda.description}</div>
-          <div style={styles.text}><b>Amount:</b> {ayuda.amount}</div>
-          <div style={styles.text}><b>Location:</b> {ayuda.barangay}, {ayuda.city}</div>
-          <div style={styles.text}><b>Address:</b> {ayuda.address || "N/A"}</div>
-          <div style={styles.text}><b>Requirements:</b> {ayuda.requirements || "None"}</div>
-          <div style={styles.text}><b>Schedule:</b> {ayuda.schedule || "Not specified"}</div>
+            <div style={styles.text}><span style={styles.label}>Description:</span> {ayuda.description}</div>
+            <div style={styles.text}><span style={styles.label}>Amount:</span> ₱{ayuda.amount}</div>
+            <div style={styles.text}><span style={styles.label}>Location:</span> {ayuda.barangay}, {ayuda.city}</div>
+            <div style={styles.text}><span style={styles.label}>Address:</span> {ayuda.address || "N/A"}</div>
+            <div style={styles.text}><span style={styles.label}>Requirements:</span> {ayuda.requirements || "None"}</div>
+            <div style={styles.text}><span style={styles.label}>Schedule:</span> {ayuda.schedule || "Not specified"}</div>
 
-          <div style={styles.buttonContainer}>
-            <button
-              style={styles.button}
-              onClick={() => openListModal("Applicants", ayuda.applicants)}
-            >
-              Applicants
-            </button>
+            <div style={styles.buttonContainer}>
+              <button
+                style={styles.buttonBlue}
+                onClick={() => openListModal("Applicants", ayuda.applicants)}
+              >
+                Applicants
+              </button>
 
-            <button
-              style={styles.button}
-              onClick={() => openListModal("Beneficiaries", ayuda.beneficiaries)}
-            >
-              Beneficiaries
-            </button>
+              <button
+                style={styles.buttonGreen}
+                onClick={() => openListModal("Beneficiaries", ayuda.beneficiaries)}
+              >
+                Beneficiaries
+              </button>
 
-            <button
-              style={styles.updateButton}
-              onClick={() => openUpdateModal(ayuda)}
-            >
-              Update
-            </button>
+              <button
+                style={styles.buttonOrange}
+                onClick={() => openUpdateModal(ayuda)}
+              >
+                Update
+              </button>
+            </div>
           </div>
-        </div>
-      ))}
+        ))}
+      </div>
 
       {/* LIST MODAL */}
       {modalOpen && (
         <div style={styles.modalOverlay}>
-          <div style={styles.modal}>
-            <h2>{modalTitle}</h2>
+          <div className="base-card" style={styles.modal}>
+            <h2 className="soft-white-glow" style={{margin: "0 0 15px 0"}}>{modalTitle}</h2>
 
             {modalList.length === 0 ? (
-  <p>No data found</p>
-) : (
-  modalList.map((item, index) => (
-    <div key={index} style={styles.listRow}>
-      <span>{item}</span>
+              <p style={{color: "var(--color-text-muted)"}}>No data found</p>
+            ) : (
+              <div style={styles.modalScrollList}>
+                {modalList.map((item, index) => (
+                  <div key={index} style={styles.listRow}>
+                    <span style={{wordBreak: "break-all", fontSize: "0.9rem"}}>{item}</span>
 
-      {modalTitle === "Applicants" && (
-        <div style={styles.rowButtons}>
-          <button
-            style={styles.approveBtn}
-            onClick={() => approveApplicant(item)}
-          >
-            Approve
-          </button>
+                    {modalTitle === "Applicants" && (
+                      <div style={styles.rowButtons}>
+                        <button
+                          style={styles.approveBtn}
+                          onClick={() => approveApplicant(item)}
+                        >
+                          Approve
+                        </button>
 
-          <button
-            style={styles.rejectBtn}
-            onClick={() => rejectApplicant(item)}
-          >
-            Reject
-          </button>
-        </div>
-      )}
-    </div>
-  ))
-)}
+                        <button
+                          style={styles.rejectBtn}
+                          onClick={() => rejectApplicant(item)}
+                        >
+                          Reject
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
 
             <button onClick={() => setModalOpen(false)} style={styles.closeBtn}>
               Close
@@ -175,55 +180,57 @@ function AdminCurrentAyuda() {
       {/* UPDATE MODAL */}
       {updateModal && (
         <div style={styles.modalOverlay}>
-    <div style={styles.modal}>
-      <h2>Update Ayuda</h2>
+          <div className="base-card" style={styles.modal}>
+            <h2 className="soft-white-glow" style={{margin: "0 0 15px 0"}}>Update Ayuda</h2>
 
-      <div style={styles.inputGroup}>
-        <label>Title</label>
-        <input name="title" value={formData.title || ""} onChange={handleChange}/>
-      </div>
+            <div style={styles.modalScrollList}>
+              <div style={styles.inputGroup}>
+                <label style={styles.inputLabel}>Title</label>
+                <input style={styles.input} name="title" value={formData.title || ""} onChange={handleChange}/>
+              </div>
 
-      <div style={styles.inputGroup}>
-        <label>Description</label>
-        <input name="description" value={formData.description || ""} onChange={handleChange}/>
-      </div>
+              <div style={styles.inputGroup}>
+                <label style={styles.inputLabel}>Description</label>
+                <textarea style={{...styles.input, resize: "vertical"}} name="description" value={formData.description || ""} onChange={handleChange}/>
+              </div>
 
-      <div style={styles.inputGroup}>
-        <label>Amount</label>
-        <input name="amount" value={formData.amount || ""} onChange={handleChange}/>
-      </div>
+              <div style={styles.inputGroup}>
+                <label style={styles.inputLabel}>Amount</label>
+                <input style={styles.input} type="number" name="amount" value={formData.amount || ""} onChange={handleChange}/>
+              </div>
 
-      <div style={styles.inputGroup}>
-        <label>Address</label>
-        <input name="address" value={formData.address || ""} onChange={handleChange}/>
-      </div>
+              <div style={styles.inputGroup}>
+                <label style={styles.inputLabel}>Address</label>
+                <input style={styles.input} name="address" value={formData.address || ""} onChange={handleChange}/>
+              </div>
 
-      <div style={styles.inputGroup}>
-        <label>Barangay</label>
-        <input name="barangay" value={formData.barangay || ""} onChange={handleChange}/>
-      </div>
+              <div style={styles.inputGroup}>
+                <label style={styles.inputLabel}>Barangay</label>
+                <input style={styles.input} name="barangay" value={formData.barangay || ""} onChange={handleChange}/>
+              </div>
 
-      <div style={styles.inputGroup}>
-        <label>City</label>
-        <input name="city" value={formData.city || ""} onChange={handleChange}/>
-      </div>
+              <div style={styles.inputGroup}>
+                <label style={styles.inputLabel}>City</label>
+                <input style={styles.input} name="city" value={formData.city || ""} onChange={handleChange}/>
+              </div>
 
-      <div style={styles.inputGroup}>
-        <label>Requirements</label>
-        <input name="requirements" value={formData.requirements || ""} onChange={handleChange}/>
-      </div>
+              <div style={styles.inputGroup}>
+                <label style={styles.inputLabel}>Requirements</label>
+                <input style={styles.input} name="requirements" value={formData.requirements || ""} onChange={handleChange}/>
+              </div>
 
-      <div style={styles.inputGroup}>
-        <label>Schedule</label>
-        <input name="schedule" value={formData.schedule || ""} onChange={handleChange}/>
-      </div>
+              <div style={styles.inputGroup}>
+                <label style={styles.inputLabel}>Schedule</label>
+                <input style={styles.input} type="date" name="schedule" value={formData.schedule || ""} onChange={handleChange}/>
+              </div>
+            </div>
 
-      <div style={{marginTop:"10px"}}>
-        <button onClick={saveUpdate} style={styles.button}>Save</button>
-        <button onClick={() => setUpdateModal(false)} style={styles.closeBtn}>Cancel</button>
-      </div>
-    </div>
-  </div>
+            <div style={{marginTop:"15px", display: "flex", gap: "10px", flexDirection: "column"}}>
+              <button onClick={saveUpdate} style={styles.gradientButton}>Save Changes</button>
+              <button onClick={() => setUpdateModal(false)} style={styles.closeBtn}>Cancel</button>
+            </div>
+          </div>
+        </div>
       )}
 
     </div>
@@ -231,135 +238,201 @@ function AdminCurrentAyuda() {
 }
 
 const styles = {
+  pageWrapper: {
+    padding: "40px 20px",
+    display: "flex",
+    justifyContent: "center",
+    minHeight: "80vh"
+  },
+
   container: {
-    padding: "40px",
+    width: "100%",
+    maxWidth: "1200px",
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+    gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
     gap: "25px",
+    alignItems: "start"
   },
 
   card: {
-    background: "white",
-    padding: "20px",
-    borderRadius: "12px",
-    boxShadow: "0 8px 20px rgba(0,0,0,0.15)",
-    width: "200px",
-    position: "center",
-    margin: "0 auto",
+    padding: "25px",
     display: "flex",
     flexDirection: "column",
-    gap: "10px"
+    gap: "12px",
+    margin: "0" // Override base-card mb
   },
 
   title: {
-    fontSize: "18px",
-    fontWeight: "bold",
-    marginBottom: "10px",
+    fontSize: "1.4rem",
+    marginBottom: "5px",
+  },
+
+  label: {
+    color: "var(--color-text-muted)",
+    fontWeight: "normal"
   },
 
   text: {
-    fontSize: "14px",
-    marginBottom: "6px",
+    fontSize: "0.95rem",
+    color: "var(--color-text-main)",
+    lineHeight: "1.4"
   },
 
   buttonContainer: {
-    marginTop: "15px",
+    marginTop: "auto",
+    paddingTop: "15px",
     display: "flex",
     gap: "8px",
     flexWrap: "wrap",
   },
 
-  button: {
-    padding: "8px 10px",
+  buttonBlue: {
+    flex: "1 1 auto",
+    padding: "10px",
     border: "none",
     borderRadius: "6px",
-    background: "#2b7cff",
-    color: "white",
+    background: "var(--color-primary-blue)",
+    color: "#0B1121",
+    fontWeight: "bold",
     cursor: "pointer",
   },
 
-  updateButton: {
-    padding: "8px 10px",
+  buttonGreen: {
+    flex: "1 1 auto",
+    padding: "10px",
     border: "none",
     borderRadius: "6px",
-    background: "#f59e0b",
+    background: "var(--color-primary-green)",
+    color: "#0B1121",
+    fontWeight: "bold",
+    cursor: "pointer",
+  },
+
+  buttonOrange: {
+    flex: "1 1 auto",
+    padding: "10px",
+    border: "none",
+    borderRadius: "6px",
+    background: "#f59e0b", // Amber/Orange
     color: "white",
+    fontWeight: "bold",
     cursor: "pointer",
   },
 
   modalOverlay: {
     position: "fixed",
-    top:0,
-    left:0,
-    width:"100%",
-    height:"100%",
-    background:"rgba(0,0,0,0.5)",
-    display:"flex",
-    justifyContent:"center",
-    alignItems:"center",
+    top: 0,
+    left: 0,
+    width: "100%",
+    height: "100%",
+    background: "rgba(0,0,0,0.7)",
+    backdropFilter: "blur(5px)",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 1000
   },
 
   modal: {
-    background:"white",
-    padding:"25px",
-    borderRadius:"10px",
-    width:"350px",
-    display:"flex",
-    flexDirection:"column",
-    gap:"8px"
+    width: "90%",
+    maxWidth: "450px",
+    maxHeight: "90vh",
+    display: "flex",
+    flexDirection: "column",
+    padding: "30px",
+    margin: 0
+  },
+  
+  modalScrollList: {
+    overflowY: "auto",
+    maxHeight: "60vh",
+    paddingRight: "5px",
+    display: "flex",
+    flexDirection: "column",
+    gap: "10px"
   },
 
-  listItem:{
-    padding:"5px",
-    borderBottom:"1px solid #ddd"
+  listRow: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: "10px",
+    borderBottom: "1px solid rgba(255,255,255,0.1)",
+    gap: "10px"
   },
 
-  closeBtn:{
-    marginTop:"10px",
-    padding:"8px",
-    border:"none",
-    background:"#888",
-    color:"white",
-    borderRadius:"6px",
-    cursor:"pointer"
+  rowButtons: {
+    display: "flex",
+    gap: "6px"
   },
 
-  inputGroup:{
-  display:"flex",
-  flexDirection:"column",
-  marginBottom:"8px"
-},
+  approveBtn: {
+    background: "var(--color-primary-green)",
+    color: "#0B1121",
+    fontWeight: "bold",
+    border: "none",
+    padding: "6px 12px",
+    borderRadius: "6px",
+    cursor: "pointer",
+    fontSize: "0.85rem"
+  },
 
-listRow:{
-  display:"flex",
-  justifyContent:"space-between",
-  alignItems:"center",
-  padding:"6px",
-  borderBottom:"1px solid #ddd"
-},
+  rejectBtn: {
+    background: "#dc2626",
+    color: "white",
+    fontWeight: "bold",
+    border: "none",
+    padding: "6px 12px",
+    borderRadius: "6px",
+    cursor: "pointer",
+    fontSize: "0.85rem"
+  },
 
-rowButtons:{
-  display:"flex",
-  gap:"5px"
-},
+  closeBtn: {
+    width: "100%",
+    padding: "12px",
+    border: "1px solid rgba(255,255,255,0.2)",
+    background: "transparent",
+    color: "var(--color-text-main)",
+    borderRadius: "8px",
+    cursor: "pointer",
+    marginTop: "10px",
+    fontWeight: "500"
+  },
 
-approveBtn:{
-  background:"#16a34a",
-  color:"white",
-  border:"none",
-  padding:"4px 6px",
-  borderRadius:"4px",
-  cursor:"pointer"
-},
+  inputGroup: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "5px"
+  },
 
-rejectBtn:{
-  background:"#dc2626",
-  color:"white",
-  border:"none",
-  padding:"4px 6px",
-  borderRadius:"4px",
-  cursor:"pointer"
-}
+  inputLabel: {
+    fontSize: "0.85rem",
+    color: "var(--color-text-muted)"
+  },
+  
+  input: {
+    padding: "12px",
+    borderRadius: "8px",
+    border: "1px solid rgba(255, 255, 255, 0.1)",
+    backgroundColor: "rgba(0, 0, 0, 0.2)",
+    color: "var(--color-text-main)",
+    fontSize: "0.95rem",
+    outline: "none",
+  },
+  
+  gradientButton: {
+    width: "100%",
+    padding: "12px",
+    border: "none",
+    borderRadius: "8px",
+    background: "linear-gradient(to right, var(--color-primary-blue), var(--color-primary-green))",
+    color: "#0B1121",
+    fontWeight: "bold",
+    fontSize: "1rem",
+    cursor: "pointer",
+    marginTop: "10px",
+  }
 };
 
 export default AdminCurrentAyuda;

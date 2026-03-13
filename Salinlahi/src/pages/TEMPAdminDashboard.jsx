@@ -48,22 +48,24 @@ function AdminDashboard() {
 
   return (
     <div style={styles.page}>
-      <h1>Admin Dashboard</h1>
+      <div className="base-card" style={styles.card}>
+        <h1 className="soft-white-glow" style={{margin: "0 0 15px 0", fontSize: "2rem"}}>Admin Dashboard</h1>
 
-      {!scanning ? (
-        <button onClick={startScanner} style={styles.button}>
-          Start QR Scanner
-        </button>
-      ) : (
-        <button onClick={stopScanner} style={styles.button}>
-          Stop Scanner
-        </button>
-      )}
+        {!scanning ? (
+          <button onClick={startScanner} style={styles.gradientButton}>
+            Start QR Scanner
+          </button>
+        ) : (
+          <button onClick={stopScanner} style={styles.stopButton}>
+            Stop Scanner
+          </button>
+        )}
 
-      <div id="reader" style={styles.reader}></div>
+        <div id="reader" style={styles.reader}></div>
+      </div>
 
       {/* Bottom Navigation */}
-      <div style={styles.navbar}>
+      <div className="base-card" style={styles.navbar}>
         <Link to="/admin/home" style={styles.navItem}>🏠</Link>
         <Link to="/admin/scan" style={styles.navItem}>📷</Link>
         <Link to="/admin/aid" style={styles.navItem}>🎁</Link>
@@ -78,35 +80,75 @@ const styles = {
   page: {
     padding: "30px",
     textAlign: "center",
-    paddingBottom: "80px"
+    paddingBottom: "100px",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center"
   },
 
-  button: {
-    padding: "10px",
+  card: {
+    width: "100%",
+    maxWidth: "500px",
+    padding: "30px",
+    display: "flex",
+    flexDirection: "column",
+    gap: "10px"
+  },
+
+  gradientButton: {
+    padding: "12px",
+    border: "none",
+    borderRadius: "8px",
+    background: "linear-gradient(to right, var(--color-primary-blue), var(--color-primary-green))",
+    color: "#0B1121",
+    fontWeight: "bold",
+    fontSize: "1.1rem",
+    cursor: "pointer",
+    marginBottom: "20px"
+  },
+
+  stopButton: {
+    padding: "12px",
+    border: "none",
+    borderRadius: "8px",
+    background: "#dc2626",
+    color: "white",
+    fontWeight: "bold",
+    fontSize: "1.1rem",
+    cursor: "pointer",
     marginBottom: "20px"
   },
 
   reader: {
-    width: "300px",
-    margin: "auto"
+    width: "100%",
+    maxWidth: "300px",
+    margin: "auto",
+    borderRadius: "8px",
+    overflow: "hidden",
+    backgroundColor: "rgba(255,255,255,0.9)"
   },
 
   navbar: {
     position: "fixed",
-    bottom: 0,
-    left: 0,
-    width: "100%",
+    bottom: "20px",
+    left: "50%",
+    transform: "translateX(-50%)",
+    width: "90%",
+    maxWidth: "500px",
     height: "60px",
-    backgroundColor: "#ffffff",
-    borderTop: "1px solid #ddd",
     display: "flex",
     justifyContent: "space-around",
     alignItems: "center",
-    fontSize: "24px"
+    fontSize: "24px",
+    padding: "0 20px",
+    margin: 0
   },
 
   navItem: {
     textDecoration: "none",
-    color: "#333"
+    color: "var(--color-text-main)",
+    transition: "transform 0.2s ease"
   }
 };
+
+export default AdminDashboard;

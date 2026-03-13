@@ -27,25 +27,50 @@ function UserDashboard() {
     fetchUserData();
   }, []);
 
-  if (loading) return <h2>Loading...</h2>;
+  if (loading) return <h2 style={{color: "var(--color-text-main)", textAlign: "center", marginTop: "50px"}}>Loading...</h2>;
 
   return (
-    <div style={{ textAlign: "center", marginTop: "50px" }}>
-      <h2>User Dashboard</h2>
+    <div style={styles.pageWrapper}>
+      <div className="base-card" style={styles.card}>
+        <h2 className="soft-white-glow" style={{margin: "0 0 5px 0", fontSize: "1.8rem"}}>User Dashboard</h2>
+        <p style={{color: "var(--color-text-muted)", marginBottom: "20px"}}>Your Unique QR Code</p>
 
-      <p>Your Unique QR Code</p>
+        {uuid && (
+          <div style={styles.qrWrapper}>
+            <QRCode value={uuid} size={200} bgColor="#ffffff" fgColor="#000000" />
+          </div>
+        )}
 
-      {uuid && (
-        <div style={{ background: "white", padding: "20px", display: "inline-block" }}>
-          <QRCode value={uuid} size={200} />
-        </div>
-      )}
-
-      <p style={{ marginTop: "20px" }}>
-        UUID: {uuid}
-      </p>
+        <p style={{ marginTop: "20px", fontSize: "0.9rem", color: "var(--color-text-main)" }}>
+          <span style={{color: "var(--color-text-muted)", display: "block", fontSize: "0.8rem", textTransform: "uppercase", letterSpacing: "1px"}}>UUID</span>
+          <br/>
+          <span style={{wordBreak: "break-all", fontFamily: "monospace"}}>{uuid}</span>
+        </p>
+      </div>
     </div>
   );
 }
+
+const styles = {
+  pageWrapper: {
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    minHeight: "70vh",
+    padding: "20px"
+  },
+  card: {
+    width: "100%",
+    maxWidth: "400px",
+    textAlign: "center"
+  },
+  qrWrapper: {
+    background: "#ffffff",
+    padding: "16px",
+    borderRadius: "16px",
+    display: "inline-block",
+    boxShadow: "0 10px 30px rgba(15,23,42,0.5)",
+  }
+};
 
 export default UserDashboard;

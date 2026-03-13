@@ -101,96 +101,120 @@ function AdminCreateAyuda() {
   };
 
   return (
-    <div style={styles.page}>
-      <form onSubmit={handleSubmit} style={styles.form}>
+    <div style={styles.pageWrapper}>
+      <form onSubmit={handleSubmit} className="base-card" style={styles.formContainer}>
 
-        <h2>Create New Ayuda</h2>
+        <h2 className="soft-white-glow" style={styles.title}>Create New Ayuda</h2>
+        <p style={styles.subtitle}>Set up a new ayuda distribution</p>
 
-        <label>Ayuda Title</label>
-        <input
-          name="title"
-          value={formData.title}
-          onChange={handleChange}
-          placeholder="Enter Title"
-          required
-        />
+        <div style={styles.inputGroup}>
+          <label style={styles.label}>Ayuda Title</label>
+          <input
+            style={styles.input}
+            name="title"
+            value={formData.title}
+            onChange={handleChange}
+            placeholder="Enter Title"
+            required
+          />
+        </div>
 
-        <label>Amount (₱)</label>
-        <input
-          type="number"
-          name="amount"
-          value={formData.amount}
-          onChange={handleChange}
-          placeholder="Enter Amount"
-          min="0"
-          required
-        />
+        <div style={styles.inputGroup}>
+          <label style={styles.label}>Amount (₱)</label>
+          <input
+            style={styles.input}
+            type="number"
+            name="amount"
+            value={formData.amount}
+            onChange={handleChange}
+            placeholder="Enter Amount"
+            min="0"
+            required
+          />
+        </div>
 
-        <label>City / Municipality</label>
-        <select
-          name="city"
-          value={formData.city}
-          onChange={handleCityChange}
-          required
-        >
-          <option value="">Select City / Municipality</option>
-          <option value="Batangas City">Batangas City</option>
-          <option value="Lipa City">Lipa City</option>
-          <option value="Tanauan City">Tanauan City</option>
-        </select>
+        <div style={styles.inputGroup}>
+          <label style={styles.label}>City / Municipality</label>
+          <select
+            style={styles.input}
+            name="city"
+            value={formData.city}
+            onChange={handleCityChange}
+            required
+          >
+            <option value="" style={{color: "black"}}>Select City / Municipality</option>
+            <option value="Batangas City" style={{color: "black"}}>Batangas City</option>
+            <option value="Lipa City" style={{color: "black"}}>Lipa City</option>
+            <option value="Tanauan City" style={{color: "black"}}>Tanauan City</option>
+          </select>
+        </div>
 
-        <label>Barangay</label>
-        <select
-          name="barangay"
-          value={formData.barangay}
-          onChange={handleChange}
-          disabled={!formData.city}
-          required
-        >
-          <option value="">Select Barangay</option>
+        <div style={styles.inputGroup}>
+          <label style={styles.label}>Barangay</label>
+          <select
+            style={styles.input}
+            name="barangay"
+            value={formData.barangay}
+            onChange={handleChange}
+            disabled={!formData.city}
+            required
+          >
+            <option value="" style={{color: "black"}}>Select Barangay</option>
+            {formData.city &&
+              barangays[formData.city]?.map((brgy) => (
+                <option key={brgy} value={brgy} style={{color: "black"}}>
+                  {brgy}
+                </option>
+              ))}
+          </select>
+        </div>
 
-          {formData.city &&
-            barangays[formData.city]?.map((brgy) => (
-              <option key={brgy} value={brgy}>
-                {brgy}
-              </option>
-            ))}
-        </select>
+        <div style={styles.inputGroup}>
+          <label style={styles.label}>Schedule</label>
+          <input
+            style={styles.input}
+            type="date"
+            name="schedule"
+            value={formData.schedule}
+            onChange={handleChange}
+          />
+        </div>
 
-        <label>Schedule</label>
-        <input
-          type="date"
-          name="schedule"
-          value={formData.schedule}
-          onChange={handleChange}
-        />
+        <div style={styles.inputGroup}>
+          <label style={styles.label}>Requirements</label>
+          <input
+            style={styles.input}
+            name="requirements"
+            value={formData.requirements}
+            onChange={handleChange}
+            placeholder="List of Requirements"
+          />
+        </div>
 
-        <label>Requirements</label>
-        <input
-          name="requirements"
-          value={formData.requirements}
-          onChange={handleChange}
-          placeholder="List of Requirements"
-        />
+        <div style={styles.inputGroup}>
+          <label style={styles.label}>Claiming Area</label>
+          <input
+            style={styles.input}
+            name="address"
+            value={formData.address}
+            onChange={handleChange}
+            placeholder="e.g. 123 Mabini St."
+          />
+        </div>
 
-        <label>Claiming Area</label>
-        <input
-          name="address"
-          value={formData.address}
-          onChange={handleChange}
-          placeholder="e.g. 123 Mabini St."
-        />
+        <div style={styles.inputGroup}>
+          <label style={styles.label}>Description</label>
+          <textarea
+            style={{...styles.input, resize: "vertical", minHeight: "80px"}}
+            name="description"
+            value={formData.description}
+            onChange={handleChange}
+            placeholder="Describe the Ayuda"
+            required
+          />
+        </div>
 
-        <label>Description</label>
-        <textarea
-          name="description"
-          value={formData.description}
-          onChange={handleChange}
-          placeholder="Describe the Ayuda"
-          required
-        />
-
-        <button type="submit" style={styles.button}>
+        <button type="submit" style={styles.gradientButton}>
           Create Ayuda
         </button>
 
@@ -200,31 +224,61 @@ function AdminCreateAyuda() {
 }
 
 const styles = {
-  page: {
+  pageWrapper: {
     display: "flex",
     justifyContent: "center",
-    paddingTop: "40px"
+    alignItems: "center",
+    padding: "40px 20px"
   },
-
-  form: {
-    background: "white",
-    padding: "30px",
-    borderRadius: "10px",
-    boxShadow: "0 5px 15px rgba(0,0,0,0.1)",
-    width: "400px",
+  formContainer: {
+    width: "100%",
+    maxWidth: "500px",
     display: "flex",
     flexDirection: "column",
-    gap: "10px"
+    gap: "16px",
+    padding: "2.5rem 2rem",
   },
-
-  button: {
-    marginTop: "10px",
-    padding: "10px",
-    backgroundColor: "#007bff",
+  title: {
+    textAlign: "center",
+    marginBottom: "0.25rem",
+    fontSize: "2rem"
+  },
+  subtitle: {
+    textAlign: "center",
+    color: "var(--color-text-muted)",
+    marginBottom: "1.5rem",
+    fontSize: "0.9rem"
+  },
+  inputGroup: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "6px"
+  },
+  label: {
+    fontSize: "0.9rem",
+    color: "var(--color-text-main)",
+    fontWeight: "500"
+  },
+  input: {
+    padding: "14px",
+    borderRadius: "8px",
+    border: "1px solid rgba(255, 255, 255, 0.1)",
+    backgroundColor: "rgba(0, 0, 0, 0.2)",
+    color: "var(--color-text-main)",
+    fontSize: "1rem",
+    outline: "none",
+  },
+  gradientButton: {
+    padding: "14px",
     border: "none",
-    color: "white",
-    borderRadius: "5px",
-    cursor: "pointer"
+    borderRadius: "8px",
+    background: "linear-gradient(to right, var(--color-primary-blue), var(--color-primary-green))",
+    color: "#0B1121",
+    fontWeight: "bold",
+    fontSize: "1.1rem",
+    cursor: "pointer",
+    marginTop: "10px",
+    transition: "transform 0.1s ease",
   }
 };
 

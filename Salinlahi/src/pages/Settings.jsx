@@ -15,24 +15,10 @@ function Settings() {
   };
 
   return (
-    <div style={styles.container}>
+    <div style={styles.pageWrapper}>
 
-      {/*<div style={styles.card}>
-        <div style={styles.title}>Update Profile</div>
-        <div style={styles.text}>
-          Change your account information.
-        </div>
-
-        <button
-          style={styles.button}
-          onClick={() => navigate("/update-profile")}
-        >
-          Update Profile
-        </button>
-      </div>*/}
-
-      <div style={styles.card}>
-        <div style={styles.title}>Logout</div>
+      <div className="base-card" style={styles.card}>
+        <div className="soft-white-glow" style={styles.title}>Logout</div>
         <div style={styles.text}>
           Sign out of your account.
         </div>
@@ -50,53 +36,43 @@ function Settings() {
 }
 
 const styles = {
-  container: {
+  pageWrapper: {
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
-    gap: "30px",
-    flexWrap: "wrap",
-    flexDirection: "column",
+    minHeight: "70vh",
+    padding: "20px"
   },
 
   card: {
-    width: "250px",
-    background: "white",
-    padding: "25px",
-    borderRadius: "12px",
-    boxShadow: "0 8px 20px rgba(0,0,0,0.15)",
-    textAlign: "center"
+    width: "100%",
+    maxWidth: "320px",
+    textAlign: "center",
+    padding: "30px 20px"
   },
 
   title: {
-    fontSize: "18px",
-    fontWeight: "bold",
+    fontSize: "1.8rem",
     marginBottom: "10px"
   },
 
   text: {
-    fontSize: "14px",
-    marginBottom: "15px"
-  },
-
-  button: {
-    width: "100%",
-    padding: "10px",
-    border: "none",
-    borderRadius: "8px",
-    background: "#2b7cff",
-    color: "white",
-    cursor: "pointer"
+    color: "var(--color-text-muted)",
+    fontSize: "0.9rem",
+    marginBottom: "25px"
   },
 
   logoutButton: {
     width: "100%",
-    padding: "10px",
+    padding: "14px",
     border: "none",
     borderRadius: "8px",
-    background: "#dc2626",
+    background: "#dc2626", // Tailwind red-600
     color: "white",
-    cursor: "pointer"
+    fontWeight: "bold",
+    fontSize: "1.05rem",
+    cursor: "pointer",
+    transition: "transform 0.1s ease"
   }
 };
 

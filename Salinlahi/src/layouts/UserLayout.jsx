@@ -37,7 +37,7 @@ function UserLayout() {
       </div>
 
       {/* Bottom Navigation */}
-      <div style={styles.navbar}>
+      <div className="base-card" style={styles.navbar}>
         <Link to="/user/UserHome" style={styles.navItem}>🏠</Link>
         <Link to="/user/ApplyAyuda" style={styles.navItem}>➕</Link>
         <Link to="/user/CurrentAyuda" style={styles.navItem}>📋</Link>
@@ -50,7 +50,7 @@ function UserLayout() {
 const styles = {
   page: {
     minHeight: "100vh",
-    paddingBottom: "70px"
+    paddingBottom: "100px"
   },
 
   content: {
@@ -59,22 +59,25 @@ const styles = {
 
   navbar: {
     position: "fixed",
-    bottom: 0,
-    left: 0,
-    width: "100%",
+    bottom: "20px",
+    left: "50%",
+    transform: "translateX(-50%)",
+    width: "90%",
+    maxWidth: "500px",
     height: "60px",
-    backgroundColor: "#ffffff",
-    borderTop: "1px solid #ddd",
     display: "flex",
     justifyContent: "space-around",
     alignItems: "center",
     fontSize: "24px",
+    padding: "0 20px",
+    margin: 0,
     zIndex: 1000
   },
 
   navItem: {
     textDecoration: "none",
-    color: "#333"
+    color: "var(--color-text-main)",
+    transition: "transform 0.2s ease"
   }
 };
 
