@@ -27,20 +27,17 @@ function Login() {
       if (docSnap.exists()) {
         const role = docSnap.data().role;
 
-        if (role === "admin") {
+        if (role === "staff") {
+          navigate("/staff");
+        } else if (role === "captain" || role === "admin") {
           navigate("/admin");
         } else {
           navigate("/user");
         }
       } else {
         alert("No user record found.");
+        return;
       }
-
-      
-      // Temporary preview alert
-      alert("Login simulation successful! (Uncomment Firebase code for local use)");
-      navigate("/admin");
-
     } catch (error) {
       alert(error.message);
     }

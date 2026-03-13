@@ -10,7 +10,7 @@ function AdminScan() {
     try {
       setScanning(true);
 
-      scannerRef.current = new Html5Qrcode("reader");
+      scannerRef.current = new Html5Qrcode("admin-reader");
 
       await scannerRef.current.start(
         { facingMode: "environment" },
@@ -44,30 +44,47 @@ function AdminScan() {
   }, []);
 
   return (
-    <div style={{ textAlign: "center" }}>
-      <h2>QR Scanner</h2>
+    <div className="page-root page-scroll">
+      <div className="stack-md">
+        <div className="base-card card card--wide">
+          <h2 className="soft-white-glow" style={{ marginTop: 0 }}>
+            Admin QR Scanner
+          </h2>
+          <p className="text-muted" style={{ marginTop: 0 }}>
+            Use this scanner for administrative checks and debugging.
+          </p>
 
-      {!scanning ? (
-        <button style={{padding: "12px",
-    border: "none",
-    borderRadius: "6px",
-    backgroundColor: "#2563eb",
-    color: "white",
-    fontWeight: "bold",
-    cursor: "pointer",
-    marginTop: "10px",}} onClick={startScanner}>Start Scanner</button>
-      ) : (
-        <button style={{padding: "12px",
-    border: "none",
-    borderRadius: "6px",
-    backgroundColor: "#dc2626",
-    color: "white",
-    fontWeight: "bold",
-    cursor: "pointer",
-    marginTop: "10px",}} onClick={stopScanner}>Stop Scanner</button>
-      )}
+          <div style={{ marginTop: "16px" }}>
+            {!scanning ? (
+              <button
+                className="btn btn-primary btn--full"
+                onClick={startScanner}
+              >
+                Start Scanner
+              </button>
+            ) : (
+              <button
+                className="btn btn-danger btn--full"
+                onClick={stopScanner}
+              >
+                Stop Scanner
+              </button>
+            )}
+          </div>
 
-      <div id="reader" style={{ width: "300px", margin: "auto" }}></div>
+          <div
+            id="admin-reader"
+            style={{
+              width: "100%",
+              maxWidth: "320px",
+              margin: "16px auto 0 auto",
+              backgroundColor: "rgba(15,23,42,0.6)",
+              borderRadius: "16px",
+              overflow: "hidden",
+            }}
+          />
+        </div>
+      </div>
     </div>
   );
 }

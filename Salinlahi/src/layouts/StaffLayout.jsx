@@ -1,19 +1,16 @@
 import { Link, Outlet } from "react-router-dom";
 
-function AdminLayout() {
+function StaffLayout() {
   return (
     <div style={styles.page}>
       <div style={styles.content}>
         <Outlet />
       </div>
 
-      {/* Bottom Navigation (mobile-first) */}
+      {/* Bottom Navigation */}
       <div className="base-card" style={styles.navbar}>
-        <Link to="/admin/AdminHome" style={styles.navItem}>🏠</Link>
-        <Link to="/admin/CreateAyuda" style={styles.navItem}>➕</Link>
-        <Link to="/admin/scan" style={styles.navItem}>📷</Link>
-        <Link to="/admin/CurrentAyuda" style={styles.navItem}>📋</Link>
-        <Link to="/admin/Settings" style={styles.navItem}>⚙️</Link>
+        <Link to="/staff/scan" style={styles.navItem}>📷</Link>
+        <Link to="/staff/events" style={styles.navItem}>📋</Link>
       </div>
     </div>
   );
@@ -23,16 +20,10 @@ const styles = {
   page: {
     minHeight: "100vh",
     paddingBottom: "100px",
-    display: "flex",
-    justifyContent: "center",
   },
-
   content: {
     padding: "20px",
-    width: "100%",
-    maxWidth: "1200px",
   },
-
   navbar: {
     position: "fixed",
     bottom: "20px",
@@ -47,14 +38,14 @@ const styles = {
     fontSize: "24px",
     padding: "0 20px",
     margin: 0,
-    zIndex: 1000
+    zIndex: 1000,
   },
-
   navItem: {
     textDecoration: "none",
     color: "var(--color-text-main)",
-    transition: "transform 0.2s ease"
-  }
+    transition: "transform 0.2s ease",
+  },
 };
 
-export default AdminLayout;
+export default StaffLayout;
+

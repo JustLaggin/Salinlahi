@@ -10,6 +10,10 @@ import AdminHome from "./pages/AdminHome";
 import Settings from "./pages/Settings";
 import UserLayout from "./layouts/UserLayout";
 import UserHome from "./pages/UserHome";
+import UserTracker from "./pages/UserTracker";
+import StaffLayout from "./layouts/StaffLayout";
+import StaffScan from "./pages/StaffScan";
+import StaffEvents from "./pages/StaffEvents";
 
 function App() {
   return (
@@ -32,16 +36,30 @@ function App() {
           <Route path="/" element={<Navigate to="/register" />} />
           <Route path="/register" element={<Register />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/user" element={<UserLayout/>}>
-            <Route path="/user/UserHome" element={<UserHome />} />
-            <Route path="/user/Settings" element={<Settings />} />
+
+          {/* Citizen (User) routes */}
+          <Route path="/user" element={<UserLayout />}>
+            <Route index element={<UserHome />} />
+            <Route path="dashboard" element={<UserHome />} />
+            <Route path="tracker" element={<UserTracker />} />
+            <Route path="settings" element={<Settings />} />
           </Route>
-          <Route path="/admin" element={<AdminLayout/>}>
-            <Route path="/admin/AdminHome" element={<AdminHome />} />
-            <Route path="/admin/CreateAyuda" element={<AdminCreateAyuda />} />
-            <Route path="/admin/scan" element={<AdminScanner />} />
-            <Route path="/admin/CurrentAyuda" element={<AdminCurrentAyuda />} />
-            <Route path="/admin/Settings" element={<Settings />} />
+
+          {/* Staff routes */}
+          <Route path="/staff" element={<StaffLayout />}>
+            <Route index element={<StaffScan />} />
+            <Route path="scan" element={<StaffScan />} />
+            <Route path="events" element={<StaffEvents />} />
+          </Route>
+
+          {/* Barangay Captain / Admin routes */}
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route index element={<AdminHome />} />
+            <Route path="AdminHome" element={<AdminHome />} />
+            <Route path="CreateAyuda" element={<AdminCreateAyuda />} />
+            <Route path="scan" element={<AdminScanner />} />
+            <Route path="CurrentAyuda" element={<AdminCurrentAyuda />} />
+            <Route path="Settings" element={<Settings />} />
           </Route>
         </Routes>
       </div>

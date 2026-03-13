@@ -6,7 +6,7 @@ import { doc, getDoc } from "firebase/firestore";
 import QRCode from "react-qr-code";
 
 function UserLayout() {
-    const [uuid, setUuid] = useState("");
+  const [uuid, setUuid] = useState("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -31,17 +31,16 @@ function UserLayout() {
   if (loading) return <h2>Loading...</h2>;
   return (
     <div style={styles.page}>
-      
+
       <div style={styles.content}>
         <Outlet />
       </div>
 
       {/* Bottom Navigation */}
       <div className="base-card" style={styles.navbar}>
-        <Link to="/user/UserHome" style={styles.navItem}>🏠</Link>
-        <Link to="/user/ApplyAyuda" style={styles.navItem}>➕</Link>
-        <Link to="/user/CurrentAyuda" style={styles.navItem}>📋</Link>
-        <Link to="/user/Settings" style={styles.navItem}>⚙️</Link>
+        <Link to="/user/dashboard" style={styles.navItem}>🏠</Link>
+        <Link to="/user/tracker" style={styles.navItem}>📋</Link>
+        <Link to="/user/settings" style={styles.navItem}>⏏</Link>
       </div>
     </div>
   );
