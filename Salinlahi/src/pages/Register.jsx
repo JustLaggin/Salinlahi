@@ -61,37 +61,115 @@ function Register() {
   };
 
   return (
-    <div style={styles.page}>
-      <form onSubmit={handleRegister} style={styles.form}>
-        <h2 style={styles.title}>Registration</h2>
-
-        
-        <input style={styles.input} name="first_name" placeholder="First Name" onChange={handleChange} required />
-        
-        <input style={styles.input} name="middle_name" placeholder="Middle Name" onChange={handleChange} />
-
-        <input style={styles.input} name="last_name" placeholder="Last Name" onChange={handleChange} required />
-      
-        <input style={styles.input} type="date" name="birth_date" onChange={handleChange} required />
-        <div style={styles.row}>
-        <input style={styles.input} name="contact_number" placeholder="Contact Number" onChange={handleChange} required />
-        <input style={styles.input} type="email" name="email" placeholder="Email Address" onChange={handleChange} required />
-        </div>
-        <div style={styles.row}>
-          <input style={styles.input} name="address_line" placeholder="Street Address" onChange={handleChange} required />
-          <input style={styles.input} name="barangay" placeholder="Barangay" onChange={handleChange} required />
-        </div>
+    <div style={styles.pageWrapper}>
+      <form
+        onSubmit={handleRegister}
+        className="base-card"
+        style={styles.formContainer}
+      >
+        <h2 className="soft-white-glow" style={styles.title}>
+          Create an Account
+        </h2>
+        <p style={styles.subtitle}>Join the Salinlahi community</p>
 
         <div style={styles.row}>
-          <input style={styles.input} name="city" placeholder="City" onChange={handleChange} required />
-        <input style={styles.input} name="province" placeholder="Province" onChange={handleChange} required />
+          <input
+            style={styles.input}
+            name="first_name"
+            placeholder="First Name"
+            onChange={handleChange}
+            required
+          />
+          <input
+            style={styles.input}
+            name="middle_name"
+            placeholder="Middle Name"
+            onChange={handleChange}
+          />
         </div>
 
-        
-        <button type="submit" style={styles.button}>
+        <input
+          style={styles.input}
+          name="last_name"
+          placeholder="Last Name"
+          onChange={handleChange}
+          required
+        />
+
+        <input
+          style={styles.input}
+          type="date"
+          name="birth_date"
+          onChange={handleChange}
+          required
+        />
+
+        <div style={styles.row}>
+          <input
+            style={styles.input}
+            name="contact_number"
+            placeholder="Contact Number"
+            onChange={handleChange}
+            required
+          />
+          <input
+            style={styles.input}
+            type="email"
+            name="email"
+            placeholder="Email Address"
+            onChange={handleChange}
+            required
+          />
+        </div>
+
+        <input
+          style={styles.input}
+          type="password"
+          name="password"
+          placeholder="Password"
+          onChange={handleChange}
+          required
+        />
+
+        <div style={styles.row}>
+          <input
+            style={styles.input}
+            name="address_line"
+            placeholder="Street Address"
+            onChange={handleChange}
+            required
+          />
+          <input
+            style={styles.input}
+            name="barangay"
+            placeholder="Barangay"
+            onChange={handleChange}
+            required
+          />
+        </div>
+
+        <div style={styles.row}>
+          <input
+            style={styles.input}
+            name="city"
+            placeholder="City"
+            onChange={handleChange}
+            required
+          />
+          <input
+            style={styles.input}
+            name="province"
+            placeholder="Province"
+            onChange={handleChange}
+            required
+          />
+        </div>
+
+        <button type="submit" style={styles.gradientButton}>
           Register
         </button>
-        <p style={{ textAlign: "center", marginTop: "10px" }}>
+
+        <p style={{ textAlign: "center", marginTop: "1.5rem", color: "var(--color-text-muted)" }}>
           Already have an account?{" "}
           <Link to="/login" style={styles.link}>
             Login here
@@ -103,46 +181,63 @@ function Register() {
 }
 
 const styles = {
-  page: {
+  pageWrapper: {
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
-    minHeight: "100vh",
-    backgroundColor: "#ffffff",
+    minHeight: "80vh",
+    padding: "20px"
   },
-  form: {
-    background: "white",
-    padding: "30px",
-    borderRadius: "10px",
-    boxShadow: "0 5px 15px rgba(0,0,0,0.1)",
-    width: "400px",
+  formContainer: {
+    width: "100%",
+    maxWidth: "480px",
     display: "flex",
     flexDirection: "column",
-    gap: "12px",
+    gap: "14px",
+    padding: "2.5rem 2rem"
   },
   title: {
     textAlign: "center",
-    marginBottom: "10px",
+    marginBottom: "0.25rem",
+    fontSize: "2rem"
+  },
+  subtitle: {
+    textAlign: "center",
+    color: "var(--color-text-muted)",
+    marginBottom: "1.5rem",
+    fontSize: "0.9rem"
   },
   row: {
     display: "flex",
     gap: "10px",
+    flexWrap: "wrap"
   },
   input: {
-    padding: "10px",
-    borderRadius: "5px",
-    border: "1px solid #ccc",
-    flex: 0.5,
+    flex: 1,
+    padding: "14px",
+    borderRadius: "8px",
+    border: "1px solid rgba(255, 255, 255, 0.1)",
+    backgroundColor: "rgba(0, 0, 0, 0.2)",
+    color: "var(--color-text-main)",
+    fontSize: "0.95rem",
+    outline: "none"
   },
-  button: {
-    padding: "12px",
+  gradientButton: {
+    padding: "14px",
     border: "none",
-    borderRadius: "6px",
-    backgroundColor: "#2563eb",
-    color: "white",
+    borderRadius: "8px",
+    background: "linear-gradient(to right, var(--color-primary-blue), var(--color-primary-green))",
+    color: "#0B1121",
     fontWeight: "bold",
+    fontSize: "1.05rem",
     cursor: "pointer",
     marginTop: "10px",
+    transition: "transform 0.1s ease"
+  },
+  link: {
+    color: "var(--color-primary-blue)",
+    fontWeight: "bold",
+    textDecoration: "none"
   }
 };
 

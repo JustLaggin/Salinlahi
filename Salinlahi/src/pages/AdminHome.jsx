@@ -1,72 +1,87 @@
+import { useNavigate } from "react-router-dom";
+
 function AdminHome() {
+  const navigate = useNavigate();
+
   return (
-     <div style={styles.container}>
-      <div style={styles.card}>
-        <p style={styles.text}>Scan a QR code to verify and claim ayuda.</p>
+    <div style={styles.pageWrapper}>
+      <div style={styles.grid}>
         <button
-          style={styles.button}
-          onClick={() => navigate("/scan")}
+          className="base-card"
+          style={styles.card}
+          onClick={() => navigate("/admin/scan")}
         >
-          Scan QR
+          <h3 className="soft-white-glow" style={styles.cardTitle}>
+            Scan QR
+          </h3>
+          <p style={styles.cardText}>
+            Verify and claim ayuda quickly using QR scanning.
+          </p>
         </button>
-      </div>
 
-      <div style={styles.card}>
-        <p style={styles.text}>Create a new ayuda for distribution.</p>
         <button
-          style={styles.button}
-          onClick={() => navigate("/create-ayuda")}
+          className="base-card"
+          style={styles.card}
+          onClick={() => navigate("/admin/CreateAyuda")}
         >
-          Create Ayuda
+          <h3 className="soft-white-glow" style={styles.cardTitle}>
+            Create Ayuda
+          </h3>
+          <p style={styles.cardText}>
+            Set up new ayuda distributions with full details.
+          </p>
         </button>
-      </div>
 
-      <div style={styles.card}>
-        <p style={styles.text}>View the currently active ayudas.</p>
         <button
-          style={styles.button}
-          onClick={() => navigate("/current-ayudas")}
+          className="base-card"
+          style={styles.card}
+          onClick={() => navigate("/admin/CurrentAyuda")}
         >
-          View Ayudas
+          <h3 className="soft-white-glow" style={styles.cardTitle}>
+            Current Ayudas
+          </h3>
+          <p style={styles.cardText}>
+            View and manage all active ayuda programs.
+          </p>
         </button>
       </div>
     </div>
   );
-}  
+}
 
 const styles = {
-    container: {
-      height: "flex",
-      display: "flex",
-      justifyContent: "center",
-      alignItems: "center",
-      gap: "30px",
-      flexWrap: "wrap",
-    },
+  pageWrapper: {
+    minHeight: "70vh",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "20px"
+  },
+  grid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+    gap: "16px",
+    width: "100%"
+  },
+  card: {
+    border: "none",
+    background: "transparent",
+    cursor: "pointer",
+    textAlign: "left",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "flex-start",
+    gap: "8px"
+  },
+  cardTitle: {
+    margin: 0,
+    fontSize: "1.1rem"
+  },
+  cardText: {
+    margin: 0,
+    color: "var(--color-text-muted)",
+    fontSize: "0.9rem"
+  }
+};
 
-    card: {
-      width: "220px",
-      padding: "20px",
-      borderRadius: "12px",
-      background: "white",
-      boxShadow: "0 8px 20px rgba(0,0,0,0.15)",
-      textAlign: "center",
-    },
-
-    text: {
-      marginBottom: "15px",
-      fontSize: "14px",
-    },
-
-    button: {
-      width: "100%",
-      padding: "10px",
-      border: "none",
-      background: "#2b7cff",
-      color: "white",
-      borderRadius: "8px",
-      cursor: "pointer",
-      fontSize: "14px",
-    },
-  };
 export default AdminHome;
