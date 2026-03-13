@@ -3,6 +3,7 @@ import { auth, db } from "../firebase";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 import { v4 as uuidv4 } from "uuid";
+import { Link } from "react-router-dom";
 
 function Register() {
   const [form, setForm] = useState({
@@ -60,24 +61,89 @@ function Register() {
   };
 
   return (
-    <form onSubmit={handleRegister}>
-      <h2>Register</h2>
+    <div style={styles.page}>
+      <form onSubmit={handleRegister} style={styles.form}>
+        <h2 style={styles.title}>Registration</h2>
 
-      <input name="first_name" placeholder="First Name" onChange={handleChange} required />
-      <input name="last_name" placeholder="Last Name" onChange={handleChange} required />
-      <input name="middle_name" placeholder="Middle Name" onChange={handleChange} />
-      <input type="date" name="birth_date" onChange={handleChange} required />
-      <input name="contact_number" placeholder="Contact Number" onChange={handleChange} required />
-      <input type="email" name="email" placeholder="Email" onChange={handleChange} required />
-      <input type="password" name="password" placeholder="Password" onChange={handleChange} required />
-      <input name="address_line" placeholder="Street Address" onChange={handleChange} required />
-      <input name="barangay" placeholder="Barangay" onChange={handleChange} required />
-      <input name="city" placeholder="City" onChange={handleChange} required />
-      <input name="province" placeholder="Province" onChange={handleChange} required />
+        
+        <input style={styles.input} name="first_name" placeholder="First Name" onChange={handleChange} required />
+        
+        <input style={styles.input} name="middle_name" placeholder="Middle Name" onChange={handleChange} />
 
-      <button type="submit">Register</button>
-    </form>
+        <input style={styles.input} name="last_name" placeholder="Last Name" onChange={handleChange} required />
+      
+        <input style={styles.input} type="date" name="birth_date" onChange={handleChange} required />
+        <div style={styles.row}>
+        <input style={styles.input} name="contact_number" placeholder="Contact Number" onChange={handleChange} required />
+        <input style={styles.input} type="email" name="email" placeholder="Email Address" onChange={handleChange} required />
+        </div>
+        <div style={styles.row}>
+          <input style={styles.input} name="address_line" placeholder="Street Address" onChange={handleChange} required />
+          <input style={styles.input} name="barangay" placeholder="Barangay" onChange={handleChange} required />
+        </div>
+
+        <div style={styles.row}>
+          <input style={styles.input} name="city" placeholder="City" onChange={handleChange} required />
+        <input style={styles.input} name="province" placeholder="Province" onChange={handleChange} required />
+        </div>
+
+        
+        <button type="submit" style={styles.button}>
+          Register
+        </button>
+        <p style={{ textAlign: "center", marginTop: "10px" }}>
+          Already have an account?{" "}
+          <Link to="/login" style={styles.link}>
+            Login here
+          </Link>
+        </p>
+      </form>
+    </div>
   );
 }
+
+const styles = {
+  page: {
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    minHeight: "100vh",
+    backgroundColor: "#ffffff",
+  },
+  form: {
+    background: "white",
+    padding: "30px",
+    borderRadius: "10px",
+    boxShadow: "0 5px 15px rgba(0,0,0,0.1)",
+    width: "400px",
+    display: "flex",
+    flexDirection: "column",
+    gap: "12px",
+  },
+  title: {
+    textAlign: "center",
+    marginBottom: "10px",
+  },
+  row: {
+    display: "flex",
+    gap: "10px",
+  },
+  input: {
+    padding: "10px",
+    borderRadius: "5px",
+    border: "1px solid #ccc",
+    flex: 0.5,
+  },
+  button: {
+    padding: "12px",
+    border: "none",
+    borderRadius: "6px",
+    backgroundColor: "#2563eb",
+    color: "white",
+    fontWeight: "bold",
+    cursor: "pointer",
+    marginTop: "10px",
+  }
+};
 
 export default Register;
