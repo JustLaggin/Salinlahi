@@ -1,54 +1,40 @@
 import { Link, Outlet } from "react-router-dom";
+import { useEffect } from "react";
 
 function AdminLayout() {
-  return (
-    <div style={styles.page}>
-      {/* Page content changes here */}
-      <div style={styles.content}>
-        <Outlet />
-      </div>
+  useEffect(() => {
+    const setActiveNav = () => {
+      document.querySelectorAll('.nav-item').forEach(item => {
+        item.classList.remove('active');
+      });
+      const currentPath = window.location.pathname;
+      document.querySelectorAll('.nav-item').forEach(item => {
+        if (item.getAttribute('href') === currentPath) {
+          item.classList.add('active');
+        }
+      });
+    };
+    setActiveNav();
+    window.addEventListener('popstate', setActiveNav);
+    return () => window.removeEventListener('popstate', setActiveNav);
+  }, []);
 
-      {/* Bottom Navigation */}
-      <div style={styles.navbar}>
-        <Link to="/admin/AdminHome" style={styles.navItem}>🏠</Link>
-        <Link to="/admin/CreateAyuda" style={styles.navItem}>➕</Link>
-        <Link to="/admin/scan" style={styles.navItem}>📷</Link>
-        <Link to="/admin/CurrentAyuda" style={styles.navItem}>📋</Link>
-        <Link to="/admin/Settings" style={styles.navItem}>⚙️</Link>
+  return (
+
+      <div className="app-container">
+        <main className="page-content">
+          <Outlet />
+        </main>
+
+        <nav className="bottom-nav">
+          <Link to="/admin/AdminHome" className="nav-item">🏠 Home</Link>
+          <Link to="/admin/CreateAyuda" className="nav-item">➕ New</Link>
+          <Link to="/admin/scan" className="nav-item">📷 Scan</Link>
+          <Link to="/admin/CurrentAyuda" className="nav-item">📋 List</Link>
+          <Link to="/admin/Settings" className="nav-item">⚙️ Settings</Link>
+        </nav>
       </div>
-    </div>
   );
 }
-
-const styles = {
-  page: {
-    minHeight: "100vh",
-    paddingBottom: "70px"
-  },
-
-  content: {
-    padding: "20px"
-  },
-
-  navbar: {
-    position: "fixed",
-    bottom: 0,
-    left: 0,
-    width: "100%",
-    height: "60px",
-    backgroundColor: "#ffffff",
-    borderTop: "1px solid #ddd",
-    display: "flex",
-    justifyContent: "space-around",
-    alignItems: "center",
-    fontSize: "24px",
-    zIndex: 1000
-  },
-
-  navItem: {
-    textDecoration: "none",
-    color: "#333"
-  }
-};
 
 export default AdminLayout;

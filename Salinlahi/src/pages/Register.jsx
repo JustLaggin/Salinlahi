@@ -14,6 +14,7 @@ function Register() {
     contact_number: "",
     email: "",
     password: "",
+    confirm_password: "",
     address_line: "",
     barangay: "",
     city: "",
@@ -26,6 +27,11 @@ function Register() {
 
   const handleRegister = async (e) => {
     e.preventDefault();
+
+    if (form.password !== form.confirm_password) {
+      alert("Passwords do not match");
+      return;
+    }
 
     try {
       const userCredential = await createUserWithEmailAndPassword(
@@ -50,10 +56,29 @@ function Register() {
         city: form.city,
         province: form.province,
         role: "user",
+        ayudas_applied: [],
+        ayudas_beneficiary: [],
+        ayudas_received: [],
         created_at: new Date()
       });
 
       alert("Registration successful!");
+
+      // Reset form
+      setForm({
+        first_name: "",
+        last_name: "",
+        middle_name: "",
+        birth_date: "",
+        contact_number: "",
+        email: "",
+        password: "",
+        confirm_password: "",
+        address_line: "",
+        barangay: "",
+        city: "",
+        province: ""
+      });
 
     } catch (error) {
       alert(error.message);
@@ -61,39 +86,137 @@ function Register() {
   };
 
   return (
-    <div style={styles.page}>
-      <form onSubmit={handleRegister} style={styles.form}>
-        <h2 style={styles.title}>Registration</h2>
+    <div className="app-container">
+      <form onSubmit={handleRegister} className="base-card auth-form">
+  <h2 className="auth-title">Registration</h2>
 
-        
-        <input style={styles.input} name="first_name" placeholder="First Name" onChange={handleChange} required />
-        
-        <input style={styles.input} name="middle_name" placeholder="Middle Name" onChange={handleChange} />
-
-        <input style={styles.input} name="last_name" placeholder="Last Name" onChange={handleChange} required />
-      
-        <input style={styles.input} type="date" name="birth_date" onChange={handleChange} required />
-        <div style={styles.row}>
-        <input style={styles.input} name="contact_number" placeholder="Contact Number" onChange={handleChange} required />
-        <input style={styles.input} type="email" name="email" placeholder="Email Address" onChange={handleChange} required />
-        </div>
-        <div style={styles.row}>
-          <input style={styles.input} name="address_line" placeholder="Street Address" onChange={handleChange} required />
-          <input style={styles.input} name="barangay" placeholder="Barangay" onChange={handleChange} required />
-        </div>
-
-        <div style={styles.row}>
-          <input style={styles.input} name="city" placeholder="City" onChange={handleChange} required />
-        <input style={styles.input} name="province" placeholder="Province" onChange={handleChange} required />
+        <div className="input-row">
+          <input
+            className="input-field"
+            name="first_name"
+            placeholder="First Name"
+            value={form.first_name}
+            onChange={handleChange}
+            required
+          />
+          <input
+            className="input-field"
+            name="middle_name"
+            placeholder="Middle Name (Optional)"
+            value={form.middle_name}
+            onChange={handleChange}
+          />
         </div>
 
-        
-        <button type="submit" style={styles.button}>
+        <div className="input-row">
+          <input
+            className="input-field"
+            name="last_name"
+            placeholder="Last Name"
+            value={form.last_name}
+            onChange={handleChange}
+            required
+          />
+          <input
+            className="input-field"
+            type="date"
+            name="birth_date"
+            placeholder="Birth Date"
+            value={form.birth_date}
+            onChange={handleChange}
+            required
+          />
+        </div>
+
+        <div className="input-row">
+          <input
+            className="input-field"
+            name="contact_number"
+            placeholder="Contact Number"
+            value={form.contact_number}
+            onChange={handleChange}
+            required
+          />
+
+          <input
+            className="input-field"
+            type="email"
+            name="email"
+            placeholder="Email Address"
+            value={form.email}
+            onChange={handleChange}
+            required
+          />
+        </div>
+
+        <div className="input-row">
+          <input
+            className="input-field"
+            name="address_line"
+            placeholder="Street Address"
+            value={form.address_line}
+            onChange={handleChange}
+            required
+          />
+
+          <input
+            className="input-field"
+            name="barangay"
+            placeholder="Barangay"
+            value={form.barangay}
+            onChange={handleChange}
+            required
+          />
+        </div>
+
+        <div className="input-row">
+          <input
+            className="input-field"
+            name="city"
+            placeholder="City"
+            value={form.city}
+            onChange={handleChange}
+            required
+          />
+
+          <input
+            className="input-field"
+            name="province"
+            placeholder="Province"
+            value={form.province}
+            onChange={handleChange}
+            required
+          />
+        </div>
+        {/* PASSWORD SECTION */}
+        <div className="input-row">
+          <input
+            className="input-field"
+            type="password"
+            name="password"
+            placeholder="Password"
+            value={form.password}
+            onChange={handleChange}
+            required
+          />
+
+          <input
+            className="input-field"
+            type="password"
+            name="confirm_password"
+            placeholder="Confirm Password"
+            value={form.confirm_password}
+            onChange={handleChange}
+            required
+          />
+        </div>
+        <button type="submit" className="auth-button">
           Register
         </button>
-        <p style={{ textAlign: "center", marginTop: "10px" }}>
+
+        <p style={{ textAlign: "center", marginTop: "1rem", color: 'var(--color-text-muted)' }}>
           Already have an account?{" "}
-          <Link to="/login" style={styles.link}>
+          <Link to="/login" className="auth-link">
             Login here
           </Link>
         </p>
@@ -102,48 +225,6 @@ function Register() {
   );
 }
 
-const styles = {
-  page: {
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    minHeight: "100vh",
-    backgroundColor: "#ffffff",
-  },
-  form: {
-    background: "white",
-    padding: "30px",
-    borderRadius: "10px",
-    boxShadow: "0 5px 15px rgba(0,0,0,0.1)",
-    width: "400px",
-    display: "flex",
-    flexDirection: "column",
-    gap: "12px",
-  },
-  title: {
-    textAlign: "center",
-    marginBottom: "10px",
-  },
-  row: {
-    display: "flex",
-    gap: "10px",
-  },
-  input: {
-    padding: "10px",
-    borderRadius: "5px",
-    border: "1px solid #ccc",
-    flex: 0.5,
-  },
-  button: {
-    padding: "12px",
-    border: "none",
-    borderRadius: "6px",
-    backgroundColor: "#2563eb",
-    color: "white",
-    fontWeight: "bold",
-    cursor: "pointer",
-    marginTop: "10px",
-  }
-};
+
 
 export default Register;

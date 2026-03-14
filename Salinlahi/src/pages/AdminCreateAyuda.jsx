@@ -101,96 +101,122 @@ function AdminCreateAyuda() {
   };
 
   return (
-    <div style={styles.page}>
-      <form onSubmit={handleSubmit} style={styles.form}>
+    <div className="app-container">
+      <form onSubmit={handleSubmit} className="base-card auth-form">
+        <h2 className="auth-title">Create New Ayuda</h2>
 
-        <h2>Create New Ayuda</h2>
+        <div className="input-group">
+          <label>Title</label>
+          <input
+            className="input-field"
+            name="title"
+            value={formData.title}
+            onChange={handleChange}
+            placeholder="Enter Title"
+            required
+          />
+        </div>
 
-        <label>Ayuda Title</label>
-        <input
-          name="title"
-          value={formData.title}
-          onChange={handleChange}
-          placeholder="Enter Title"
-          required
-        />
+        <div className="input-group">
+          <label>Amount (₱)</label>
+          <input
+            className="input-field"
+            type="number"
+            name="amount"
+            value={formData.amount}
+            onChange={handleChange}
+            placeholder="Enter Amount"
+            min="0"
+            required
+          />
+        </div>
 
-        <label>Amount (₱)</label>
-        <input
-          type="number"
-          name="amount"
-          value={formData.amount}
-          onChange={handleChange}
-          placeholder="Enter Amount"
-          min="0"
-          required
-        />
+<div className="input-row">
+          <div className="input-group">
+            <label>City / Municipality</label>
+            <select
+              className="input-field"
+              name="city"
+              value={formData.city}
+              onChange={handleCityChange}
+              required
+            >
+              <option value="">Select City / Municipality</option>
+              <option value="Batangas City">Batangas City</option>
+              <option value="Lipa City">Lipa City</option>
+              <option value="Tanauan City">Tanauan City</option>
+            </select>
+          </div>
+          <div className="input-group">
+            <label>Barangay</label>
+            <select
+              className="input-field"
+              name="barangay"
+              value={formData.barangay}
+              onChange={handleChange}
+              disabled={!formData.city}
+              required
+            >
+              <option value="">Select Barangay</option>
+              {formData.city && barangays[formData.city]?.map((brgy) => (
+                <option key={brgy} value={brgy}>
+                  {brgy}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
 
-        <label>City / Municipality</label>
-        <select
-          name="city"
-          value={formData.city}
-          onChange={handleCityChange}
-          required
-        >
-          <option value="">Select City / Municipality</option>
-          <option value="Batangas City">Batangas City</option>
-          <option value="Lipa City">Lipa City</option>
-          <option value="Tanauan City">Tanauan City</option>
-        </select>
+        <div className="input-row">
+          <div className="input-group">
+            <label>Schedule</label>
+            <input
+              className="input-field"
+              type="date"
+              name="schedule"
+              value={formData.schedule}
+              onChange={handleChange}
+            />
+          </div>
 
-        <label>Barangay</label>
-        <select
-          name="barangay"
-          value={formData.barangay}
-          onChange={handleChange}
-          disabled={!formData.city}
-          required
-        >
-          <option value="">Select Barangay</option>
+          <div className="input-group">
+            <label>Address</label>
+            <input
+              className="input-field"
+              name="address"
+              value={formData.address}
+              onChange={handleChange}
+              placeholder="e.g. 123 Mabini St."
+            />
+          </div>
+        </div>
 
-          {formData.city &&
-            barangays[formData.city]?.map((brgy) => (
-              <option key={brgy} value={brgy}>
-                {brgy}
-              </option>
-            ))}
-        </select>
+        <div className="input-group">
+          <label>Requirements</label>
+          <textarea
+            className="input-field"
+            name="requirements"
+            value={formData.requirements}
+            onChange={handleChange}
+            placeholder="List of Requirements"
+            rows="3"
+          />
+        </div>
 
-        <label>Schedule</label>
-        <input
-          type="date"
-          name="schedule"
-          value={formData.schedule}
-          onChange={handleChange}
-        />
+        <div className="input-group">
+          <label>Description</label>
+          <textarea
+            className="input-field"
+            name="description"
+            value={formData.description}
+            onChange={handleChange}
+            placeholder="Describe the Ayuda"
+            rows="4"
+            required
+          />
+        </div>
 
-        <label>Requirements</label>
-        <input
-          name="requirements"
-          value={formData.requirements}
-          onChange={handleChange}
-          placeholder="List of Requirements"
-        />
-
-        <label>Claiming Area</label>
-        <input
-          name="address"
-          value={formData.address}
-          onChange={handleChange}
-          placeholder="e.g. 123 Mabini St."
-        />
-
-        <label>Description</label>
-        <textarea
-          name="description"
-          value={formData.description}
-          onChange={handleChange}
-          placeholder="Describe the Ayuda"
-          required
-        />
-
-        <button type="submit" style={styles.button}>
+        <button type="submit" className="auth-button">
           Create Ayuda
         </button>
 
@@ -198,34 +224,5 @@ function AdminCreateAyuda() {
     </div>
   );
 }
-
-const styles = {
-  page: {
-    display: "flex",
-    justifyContent: "center",
-    paddingTop: "40px"
-  },
-
-  form: {
-    background: "white",
-    padding: "30px",
-    borderRadius: "10px",
-    boxShadow: "0 5px 15px rgba(0,0,0,0.1)",
-    width: "400px",
-    display: "flex",
-    flexDirection: "column",
-    gap: "10px"
-  },
-
-  button: {
-    marginTop: "10px",
-    padding: "10px",
-    backgroundColor: "#007bff",
-    border: "none",
-    color: "white",
-    borderRadius: "5px",
-    cursor: "pointer"
-  }
-};
 
 export default AdminCreateAyuda;

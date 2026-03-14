@@ -1,72 +1,37 @@
+import { useNavigate } from "react-router-dom";
+
 function AdminHome() {
+  const navigate = useNavigate();
   return (
-     <div style={styles.container}>
-      <div style={styles.card}>
-        <p style={styles.text}>Scan a QR code to verify and claim ayuda.</p>
-        <button
-          style={styles.button}
-          onClick={() => navigate("/scan")}
-        >
-          Scan QR
-        </button>
-      </div>
+    <div className="app-container">
+      <h1 className="auth-title">Admin Dashboard</h1>
+      <div className="admin-grid">
+        <div className="base-card">
+          <h3 className="auth-title">Scan QR</h3>
+          <p className="settings-text">Verify beneficiary and process claim</p>
+          <button className="auth-button" onClick={() => navigate("/admin/scan")}>
+            Scan QR
+          </button>
+        </div>
 
-      <div style={styles.card}>
-        <p style={styles.text}>Create a new ayuda for distribution.</p>
-        <button
-          style={styles.button}
-          onClick={() => navigate("/create-ayuda")}
-        >
-          Create Ayuda
-        </button>
-      </div>
+        <div className="base-card">
+          <h3 className="auth-title">Create Ayuda</h3>
+          <p className="settings-text">Launch new aid distribution program</p>
+          <button className="auth-button" onClick={() => navigate("/admin/CreateAyuda")}>
+            Create Ayuda
+          </button>
+        </div>
 
-      <div style={styles.card}>
-        <p style={styles.text}>View the currently active ayudas.</p>
-        <button
-          style={styles.button}
-          onClick={() => navigate("/current-ayudas")}
-        >
-          View Ayudas
-        </button>
+        <div className="base-card">
+          <h3 className="auth-title">Current Ayudas</h3>
+          <p className="settings-text">Manage active distributions</p>
+          <button className="auth-button" onClick={() => navigate("/admin/CurrentAyuda")}>
+            View Ayudas
+          </button>
+        </div>
       </div>
     </div>
   );
-}  
+}
 
-const styles = {
-    container: {
-      height: "flex",
-      display: "flex",
-      justifyContent: "center",
-      alignItems: "center",
-      gap: "30px",
-      flexWrap: "wrap",
-    },
-
-    card: {
-      width: "220px",
-      padding: "20px",
-      borderRadius: "12px",
-      background: "white",
-      boxShadow: "0 8px 20px rgba(0,0,0,0.15)",
-      textAlign: "center",
-    },
-
-    text: {
-      marginBottom: "15px",
-      fontSize: "14px",
-    },
-
-    button: {
-      width: "100%",
-      padding: "10px",
-      border: "none",
-      background: "#2b7cff",
-      color: "white",
-      borderRadius: "8px",
-      cursor: "pointer",
-      fontSize: "14px",
-    },
-  };
 export default AdminHome;

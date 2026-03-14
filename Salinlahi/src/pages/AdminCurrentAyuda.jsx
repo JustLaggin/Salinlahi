@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { collection, getDocs, doc, updateDoc, arrayUnion, arrayRemove, } from "firebase/firestore";
+import { Package, MapPin, Calendar, Info } from "lucide-react";
+import { collection, getDocs, doc, updateDoc, arrayUnion, arrayRemove, query, where } from "firebase/firestore";
 import { db } from "../firebase";
 
 function AdminCurrentAyuda() {
@@ -12,6 +13,7 @@ function AdminCurrentAyuda() {
   const [selectedAyuda, setSelectedAyuda] = useState(null);
 
   const [formData, setFormData] = useState({});
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     const fetchAyudas = async () => {
@@ -29,6 +31,7 @@ function AdminCurrentAyuda() {
   }, []);
 
   const approveApplicant = async (applicant) => {
+  if (!selectedAyuda) return;
   const ayudaRef = doc(db, "ayudas", selectedAyuda.id);
 
   await updateDoc(ayudaRef, {
@@ -36,10 +39,23 @@ function AdminCurrentAyuda() {
     beneficiaries: arrayUnion(applicant)
   });
 
+  // Update user document
+  const userQuery = query(collection(db, "users"), where("uuid", "==", applicant));
+  const userSnap = await getDocs(userQuery);
+  if (userSnap.docs.length > 0) {
+    const userDoc = userSnap.docs[0];
+    const userRef = doc(db, "users", userDoc.id);
+    await updateDoc(userRef, {
+      "ayudas_applied": arrayRemove(selectedAyuda.id),
+      "ayudas_beneficiary": arrayUnion(selectedAyuda.id)
+    });
+  }
+
   setModalList(prev => prev.filter(a => a !== applicant));
 };
 
   const rejectApplicant = async (applicant) => {
+  if (!selectedAyuda) return;
   const ayudaRef = doc(db, "ayudas", selectedAyuda.id);
 
   await updateDoc(ayudaRef, {
@@ -48,9 +64,10 @@ function AdminCurrentAyuda() {
 
   setModalList(prev => prev.filter(a => a !== applicant));
 };
-  const openListModal = (title, list) => {
+  const openListModal = (title, list, ayuda) => {
     setModalTitle(title);
     setModalList(list || []);
+    setSelectedAyuda(ayuda);
     setModalOpen(true);
   };
 
@@ -94,37 +111,74 @@ function AdminCurrentAyuda() {
   };
 
   return (
-    <div style={styles.container}>
-      {ayudas.map((ayuda) => (
-        <div key={ayuda.id} style={styles.card}>
-          <div style={styles.title}>{ayuda.title}</div>
+    <div className="app-container">
+      <div className="search-container">
+        <input 
+          className="input-field" 
+          type="text" 
+          placeholder="🔍 Search Ayudas by name..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value.toLowerCase())}
+        />
+      </div>
+      <div className="admin-grid">
+        {ayudas.filter(ayuda => 
+          ayuda.title.toLowerCase().includes(searchTerm)
+        ).map((ayuda) => (
+        <div key={ayuda.id} className="base-card">
+          <h3 className="auth-title">{ayuda.title}</h3>
 
-          <div style={styles.text}><b>Description:</b> {ayuda.description}</div>
-          <div style={styles.text}><b>Amount:</b> {ayuda.amount}</div>
-          <div style={styles.text}><b>Location:</b> {ayuda.barangay}, {ayuda.city}</div>
-          <div style={styles.text}><b>Address:</b> {ayuda.address || "N/A"}</div>
-          <div style={styles.text}><b>Requirements:</b> {ayuda.requirements || "None"}</div>
-          <div style={styles.text}><b>Schedule:</b> {ayuda.schedule || "Not specified"}</div>
+          <div className="detail-row">
+            <div className="detail-icon"><Package size={24} /></div>
+            <div className="detail-content">
+              <h4>Amount</h4>
+              <p>₱{ayuda.amount?.toLocaleString()}</p>
+            </div>
+          </div>
 
-          <div style={styles.buttonContainer}>
-            <button
-              style={styles.button}
-              onClick={() => openListModal("Applicants", ayuda.applicants)}
-            >
-              Applicants
+          <div className="detail-row">
+            <div className="detail-icon"><MapPin size={24} /></div>
+            <div className="detail-content">
+              <h4>Location</h4>
+              <p>{ayuda.barangay}, {ayuda.city}</p>
+              <p style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>{ayuda.address || "N/A"}</p>
+            </div>
+          </div>
+
+          <div className="detail-row">
+            <div className="detail-icon"><Calendar size={24} /></div>
+            <div className="detail-content">
+              <h4>Schedule</h4>
+              <p>{ayuda.schedule || "Not specified"}</p>
+            </div>
+          </div>
+
+          <div className="detail-row">
+            <div className="detail-icon"><Info size={24} /></div>
+            <div className="detail-content">
+              <h4>Requirements</h4>
+              <p>{ayuda.requirements || "None"}</p>
+            </div>
+          </div>
+
+          <div className="detail-row">
+            <div className="detail-icon"><Package size={24} /></div>
+            <div className="detail-content">
+              <h4>Description</h4>
+              <p>{ayuda.description}</p>
+            </div>
+          </div>
+
+          <div className="button-group">
+            <button className="admin-btn" onClick={() => openListModal("Applicants", ayuda.applicants, ayuda)}>
+              Applicants ({ayuda.applicants?.length || 0})
             </button>
 
-            <button
-              style={styles.button}
-              onClick={() => openListModal("Beneficiaries", ayuda.beneficiaries)}
-            >
-              Beneficiaries
+            <button className="admin-btn" onClick={() => openListModal("Beneficiaries", ayuda.beneficiaries, ayuda)}>
+              Beneficiaries ({ayuda.beneficiaries?.length || 0})
             </button>
 
-            <button
-              style={styles.updateButton}
-              onClick={() => openUpdateModal(ayuda)}
-            >
+            <button className="admin-btn update-btn" onClick={() => openUpdateModal(ayuda)}>
               Update
             </button>
           </div>
@@ -133,39 +187,33 @@ function AdminCurrentAyuda() {
 
       {/* LIST MODAL */}
       {modalOpen && (
-        <div style={styles.modalOverlay}>
-          <div style={styles.modal}>
-            <h2>{modalTitle}</h2>
+        <div className="modal-overlay">
+          <div className="base-card modal-card">
+            <h2 className="auth-title">{modalTitle}</h2>
 
             {modalList.length === 0 ? (
-  <p>No data found</p>
-) : (
-  modalList.map((item, index) => (
-    <div key={index} style={styles.listRow}>
-      <span>{item}</span>
+              <p className="settings-text">No data found</p>
+            ) : (
+              modalList.map((item, index) => (
+                <div key={index} className="modal-list-row">
+                  <span>{item}</span>
 
-      {modalTitle === "Applicants" && (
-        <div style={styles.rowButtons}>
-          <button
-            style={styles.approveBtn}
-            onClick={() => approveApplicant(item)}
-          >
-            Approve
-          </button>
+                  {modalTitle === "Applicants" && (
+                    <div className="row-buttons">
+                      <button className="approve-btn" onClick={() => approveApplicant(item)}>
+                        Approve
+                      </button>
 
-          <button
-            style={styles.rejectBtn}
-            onClick={() => rejectApplicant(item)}
-          >
-            Reject
-          </button>
-        </div>
-      )}
-    </div>
-  ))
-)}
+                      <button className="reject-btn" onClick={() => rejectApplicant(item)}>
+                        Reject
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))
+            )}
 
-            <button onClick={() => setModalOpen(false)} style={styles.closeBtn}>
+            <button className="auth-button close-btn" onClick={() => setModalOpen(false)}>
               Close
             </button>
           </div>
@@ -174,192 +222,66 @@ function AdminCurrentAyuda() {
 
       {/* UPDATE MODAL */}
       {updateModal && (
-        <div style={styles.modalOverlay}>
-    <div style={styles.modal}>
-      <h2>Update Ayuda</h2>
+        <div className="modal-overlay">
+          <div className="base-card modal-card">
+            <h2 className="auth-title">Update Ayuda</h2>
 
-      <div style={styles.inputGroup}>
-        <label>Title</label>
-        <input name="title" value={formData.title || ""} onChange={handleChange}/>
-      </div>
+            <div className="input-group">
+              <label>Title</label>
+              <input className="input-field" name="title" value={formData.title || ""} onChange={handleChange}/>
+            </div>
 
-      <div style={styles.inputGroup}>
-        <label>Description</label>
-        <input name="description" value={formData.description || ""} onChange={handleChange}/>
-      </div>
+            <div className="input-group">
+              <label>Description</label>
+              <input className="input-field" name="description" value={formData.description || ""} onChange={handleChange}/>
+            </div>
 
-      <div style={styles.inputGroup}>
-        <label>Amount</label>
-        <input name="amount" value={formData.amount || ""} onChange={handleChange}/>
-      </div>
+            <div className="input-group">
+              <label>Amount (₱)</label>
+              <input className="input-field" type="number" name="amount" value={formData.amount || ""} onChange={handleChange}/>
+            </div>
 
-      <div style={styles.inputGroup}>
-        <label>Address</label>
-        <input name="address" value={formData.address || ""} onChange={handleChange}/>
-      </div>
+            <div className="input-row">
+              <div className="input-group">
+                <label>Barangay</label>
+                <input className="input-field" name="barangay" value={formData.barangay || ""} onChange={handleChange}/>
+              </div>
 
-      <div style={styles.inputGroup}>
-        <label>Barangay</label>
-        <input name="barangay" value={formData.barangay || ""} onChange={handleChange}/>
-      </div>
+              <div className="input-group">
+                <label>City</label>
+                <input className="input-field" name="city" value={formData.city || ""} onChange={handleChange}/>
+              </div>
+            </div>
 
-      <div style={styles.inputGroup}>
-        <label>City</label>
-        <input name="city" value={formData.city || ""} onChange={handleChange}/>
-      </div>
+            <div className="input-group">
+              <label>Address</label>
+              <input className="input-field" name="address" value={formData.address || ""} onChange={handleChange}/>
+            </div>
 
-      <div style={styles.inputGroup}>
-        <label>Requirements</label>
-        <input name="requirements" value={formData.requirements || ""} onChange={handleChange}/>
-      </div>
+            <div className="input-group">
+              <label>Requirements</label>
+              <input className="input-field" name="requirements" value={formData.requirements || ""} onChange={handleChange}/>
+            </div>
 
-      <div style={styles.inputGroup}>
-        <label>Schedule</label>
-        <input name="schedule" value={formData.schedule || ""} onChange={handleChange}/>
-      </div>
+            <div className="input-group">
+              <label>Schedule</label>
+              <input className="input-field" type="date" name="schedule" value={formData.schedule || ""} onChange={handleChange}/>
+            </div>
 
-      <div style={{marginTop:"10px"}}>
-        <button onClick={saveUpdate} style={styles.button}>Save</button>
-        <button onClick={() => setUpdateModal(false)} style={styles.closeBtn}>Cancel</button>
-      </div>
-    </div>
-  </div>
+            <div className="button-group">
+              <button className="auth-button" onClick={saveUpdate}>
+                Save
+              </button>
+              <button className="auth-button close-btn" onClick={() => setUpdateModal(false)}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
       )}
-
+      </div>
     </div>
   );
 }
-
-const styles = {
-  container: {
-    padding: "40px",
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
-    gap: "25px",
-  },
-
-  card: {
-    background: "white",
-    padding: "20px",
-    borderRadius: "12px",
-    boxShadow: "0 8px 20px rgba(0,0,0,0.15)",
-    width: "200px",
-    position: "center",
-    margin: "0 auto",
-    display: "flex",
-    flexDirection: "column",
-    gap: "10px"
-  },
-
-  title: {
-    fontSize: "18px",
-    fontWeight: "bold",
-    marginBottom: "10px",
-  },
-
-  text: {
-    fontSize: "14px",
-    marginBottom: "6px",
-  },
-
-  buttonContainer: {
-    marginTop: "15px",
-    display: "flex",
-    gap: "8px",
-    flexWrap: "wrap",
-  },
-
-  button: {
-    padding: "8px 10px",
-    border: "none",
-    borderRadius: "6px",
-    background: "#2b7cff",
-    color: "white",
-    cursor: "pointer",
-  },
-
-  updateButton: {
-    padding: "8px 10px",
-    border: "none",
-    borderRadius: "6px",
-    background: "#f59e0b",
-    color: "white",
-    cursor: "pointer",
-  },
-
-  modalOverlay: {
-    position: "fixed",
-    top:0,
-    left:0,
-    width:"100%",
-    height:"100%",
-    background:"rgba(0,0,0,0.5)",
-    display:"flex",
-    justifyContent:"center",
-    alignItems:"center",
-  },
-
-  modal: {
-    background:"white",
-    padding:"25px",
-    borderRadius:"10px",
-    width:"350px",
-    display:"flex",
-    flexDirection:"column",
-    gap:"8px"
-  },
-
-  listItem:{
-    padding:"5px",
-    borderBottom:"1px solid #ddd"
-  },
-
-  closeBtn:{
-    marginTop:"10px",
-    padding:"8px",
-    border:"none",
-    background:"#888",
-    color:"white",
-    borderRadius:"6px",
-    cursor:"pointer"
-  },
-
-  inputGroup:{
-  display:"flex",
-  flexDirection:"column",
-  marginBottom:"8px"
-},
-
-listRow:{
-  display:"flex",
-  justifyContent:"space-between",
-  alignItems:"center",
-  padding:"6px",
-  borderBottom:"1px solid #ddd"
-},
-
-rowButtons:{
-  display:"flex",
-  gap:"5px"
-},
-
-approveBtn:{
-  background:"#16a34a",
-  color:"white",
-  border:"none",
-  padding:"4px 6px",
-  borderRadius:"4px",
-  cursor:"pointer"
-},
-
-rejectBtn:{
-  background:"#dc2626",
-  color:"white",
-  border:"none",
-  padding:"4px 6px",
-  borderRadius:"4px",
-  cursor:"pointer"
-}
-};
 
 export default AdminCurrentAyuda;

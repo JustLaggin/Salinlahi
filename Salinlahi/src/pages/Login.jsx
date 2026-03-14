@@ -31,7 +31,7 @@ function Login() {
       const role = docSnap.data().role;
 
       if (role === "admin") {
-        navigate("/admin");
+        navigate("/admin/AdminHome");
       } else {
         navigate("/user");
       }
@@ -45,20 +45,29 @@ function Login() {
 };
 
   return (
-    <div style={styles.page}>
-    <form onSubmit={handleLogin} style={styles.form}>
-      <h2 style={styles.title}>Login</h2>
+    <div className="app-container">
+    <form onSubmit={handleLogin} className="base-card auth-form">
+      <h2 className="auth-title">Login</h2>
 
-      <input style={styles.input}type="email" placeholder="Email" onChange={(e) => setEmail(e.target.value)}required/>
+      <div className="input-row">
+        <input className="input-field" type="email" placeholder="Email" onChange={(e) => setEmail(e.target.value)} required />
+      </div>
 
-      <input style={styles.input}type="password" placeholder="Password"onChange={(e) => setPassword(e.target.value)}required/>
+      <div className="input-row">
+        <input className="input-field" type="password" placeholder="Password" onChange={(e) => setPassword(e.target.value)} required />
+      </div>
 
-      <button type="submit" style={styles.button}>
+      <button type="submit" className="auth-button">
         Login
       </button>
-      <p style={{ textAlign: "center", marginTop: "10px" }}>
+      
+      <p className="settings-text" style={{textAlign: 'center', marginTop: '0.5rem'}}>
+        <Link to="/forgot-password" className="auth-link">Forgot Password?</Link>
+      </p>
+      
+      <p style={{ textAlign: "center", marginTop: "1rem", color: 'var(--color-text-muted)' }}>
           Don't have an account?{" "}
-          <Link to="/register" style={styles.link}>
+          <Link to="/register" className="auth-link">
             Register here
           </Link>
         </p>
@@ -67,47 +76,5 @@ function Login() {
   );
 }
 
-const styles = {
-  page: {
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    minHeight: "100vh",
-    backgroundColor: "#ffffff",
-  },
-  form: {
-    background: "white",
-    padding: "30px",
-    borderRadius: "10px",
-    boxShadow: "0 5px 15px rgba(0,0,0,0.1)",
-    width: "400px",
-    display: "flex",
-    flexDirection: "column",
-    gap: "12px",
-  },
-  title: {
-    textAlign: "center",
-    marginBottom: "10px",
-  },
-  row: {
-    display: "grid",
-    gap: "10px",
-  },
-  input: {
-    padding: "10px",
-    borderRadius: "5px",
-    border: "1px solid #ccc",
-    flex: 0.5,
-  },
-  button: {
-    padding: "12px",
-    border: "none",
-    borderRadius: "6px",
-    backgroundColor: "#2563eb",
-    color: "white",
-    fontWeight: "bold",
-    cursor: "pointer",
-    marginTop: "10px",
-  }
-};
+
 export default Login;

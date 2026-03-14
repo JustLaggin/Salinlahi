@@ -1,7 +1,7 @@
 import { Routes, Route, Link, Navigate } from "react-router-dom";
 import Register from "./pages/Register";
 import Login from "./pages/Login";
-import logo from "./assets/logo.png";
+import logo from "./assets/Logo_Black.png";
 import AdminLayout from "./layouts/AdminLayout";
 import AdminScanner from "./pages/AdminScan";
 import AdminCreateAyuda from "./pages/AdminCreateAyuda";
@@ -10,16 +10,17 @@ import AdminHome from "./pages/AdminHome";
 import Settings from "./pages/Settings";
 import UserLayout from "./layouts/UserLayout";
 import UserHome from "./pages/UserHome";
-{/* import ApplyAyuda from "./pages/ApplyAyuda";
-import CurrentAyuda from "./pages/CurrentAyuda";*/}
+import ForgotPassword from "./pages/ForgotPassword";
+import UserCurrentAyuda from "./pages/UserCurrentAyuda";
+{/*import CurrentAyuda from "./pages/CurrentAyuda";*/}
 
 function App() {
   return (
     <div>
       {/* Top Banner */}
-      <div style={styles.banner}>
-        <img src={logo} style= {styles.image} />
-      </div>
+      <header className="header-banner">
+        <img src={logo} style={{maxWidth: '200px', height: 'auto', filter: 'drop-shadow(0 4px 12px rgba(56, 189, 248, 0.3))'}} alt="Salinlahi Logo" />
+      </header>
 
       {/* Page Content */}
       <div>
@@ -27,9 +28,11 @@ function App() {
           <Route path="/" element={<Navigate to="/register" />} />
           <Route path="/register" element={<Register />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/user" element={<UserLayout/>}>
-            <Route path="/user/UserHome" element={<UserHome />} />
-            <Route path="/user/Settings" element={<Settings />} />*
+            <Route index element={<UserHome />} />
+            <Route path="currentayuda" element={<UserCurrentAyuda />} />
+            <Route path="settings" element={<Settings />} />
           </Route>
           <Route path="/admin" element={<AdminLayout/>}>
             <Route path="/admin/AdminHome" element={<AdminHome />} />
@@ -43,26 +46,5 @@ function App() {
     </div>
   );
 }
-
-const styles = {
-  banner: {
-    position: "sticky",
-    top: 0,
-    left: 0,
-    width: "100%",
-    backgroundColor: "#ffffff",
-    borderBottom: "1px solid #ddd",
-    display: "flex",
-    justifyContent: "center",
-    zIndex: 1000
-  },
-
-  image: {
-    maxWidth: "200px",
-    height: "auto"
-  },
-
-  
-};
 
 export default App;

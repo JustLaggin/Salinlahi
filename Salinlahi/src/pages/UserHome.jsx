@@ -28,34 +28,25 @@ function UserHome() {
     fetchUserData();
   }, []);
 
-  if (loading) return <h2>Loading...</h2>;
+  if (loading) return <div className="app-container"><div className="base-card"><h2 className="auth-title">Loading...</h2></div></div>;
   return ( 
-    <div style={styles.page}>
-      <div style={{ textAlign: "center", marginTop: "50px" }}>
-      <h2>User Dashboard</h2>
+    <div className="app-container qr-container">
+      <div className="base-card">
+        <h2 className="auth-title">Your QR</h2>
+        <p className="settings-text">Show this QR to Barangay staff for instant verification</p>
+        
 
-      <p>Your Unique QR Code</p>
+        {uuid && (
+          <div className="qr-box" style={{padding: '2rem', background: 'white', borderRadius: '20px', boxShadow: '0 20px 40px rgba(0,0,0,0.3)', display: 'flex', justifyContent: 'center'}}>
+            <QRCode value={uuid} size={260} />
+          </div>
+        )}
 
-      {uuid && (
-        <div style={{ background: "white", padding: "20px", display: "inline-block" }}>
-          <QRCode value={uuid} size={200} />
-        </div>
-      )}
+        
+        
+      </div>
+    </div> 
+  );
+}
 
-      <p style={{ marginTop: "20px" }}>
-        UUID: {uuid}
-      </p>
-    </div>
-     </div> 
-  )};
-const styles = {
- page: {
-    minHeight: "100vh",
-    paddingBottom: "70px"
-  },
-
-  content: {
-    padding: "20px"
-  },
-};
 export default UserHome;
