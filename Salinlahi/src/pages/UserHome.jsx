@@ -37,7 +37,7 @@ function UserHome() {
         
 
         {uuid && (
-          <div className="qr-box" style={{padding: '2rem', background: 'white', borderRadius: '20px', boxShadow: '0 20px 40px rgba(0,0,0,0.3)', display: 'flex', justifyContent: 'center'}}>
+          <div className="qr-box qr-surface">
             <QRCode value={uuid} size={260} />
           </div>
         )}

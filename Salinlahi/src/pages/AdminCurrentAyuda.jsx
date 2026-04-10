@@ -230,7 +230,7 @@ const [modalList, setModalList] = useState([]); // Will store [{displayName, uui
       {/* LIST MODAL */}
       {modalOpen && (
         <div className="modal-overlay">
-          <div className="base-card modal-card">
+          <div className="base-card modal-panel">
             <h2 className="auth-title">{modalTitle}</h2>
 
             {modalList.length === 0 ? (
@@ -265,7 +265,7 @@ const [modalList, setModalList] = useState([]); // Will store [{displayName, uui
       {/* UPDATE MODAL */}
       {updateModal && (
         <div className="modal-overlay">
-          <div className="base-card modal-card">
+          <div className="base-card modal-panel">
             <h2 className="auth-title">Update Ayuda</h2>
 
             <div className="input-group">

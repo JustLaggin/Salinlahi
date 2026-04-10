@@ -1,7 +1,8 @@
-import { Routes, Route, Link, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import Register from "./pages/Register";
 import Login from "./pages/Login";
 import logo from "./assets/Logo_Black.png";
+import { ThemeToggle } from "./components/ThemeToggle";
 import AdminLayout from "./layouts/AdminLayout";
 import AdminScanner from "./pages/AdminScan";
 import AdminCreateAyuda from "./pages/AdminCreateAyuda";
@@ -19,7 +20,8 @@ function App() {
     <div>
       {/* Top Banner */}
       <header className="header-banner">
-        <img src={logo} style={{maxWidth: '200px', height: 'auto', filter: 'drop-shadow(0 4px 12px rgba(56, 189, 248, 0.3))'}} alt="Salinlahi Logo" />
+        <img src={logo} className="header-banner__logo" alt="Salinlahi Logo" />
+        <ThemeToggle />
       </header>
 
       {/* Page Content */}

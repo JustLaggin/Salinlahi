@@ -223,7 +223,7 @@ function AdminScan() {
               🎥 Start Scan
             </button>
           ) : (
-            <button className="auth-button stop-btn" onClick={stopScanner}>
+            <button className="auth-button btn-neutral-gradient" onClick={stopScanner}>
               ⏹️ Stop
             </button>
           )}
@@ -231,15 +231,15 @@ function AdminScan() {
 
         <div id="reader" style={{minHeight: '350px', width: '100%'}}></div>
         
-        <div className="scanner-status mono-text" style={{fontSize: '1.1rem', textAlign: 'center', padding: '1rem', background: 'rgba(255,255,255,0.05)', borderRadius: '12px'}}>
+        <div className="scanner-status mono-text scanner-status-panel">
           {scanResult || "Ready"}
         </div>
       </div>
 
       {/* Dynamic Modal - Ayuda-specific check OR Base user info OR Ayuda selection */}
       {showModal && (
-        <div className="modal-overlay" style={{position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem'}}>
-          <div className="base-card" style={{minWidth: '400px', maxWidth: '90vw', maxHeight: '80vh', overflow: 'auto'}}>
+        <div className="modal-overlay modal-overlay--padded">
+          <div className="base-card modal-panel modal-panel--scan">
             {hasLoadedAyuda ? (
               // Ayuda loaded: Show user data + status + conditional add
               <>
@@ -259,7 +259,7 @@ function AdminScan() {
                   {userData?.address_line && <p><strong>Address:</strong> {userData.address_line}, {userData.barangay}, {userData.city}, {userData.province}</p>}
                   {userData?.created_at && <p><strong>Created:</strong> {new Date(userData.created_at).toLocaleString('en-US', { timeZone: 'Asia/Manila', dateStyle: 'medium', timeStyle: 'short' })}</p>}
                 </div>
-                <div style={{padding: '1rem', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', marginBottom: '1.5rem'}}>
+                <div className="modal-inset-panel">
 
 
                   <h4 style={{margin: '0 0 0.5rem 0'}}>Status:</h4>
@@ -282,7 +282,7 @@ function AdminScan() {
                       </button>
                     )
                   )}
-                  <button className="auth-button stop-btn" onClick={closeModal}>
+                  <button className="auth-button btn-neutral-gradient" onClick={closeModal}>
                     Close
                   </button>
                 </div>
@@ -307,7 +307,7 @@ function AdminScan() {
                 </div>
 
                 <div style={{display: 'flex', gap: '1rem', justifyContent: 'center'}}>
-                  <button className="auth-button stop-btn" onClick={closeModal}>
+                  <button className="auth-button btn-neutral-gradient" onClick={closeModal}>
                     Close
                   </button>
                 </div>
@@ -317,14 +317,6 @@ function AdminScan() {
         </div>
       )}
 
-      <style jsx>{`
-        .stop-btn {
-          background: linear-gradient(135deg, #6b7280, #4b5563) !important;
-        }
-        .stop-btn:hover {
-          box-shadow: 0 10px 20px rgba(107,114,128,0.3) !important;
-        }
-      `}</style>
     </div>
   );
 }
