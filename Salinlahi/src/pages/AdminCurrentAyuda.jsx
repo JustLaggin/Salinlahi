@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
 import { Package, MapPin, Calendar, Info } from "lucide-react";
-import { collection, getDocs, doc, updateDoc, arrayUnion, arrayRemove, query, where } from "firebase/firestore";
+import { useNavigate } from "react-router-dom";
+import { collection, getDocs, doc, getDoc, updateDoc, arrayUnion, arrayRemove, query, where } from "firebase/firestore";
 import { db } from "../firebase";
 
 function AdminCurrentAyuda() {
+  const navigate = useNavigate();
   const [ayudas, setAyudas] = useState([]);
   const [modalOpen, setModalOpen] = useState(false);
-  const [modalList, setModalList] = useState([]);
+const [modalList, setModalList] = useState([]); // Will store [{displayName, uuid}]
   const [modalTitle, setModalTitle] = useState("");
 
   const [updateModal, setUpdateModal] = useState(false);
@@ -30,45 +32,79 @@ function AdminCurrentAyuda() {
     fetchAyudas();
   }, []);
 
-  const approveApplicant = async (applicant) => {
-  if (!selectedAyuda) return;
+  const approveApplicant = async (applicantObj) => {
+  if (!selectedAyuda || !applicantObj.uuid) return;
+  const applicantId = applicantObj.uuid;
   const ayudaRef = doc(db, "ayudas", selectedAyuda.id);
 
   await updateDoc(ayudaRef, {
-    applicants: arrayRemove(applicant),
-    beneficiaries: arrayUnion(applicant)
+    applicants: arrayRemove(applicantId),
+    beneficiaries: arrayUnion(applicantId)
   });
 
-  // Update user document
-  const userQuery = query(collection(db, "users"), where("uuid", "==", applicant));
-  const userSnap = await getDocs(userQuery);
-  if (userSnap.docs.length > 0) {
-    const userDoc = userSnap.docs[0];
-    const userRef = doc(db, "users", userDoc.id);
+// Update user document - direct getDoc using uuid as doc ID (matching applicants array storage)
+  try {
+    const userRef = doc(db, "users", applicantId);
     await updateDoc(userRef, {
-      "ayudas_applied": arrayRemove(selectedAyuda.id),
-      "ayudas_beneficiary": arrayUnion(selectedAyuda.id)
+      ayudas_applied: arrayRemove(selectedAyuda.id),
+      ayudas_beneficiary: arrayUnion(selectedAyuda.id)
     });
+    console.log(`Direct updated user doc ${applicantId} for ayuda ${selectedAyuda.id}`);
+  } catch (err) {
+    console.error(`Direct update failed for user ${applicantId}:`, err);
   }
 
-  setModalList(prev => prev.filter(a => a !== applicant));
+  setModalList(prev => prev.filter(a => a.uuid !== applicantId));
+  
+  // Refresh main list
+  const querySnapshot = await getDocs(collection(db, "ayudas"));
+  const data = querySnapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data()
+  }));
+  setAyudas(data);
 };
 
-  const rejectApplicant = async (applicant) => {
-  if (!selectedAyuda) return;
+  const rejectApplicant = async (applicantObj) => {
+  if (!selectedAyuda || !applicantObj.uuid) return;
+  const applicantId = applicantObj.uuid;
   const ayudaRef = doc(db, "ayudas", selectedAyuda.id);
 
   await updateDoc(ayudaRef, {
-    applicants: arrayRemove(applicant)
+    applicants: arrayRemove(applicantId)
   });
 
-  setModalList(prev => prev.filter(a => a !== applicant));
+  setModalList(prev => prev.filter(a => a.uuid !== applicantId));
+  
+  // Refresh main list
+  const querySnapshot = await getDocs(collection(db, "ayudas"));
+  const data = querySnapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data()
+  }));
+  setAyudas(data);
 };
-  const openListModal = (title, list, ayuda) => {
+  const openListModal = async (title, list, ayuda) => {
     setModalTitle(title);
-    setModalList(list || []);
     setSelectedAyuda(ayuda);
     setModalOpen(true);
+    
+    // Load user names + UUIDs for applicant list
+    const applicantObjects = [];
+    for (const applicantId of list || []) {
+      try {
+        const userDoc = await getDoc(doc(db, 'users', applicantId));
+        let displayName = applicantId;
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          displayName = `${userData.first_name || ''} ${userData.last_name || ''}`.trim() || applicantId;
+        }
+        applicantObjects.push({ uuid: applicantId, displayName });
+      } catch (err) {
+        applicantObjects.push({ uuid: applicantId, displayName: applicantId });
+      }
+    }
+    setModalList(applicantObjects);
   };
 
   const openUpdateModal = (ayuda) => {
@@ -181,6 +217,12 @@ function AdminCurrentAyuda() {
             <button className="admin-btn update-btn" onClick={() => openUpdateModal(ayuda)}>
               Update
             </button>
+            <button className="admin-btn" onClick={() => navigate(`/admin/scan?mode=add-applicant&ayudaId=${ayuda.id}`)}>
+              ➕ Add via QR
+            </button>
+            <button className="admin-btn" onClick={() => navigate(`/admin/scan?mode=claiming&ayudaId=${ayuda.id}`)}>
+              🏷️ Claiming Scanner
+            </button>
           </div>
         </div>
       ))}
@@ -196,7 +238,7 @@ function AdminCurrentAyuda() {
             ) : (
               modalList.map((item, index) => (
                 <div key={index} className="modal-list-row">
-                  <span>{item}</span>
+                  <span>{item.displayName}</span>
 
                   {modalTitle === "Applicants" && (
                     <div className="row-buttons">

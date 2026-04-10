@@ -1,20 +1,37 @@
 import { useState, useRef, useEffect } from "react";
 import { Html5Qrcode } from "html5-qrcode";
-import { collection, getDocs, doc, updateDoc, arrayUnion } from "firebase/firestore";
+import { useSearchParams, useNavigate } from "react-router-dom";
+import { doc, getDoc, collection, query, where, getDocs, updateDoc, arrayUnion } from "firebase/firestore";
 import { db } from "../firebase";
 
 function AdminScan() {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const modeParam = searchParams.get('mode');
+  const ayudaIdParam = searchParams.get('ayudaId');
+  const hasLoadedAyuda = !!ayudaIdParam;
+  const isClaimingMode = modeParam === 'claiming';
   const [scanning, setScanning] = useState(false);
   const [scanResult, setScanResult] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [ayudas, setAyudas] = useState([]);
   const [selectedAyuda, setSelectedAyuda] = useState('');
   const [loadingAyudas, setLoadingAyudas] = useState(false);
+  const [userUid, setUserUid] = useState(null);
+  const [loadingUser, setLoadingUser] = useState(false);
+  const [targetAyuda, setTargetAyuda] = useState(null);
+  const [userData, setUserData] = useState(null);
+  const [userStatus, setUserStatus] = useState(null); // 'applicant', 'beneficiary', or null
+  const [showUserInfo, setShowUserInfo] = useState(false);
+  
   const scannerRef = useRef(null);
   const isRunningRef = useRef(false);
 
   useEffect(() => {
     loadAyudas();
+    if (hasLoadedAyuda) {
+      setSelectedAyuda(ayudaIdParam);
+    }
   }, []);
 
   const loadAyudas = async () => {
@@ -22,7 +39,13 @@ function AdminScan() {
     try {
       const snapshot = await getDocs(collection(db, "ayudas"));
       const ayudaList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setAyudas(ayudaList.filter(a => a.status === 'ONGOING'));
+      const filteredList = hasLoadedAyuda ? ayudaList : ayudaList.filter(a => a.status === 'ONGOING');
+      setAyudas(filteredList);
+      // Set target for add mode after loading
+      if (hasLoadedAyuda) {
+        const target = ayudaList.find(a => a.id === ayudaIdParam);
+        if (target) setTargetAyuda(target);
+      }
     } catch (err) {
       console.error('Load ayundas error:', err);
     }
@@ -41,10 +64,30 @@ function AdminScan() {
       await scannerRef.current.start(
         { facingMode: "environment" },
         { fps: 5, qrbox: { width: 200, height: 200 } },
-        (decodedText) => {
+        async (decodedText) => {
           console.log('✅ QR SCANNED:', decodedText);
           scannerRef.current.pause(true);
           setScanResult(`✅ Scanned: ${decodedText}`);
+          
+          // Lookup user by uuid
+          setLoadingUser(true);
+          const userQuery = query(collection(db, "users"), where("uuid", "==", decodedText));
+          const userSnap = await getDocs(userQuery);
+          if (userSnap.docs.length > 0) {
+            const userDoc = userSnap.docs[0];
+            setUserUid(userDoc.id);
+            setUserData(userDoc.data());
+          } else {
+            alert('User not found for this QR');
+            setLoadingUser(false);
+            return;
+          }
+          setLoadingUser(false);
+          
+          // Check status if ayuda loaded
+          if (hasLoadedAyuda) {
+            await checkUserStatus(ayudaIdParam);
+          }
           setShowModal(true);
         },
         () => {} // silent no QR
@@ -67,26 +110,83 @@ function AdminScan() {
     setScanResult('');
   };
 
-  const confirmAttendance = async () => {
-    if (!selectedAyuda) return;
-    
-    try {
-      const qrId = scanResult.split(': ')[1];
-      await updateDoc(doc(db, "ayudas", selectedAyuda), {
-        beneficiaries: arrayUnion(qrId)
-      });
-      alert('✅ Attendance confirmed for ' + selectedAyuda);
-      setShowModal(false);
-      setSelectedAyuda('');
-      await loadAyudas();
-    } catch (err) {
-      alert('❌ Confirm error: ' + err.message);
-    }
-  };
-
   const closeModal = () => {
     setShowModal(false);
     setSelectedAyuda('');
+    setUserStatus(null);
+    setShowUserInfo(false);
+  };
+
+  const checkUserStatus = async (ayudaId) => {
+    if (!userUid || !ayudaId) return;
+    
+    try {
+      const ayudaRef = doc(db, 'ayudas', ayudaId);
+      const ayudaSnap = await getDoc(ayudaRef);
+      if (!ayudaSnap.exists()) return;
+      
+      const data = ayudaSnap.data();
+      if (data.applicants?.includes(userUid)) {
+        setUserStatus('applicant');
+        return;
+      }
+      if (data.beneficiaries?.includes(userUid)) {
+        setUserStatus('beneficiary');
+        return;
+      }
+      setUserStatus(null);
+    } catch (err) {
+      console.error('Status check error:', err);
+    }
+  };
+
+  const addToApplicants = async () => {
+    if (!ayudaIdParam || !userUid) return;
+    
+    try {
+      const ayudaRef = doc(db, 'ayudas', ayudaIdParam);
+      await updateDoc(ayudaRef, {
+        applicants: arrayUnion(userUid)
+      });
+      
+      const userRef = doc(db, 'users', userUid);
+      await updateDoc(userRef, {
+        ayudas_applied: arrayUnion(ayudaIdParam)
+      });
+      
+      alert('✅ Added to applicants');
+      closeModal();
+      navigate('/admin/currentayuda');
+    } catch (err) {
+      alert('❌ Add error: ' + err.message);
+    }
+  };
+
+  const markAsReceived = async () => {
+    if (!ayudaIdParam || !userUid) return;
+    
+    try {
+      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+      const userRef = doc(db, 'users', userUid);
+      await updateDoc(userRef, {
+        ayudas_received: arrayUnion(today)
+      });
+      
+      alert(`✅ Marked as received on ${today} for ${targetAyuda?.title}`);
+      closeModal();
+      navigate('/admin/currentayuda');
+    } catch (err) {
+      alert('❌ Claim error: ' + err.message);
+    }
+  };
+
+  const restartScan = () => {
+    setUserData(null);
+    setUserUid(null);
+    setUserStatus(null);
+    setShowUserInfo(false);
+    setScanResult('');
+    startScanner();
   };
 
   useEffect(() => {
@@ -99,8 +199,23 @@ function AdminScan() {
 
   return (
     <div className="app-container">
-      <div className="base-card qr-scanner-card">
-        <h2 className="auth-title">QR Attendance Scanner</h2>
+        <div className="base-card qr-scanner-card">
+          <h2 className="auth-title">
+            {isClaimingMode 
+              ? `Claiming Scanner - ${targetAyuda?.title || 'Ayuda ID: ' + ayudaIdParam}` 
+              : hasLoadedAyuda 
+              ? `QR Scanner - ${targetAyuda?.title || 'Ayuda ID: ' + ayudaIdParam}` 
+              : 'QR Scanner'
+            }
+          </h2>
+          {hasLoadedAyuda && (
+            <p className="settings-text" style={{textAlign: 'center', marginBottom: '1rem'}}>
+              {isClaimingMode 
+                ? 'Scan beneficiary QR to mark ayuda as received (adds date to user record)'
+                : 'Check scanned QR against applicants/beneficiaries for this ayuda'
+              }
+            </p>
+          )}
         
         <div className="scanner-controls">
           {!scanning ? (
@@ -121,46 +236,83 @@ function AdminScan() {
         </div>
       </div>
 
-      {/* Ayuda Selection Modal */}
+      {/* Dynamic Modal - Ayuda-specific check OR Base user info OR Ayuda selection */}
       {showModal && (
         <div className="modal-overlay" style={{position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem'}}>
           <div className="base-card" style={{minWidth: '400px', maxWidth: '90vw', maxHeight: '80vh', overflow: 'auto'}}>
-            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem'}}>
-              <h3 className="auth-title" style={{margin: 0}}>Confirm Attendance</h3>
-              <button onClick={closeModal} style={{background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: 'var(--color-text-muted)'}}>×</button>
-            </div>
-            
-            <p><strong>QR ID:</strong> {scanResult.split(': ')[1]}</p>
-            
-            <h4 style={{margin: '1.5rem 0 1rem 0'}}>Select Ayuda Event:</h4>
-            
-            {loadingAyudas ? (
-              <p>Loading events...</p>
-            ) : ayudas.length === 0 ? (
-              <p>No ongoing events</p>
-            ) : (
-              <div style={{display: 'flex', flexDirection: 'column', gap: '0.75rem'}}>
-                {ayudas.map(ayuda => (
-                  <button 
-                    key={ayuda.id}
-                    className="auth-button"
-                    style={{justifyContent: 'flex-start'}}
-                    onClick={() => setSelectedAyuda(ayuda.id)}
-                  >
-                    {ayuda.title} {ayuda.status === 'ONGOING' && <span style={{marginLeft: 'auto', background: 'var(--color-primary-green)', padding: '0.25rem 0.75rem', borderRadius: '999px', fontSize: '0.75rem'}}>Ongoing</span>}
+            {hasLoadedAyuda ? (
+              // Ayuda loaded: Show user data + status + conditional add
+              <>
+                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem'}}>
+                  <h3 className="auth-title" style={{margin: 0}}>
+                    {isClaimingMode ? `Claim Status for ${targetAyuda?.title}` : `User Status for ${targetAyuda?.title}`}
+                  </h3>
+                  <button onClick={closeModal} style={{background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: 'var(--color-text-muted)'}}>×</button>
+                </div>
+
+                <div style={{marginBottom: '1rem'}}>
+                  <h4 style={{marginBottom: '0.5rem'}}>User: {(userData?.first_name || '') + ' ' + (userData?.last_name || '')}</h4>
+                  {userData?.middle_name && <p><strong>Middle Name:</strong> {userData.middle_name}</p>}
+                  {userData?.birth_date && <p><strong>Birth Date:</strong> {userData.birth_date}</p>}
+                  {userData?.contact_number && <p><strong>Contact:</strong> {userData.contact_number}</p>}
+                  {userData?.email && <p><strong>Email:</strong> {userData.email}</p>}
+                  {userData?.address_line && <p><strong>Address:</strong> {userData.address_line}, {userData.barangay}, {userData.city}, {userData.province}</p>}
+                  {userData?.created_at && <p><strong>Created:</strong> {new Date(userData.created_at).toLocaleString('en-US', { timeZone: 'Asia/Manila', dateStyle: 'medium', timeStyle: 'short' })}</p>}
+                </div>
+                <div style={{padding: '1rem', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', marginBottom: '1.5rem'}}>
+
+
+                  <h4 style={{margin: '0 0 0.5rem 0'}}>Status:</h4>
+                  {userStatus === 'applicant' && <p style={{color: 'orange', fontWeight: 'bold'}}>Already in Applicants</p>}
+                  {userStatus === 'beneficiary' && <p style={{color: 'green', fontWeight: 'bold'}}>✅ Approved Beneficiary - Eligible for claiming</p>}
+                  {userStatus === null && <p style={{color: 'red', fontWeight: 'bold'}}>{isClaimingMode ? '❌ Not a beneficiary - Must be approved first' : 'Not registered - Can add to applicants'}</p>}
+                </div>
+
+                <div style={{display: 'flex', gap: '1rem', justifyContent: 'center'}}>
+                  {isClaimingMode ? (
+                    userStatus === 'beneficiary' && (
+                      <button className="auth-button approve-btn" onClick={markAsReceived}>
+                        ✅ Mark as Received
+                      </button>
+                    )
+                  ) : (
+                    userStatus === null && (
+                      <button className="auth-button" onClick={addToApplicants}>
+                        ➕ Add to Applicants
+                      </button>
+                    )
+                  )}
+                  <button className="auth-button stop-btn" onClick={closeModal}>
+                    Close
                   </button>
-                ))}
-              </div>
+                </div>
+              </>
+            ) : (
+
+              // Base scan OR Ayuda select: User info only + restart
+              <>
+                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem'}}>
+                  <h3 className="auth-title" style={{margin: 0}}>User Info</h3>
+                  <button onClick={closeModal} style={{background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: 'var(--color-text-muted)'}}>×</button>
+                </div>
+
+                <div style={{marginBottom: '1.5rem'}}>
+                  <h4 style={{marginBottom: '0.5rem'}}>User: {(userData?.first_name || '') + ' ' + (userData?.last_name || '')}</h4>
+                  {userData?.middle_name && <p><strong>Middle Name:</strong> {userData.middle_name}</p>}
+                  {userData?.birth_date && <p><strong>Birth Date:</strong> {userData.birth_date}</p>}
+                  {userData?.contact_number && <p><strong>Contact:</strong> {userData.contact_number}</p>}
+                  {userData?.email && <p><strong>Email:</strong> {userData.email}</p>}
+                  {userData?.address_line && <p><strong>Address:</strong> {userData.address_line}, {userData.barangay}, {userData.city}, {userData.province}</p>}
+                  {userData?.created_at && <p><strong>Created:</strong> {new Date(userData.created_at).toLocaleString('en-US', { timeZone: 'Asia/Manila', dateStyle: 'medium', timeStyle: 'short' })}</p>}
+                </div>
+
+                <div style={{display: 'flex', gap: '1rem', justifyContent: 'center'}}>
+                  <button className="auth-button stop-btn" onClick={closeModal}>
+                    Close
+                  </button>
+                </div>
+              </>
             )}
-            
-            <div style={{marginTop: '1.5rem', display: 'flex', gap: '1rem'}}>
-              <button className="auth-button" onClick={confirmAttendance} disabled={!selectedAyuda}>
-                ✅ Confirm Attendance
-              </button>
-              <button className="auth-button stop-btn" onClick={closeModal}>
-                Cancel
-              </button>
-            </div>
           </div>
         </div>
       )}

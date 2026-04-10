@@ -55,11 +55,12 @@ function Register() {
         barangay: form.barangay,
         city: form.city,
         province: form.province,
+        created_at: new Date(),
         role: "user",
         ayudas_applied: [],
         ayudas_beneficiary: [],
-        ayudas_received: [],
-        created_at: new Date()
+        ayudas_received: []
+        
       });
 
       alert("Registration successful!");

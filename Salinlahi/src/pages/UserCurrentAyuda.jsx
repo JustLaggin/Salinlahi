@@ -12,6 +12,8 @@ function UserCurrentAyuda() {
     received: []
   });
   const [loading, setLoading] = useState(true);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchUserAyudas = async () => {
@@ -22,17 +24,23 @@ function UserCurrentAyuda() {
         const userDoc = await getDoc(doc(db, "users", user.uid));
         if (userDoc.exists()) {
           const data = userDoc.data();
-          const allIds = [
-            ... (data.ayudas_applied || []),
-            ... (data.ayudas_beneficiary || []),
-            ... (data.ayudas_received || [])
-          ];
+          const applied = data.ayudas_applied || [];
+          const beneficiary = data.ayudas_beneficiary || [];
+          const received = data.ayudas_received || [];
+          
+          console.log('User arrays:', { applied, beneficiary, received }); // DEBUG
+          
+          const allIds = Array.from(new Set([...applied, ...beneficiary, ...received]));
 
           // Fetch all unique ayuda details
           const ayudaPromises = allIds.map(async (ayudaId) => {
             const ayudaDoc = await getDoc(doc(db, "ayudas", ayudaId));
-            return { id: ayudaId, ...ayudaDoc.data(), status: ayudaId in (data.ayudas_received || {}) ? 'received' : 
-                     ayudaId in (data.ayudas_beneficiary || {}) ? 'beneficiary' : 'applied' };
+            return { 
+              id: ayudaId, 
+              ...(ayudaDoc.exists() ? ayudaDoc.data() : { title: 'Ayuda no longer available' }),
+              status: received.includes(ayudaId) ? 'received' : 
+                      beneficiary.includes(ayudaId) ? 'beneficiary' : 'applied'
+            };
           });
 
           const ayundasDetails = await Promise.all(ayudaPromises);
@@ -47,18 +55,31 @@ function UserCurrentAyuda() {
         }
       } catch (error) {
         console.error("Error fetching user ayundas:", error);
+        setError('Failed to load ayundas. Check console.');
       } finally {
         setLoading(false);
       }
     };
 
     fetchUserAyudas();
-  }, []);
+  }, [refreshKey]);
 
   if (loading) {
     return <div className="app-container">
       <div className="base-card">
         <h2 className="auth-title">Loading Ayudas...</h2>
+      </div>
+    </div>;
+  }
+
+  if (error) {
+    return <div className="app-container">
+      <div className="base-card">
+        <h2 className="auth-title">Error</h2>
+        <p className="settings-text">{error}</p>
+        <button className="auth-btn" onClick={() => {setError(null); setRefreshKey(k => k+1);}}>
+          Retry
+        </button>
       </div>
     </div>;
   }
@@ -104,6 +125,13 @@ function UserCurrentAyuda() {
       <div className="search-container">
         <h1 className="auth-title">My Ayuda History</h1>
         <p className="settings-text">Track your applications, approvals, and received benefits</p>
+        <button 
+          className="approve-btn"
+          onClick={() => setRefreshKey(k => k+1)}
+          style={{marginBottom: '2rem'}}
+        >
+          🔄 Refresh Data
+        </button>
       </div>
 
       <Section 
