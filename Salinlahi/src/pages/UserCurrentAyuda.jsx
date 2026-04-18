@@ -4,6 +4,7 @@ import { db } from "../firebase";
 import { doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
 import { Package, Users, CheckCircle } from "lucide-react";
 import { Link } from "react-router-dom";
+import LoadingSpinner from "../components/LoadingSpinner";
 
 function UserCurrentAyuda() {
   const [userAyudas, setUserAyudas] = useState({
@@ -14,6 +15,7 @@ function UserCurrentAyuda() {
   const [loading, setLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
   const [error, setError] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     const fetchUserAyudas = async () => {
@@ -21,6 +23,7 @@ function UserCurrentAyuda() {
       if (!user) return;
 
       try {
+        setLoading(true);
         const userDoc = await getDoc(doc(db, "users", user.uid));
         if (userDoc.exists()) {
           const data = userDoc.data();
@@ -65,11 +68,7 @@ function UserCurrentAyuda() {
   }, [refreshKey]);
 
   if (loading) {
-    return <div className="app-container">
-      <div className="base-card">
-        <h2 className="auth-title">Loading Ayudas...</h2>
-      </div>
-    </div>;
+    return <LoadingSpinner message="Loading your ayuda history..." />;
   }
 
   if (error) {
@@ -84,7 +83,12 @@ function UserCurrentAyuda() {
     </div>;
   }
 
-  const Section = ({ title, icon: Icon, items, statusColor }) => (
+  const Section = ({ title, icon: Icon, items, statusColor }) => {
+    const filteredItems = items.filter(item => 
+      item.title.toLowerCase().includes(searchTerm)
+    );
+    
+    return (
     <div className="base-card">
       <div className="detail-row" style={{marginBottom: '1.5rem'}}>
         <div className="detail-icon" style={{background: statusColor}}>
@@ -92,16 +96,16 @@ function UserCurrentAyuda() {
         </div>
         <div className="detail-content">
           <h3 className="auth-title">{title}</h3>
-          <p className="settings-text">{items.length} records</p>
+          <p className="settings-text">{filteredItems.length} records</p>
         </div>
       </div>
       
-      {items.length === 0 ? (
+      {filteredItems.length === 0 ? (
         <p className="settings-text" style={{textAlign: 'center', opacity: 0.7}}>
-          No {title.toLowerCase()} yet
+          {searchTerm ? 'No matches found' : `No ${title.toLowerCase()} yet`}
         </p>
       ) : (
-        items.map((ayuda) => (
+        filteredItems.map((ayuda) => (
           <div key={ayuda.id} className="base-card" style={{padding: '1.5rem', marginBottom: '1rem'}}>
             <h4 style={{color: 'var(--color-text-main)', marginBottom: '0.5rem'}}>{ayuda.title || 'Untitled Ayuda'}</h4>
             <div className="detail-row">
@@ -119,12 +123,21 @@ function UserCurrentAyuda() {
       )}
     </div>
   );
+  };
 
   return (
     <div className="app-container">
       <div className="search-container">
         <h1 className="auth-title">My Ayuda History</h1>
         <p className="settings-text">Track your applications, approvals, and received benefits</p>
+        <input 
+          className="input-field" 
+          type="text" 
+          placeholder="🔍 Search Ayudas by name..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value.toLowerCase())}
+          style={{marginBottom: '1rem'}}
+        />
         <button 
           className="approve-btn"
           onClick={() => setRefreshKey(k => k+1)}

@@ -12,14 +12,16 @@ import UserLayout from "./layouts/UserLayout";
 import UserHome from "./pages/UserHome";
 import ForgotPassword from "./pages/ForgotPassword";
 import UserCurrentAyuda from "./pages/UserCurrentAyuda";
-{/*import CurrentAyuda from "./pages/CurrentAyuda";*/}
+import EditProfile from "./pages/EditProfile";
 
 function App() {
   return (
     <div>
       {/* Top Banner */}
       <header className="header-banner">
-        <img src={logo} style={{maxWidth: '200px', height: 'auto', filter: 'drop-shadow(0 4px 12px rgba(56, 189, 248, 0.3))'}} alt="Salinlahi Logo" />
+        <Link to="/" style={{textDecoration: 'none'}}>
+          <img src={logo} style={{maxWidth: '200px', height: 'auto', filter: 'drop-shadow(0 4px 12px rgba(56, 189, 248, 0.3))'}} alt="Salinlahi Logo" />
+        </Link>
       </header>
 
       {/* Page Content */}
@@ -33,6 +35,7 @@ function App() {
             <Route index element={<UserHome />} />
             <Route path="currentayuda" element={<UserCurrentAyuda />} />
             <Route path="settings" element={<Settings />} />
+            <Route path="edit-profile" element={<EditProfile />} />
           </Route>
           <Route path="/admin" element={<AdminLayout/>}>
             <Route path="/admin/AdminHome" element={<AdminHome />} />

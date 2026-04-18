@@ -5,76 +5,113 @@ import { useNavigate } from "react-router-dom";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../firebase";
 import { Link } from "react-router-dom";
+import Alert from "../components/Alert";
+import "../css/login.css";
 
 function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [alert, setAlert] = useState({ type: "error", message: "", visible: false });
   const navigate = useNavigate();
 
+  const showAlert = (message, type = "error") => {
+    setAlert({ type, message, visible: true });
+  };
+
+  const hideAlert = () => {
+    setAlert({ ...alert, visible: false });
+  };
+
   const handleLogin = async (e) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  try {
-    const userCredential = await signInWithEmailAndPassword(
-      auth,
-      email,
-      password
-    );
+    try {
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
 
-    const user = userCredential.user;
+      const user = userCredential.user;
 
-    // 🔥 Get user document from Firestore
-    const docRef = doc(db, "users", user.uid);
-    const docSnap = await getDoc(docRef);
+      // 🔥 Get user document from Firestore
+      const docRef = doc(db, "users", user.uid);
+      const docSnap = await getDoc(docRef);
 
-    if (docSnap.exists()) {
-      const role = docSnap.data().role;
+      if (docSnap.exists()) {
+        const role = docSnap.data().role;
 
-      if (role === "admin") {
-        navigate("/admin/AdminHome");
+        if (role === "admin") {
+          navigate("/admin/AdminHome");
+        } else {
+          navigate("/user");
+        }
       } else {
-        navigate("/user");
+        showAlert("No user record found.", "error");
       }
-    } else {
-      alert("No user record found.");
+    } catch (error) {
+      showAlert(error.message, "error");
     }
-
-  } catch (error) {
-    alert(error.message);
-  }
-};
+  };
 
   return (
-    <div className="app-container">
-    <form onSubmit={handleLogin} className="base-card auth-form">
-      <h2 className="auth-title">Login</h2>
+    <>
+      <Alert
+        type={alert.type}
+        message={alert.message}
+        isVisible={alert.visible}
+        onClose={hideAlert}
+        autoClose={5000}
+      />
+      <div className="auth-form-wrapper">
+        <form onSubmit={handleLogin} className="base-card auth-form">
+          <h2 className="auth-title">Sign In</h2>
+          <p className="form-subtitle">Access your Salinlahi account</p>
 
-      <div className="input-row">
-        <input className="input-field" type="email" placeholder="Email" onChange={(e) => setEmail(e.target.value)} required />
+          <div className="form-group">
+            <label htmlFor="email">Email Address</label>
+            <input
+              id="email"
+              className="input-field"
+              type="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="password">Password</label>
+            <input
+              id="password"
+              className="input-field"
+              type="password"
+              placeholder="Enter your password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
+
+          <button type="submit" className="auth-button">
+            Sign In
+          </button>
+
+          <p className="settings-text">
+            <Link to="/forgot-password" className="auth-link">Forgot your password?</Link>
+          </p>
+
+          <p style={{ color: 'var(--color-text-muted)' }}>
+            New to Salinlahi?{" "}
+            <Link to="/register" className="auth-link">
+              Create an account
+            </Link>
+          </p>
+        </form>
       </div>
-
-      <div className="input-row">
-        <input className="input-field" type="password" placeholder="Password" onChange={(e) => setPassword(e.target.value)} required />
-      </div>
-
-      <button type="submit" className="auth-button">
-        Login
-      </button>
-      
-      <p className="settings-text" style={{textAlign: 'center', marginTop: '0.5rem'}}>
-        <Link to="/forgot-password" className="auth-link">Forgot Password?</Link>
-      </p>
-      
-      <p style={{ textAlign: "center", marginTop: "1rem", color: 'var(--color-text-muted)' }}>
-          Don't have an account?{" "}
-          <Link to="/register" className="auth-link">
-            Register here
-          </Link>
-        </p>
-    </form>
-    </div>
+    </>
   );
 }
-
 
 export default Login;

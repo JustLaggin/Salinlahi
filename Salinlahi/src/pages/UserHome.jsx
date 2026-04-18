@@ -4,6 +4,7 @@ import { auth } from "../firebase";
 import { db } from "../firebase";
 import { doc, getDoc } from "firebase/firestore";
 import QRCode from "react-qr-code";
+import LoadingSpinner from "../components/LoadingSpinner";
 
 function UserHome() {
   const [uuid, setUuid] = useState("");
@@ -28,12 +29,13 @@ function UserHome() {
     fetchUserData();
   }, []);
 
-  if (loading) return <div className="app-container"><div className="base-card"><h2 className="auth-title">Loading...</h2></div></div>;
+  if (loading) return <LoadingSpinner message="Loading your QR code..." />;
+  
   return ( 
     <div className="app-container qr-container">
       <div className="base-card">
-        <h2 className="auth-title">Your QR</h2>
-        <p className="settings-text">Show this QR to Barangay staff for instant verification</p>
+        <h2 className="auth-title">Your QR Code</h2>
+        <p className="settings-text">Show this QR code to barangay staff for instant verification</p>
         
 
         {uuid && (

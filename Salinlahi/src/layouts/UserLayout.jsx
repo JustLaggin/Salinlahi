@@ -13,9 +13,18 @@ function UserLayout() {
       </main>
 
       <nav className="bottom-nav">
-        <Link to="/user" className="nav-item">🏠</Link>
-        <Link to="/user/currentayuda" className="nav-item">📋</Link>
-        <Link to="/user/settings" className="nav-item">⚙️</Link>
+        <Link to="/user" className="nav-item">
+          <span className="nav-icon">🏠</span>
+          <span className="nav-label">Home</span>
+        </Link>
+        <Link to="/user/currentayuda" className="nav-item">
+          <span className="nav-icon">📋</span>
+          <span className="nav-label">My Ayuda</span>
+        </Link>
+        <Link to="/user/settings" className="nav-item">
+          <span className="nav-icon">⚙️</span>
+          <span className="nav-label">Settings</span>
+        </Link>
       </nav>
     </div>
   );

@@ -27,11 +27,26 @@ function AdminLayout() {
         </main>
 
         <nav className="bottom-nav">
-          <Link to="/admin/AdminHome" className="nav-item">🏠 Home</Link>
-          <Link to="/admin/CreateAyuda" className="nav-item">➕ New</Link>
-          <Link to="/admin/scan" className="nav-item">📷 Scan</Link>
-          <Link to="/admin/CurrentAyuda" className="nav-item">📋 List</Link>
-          <Link to="/admin/Settings" className="nav-item">⚙️ Settings</Link>
+          <Link to="/admin/AdminHome" className="nav-item">
+            <span className="nav-icon">🏠</span>
+            <span className="nav-label">Home</span>
+          </Link>
+          <Link to="/admin/CreateAyuda" className="nav-item">
+            <span className="nav-icon">➕</span>
+            <span className="nav-label">Create</span>
+          </Link>
+          <Link to="/admin/scan" className="nav-item">
+            <span className="nav-icon">📷</span>
+            <span className="nav-label">Scan</span>
+          </Link>
+          <Link to="/admin/CurrentAyuda" className="nav-item">
+            <span className="nav-icon">📋</span>
+            <span className="nav-label">Manage</span>
+          </Link>
+          <Link to="/admin/Settings" className="nav-item">
+            <span className="nav-icon">⚙️</span>
+            <span className="nav-label">Settings</span>
+          </Link>
         </nav>
       </div>
   );

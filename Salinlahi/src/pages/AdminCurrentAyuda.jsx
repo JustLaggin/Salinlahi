@@ -3,6 +3,7 @@ import { Package, MapPin, Calendar, Info } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { collection, getDocs, doc, getDoc, updateDoc, arrayUnion, arrayRemove, query, where } from "firebase/firestore";
 import { db } from "../firebase";
+import ConfirmDialog from "../components/ConfirmDialog";
 
 function AdminCurrentAyuda() {
   const navigate = useNavigate();
@@ -16,6 +17,16 @@ const [modalList, setModalList] = useState([]); // Will store [{displayName, uui
 
   const [formData, setFormData] = useState({});
   const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("ALL");
+  
+  // Confirmation dialog state
+  const [confirmDialog, setConfirmDialog] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: null,
+    type: "warning"
+  });
 
   useEffect(() => {
     const fetchAyudas = async () => {
@@ -33,57 +44,79 @@ const [modalList, setModalList] = useState([]); // Will store [{displayName, uui
   }, []);
 
   const approveApplicant = async (applicantObj) => {
-  if (!selectedAyuda || !applicantObj.uuid) return;
-  const applicantId = applicantObj.uuid;
-  const ayudaRef = doc(db, "ayudas", selectedAyuda.id);
+    setConfirmDialog({
+      isOpen: true,
+      title: "Approve Applicant",
+      message: `Are you sure you want to approve ${applicantObj.displayName} for ${selectedAyuda.title}? This will move them to beneficiaries.`,
+      onConfirm: () => performApprove(applicantObj),
+      type: "warning"
+    });
+  };
 
-  await updateDoc(ayudaRef, {
-    applicants: arrayRemove(applicantId),
-    beneficiaries: arrayUnion(applicantId)
-  });
+  const performApprove = async (applicantObj) => {
+    if (!selectedAyuda || !applicantObj.uuid) return;
+    const applicantId = applicantObj.uuid;
+    const ayudaRef = doc(db, "ayudas", selectedAyuda.id);
+
+    await updateDoc(ayudaRef, {
+      applicants: arrayRemove(applicantId),
+      beneficiaries: arrayUnion(applicantId)
+    });
 
 // Update user document - direct getDoc using uuid as doc ID (matching applicants array storage)
-  try {
-    const userRef = doc(db, "users", applicantId);
-    await updateDoc(userRef, {
-      ayudas_applied: arrayRemove(selectedAyuda.id),
-      ayudas_beneficiary: arrayUnion(selectedAyuda.id)
-    });
-    console.log(`Direct updated user doc ${applicantId} for ayuda ${selectedAyuda.id}`);
-  } catch (err) {
-    console.error(`Direct update failed for user ${applicantId}:`, err);
-  }
+    try {
+      const userRef = doc(db, "users", applicantId);
+      await updateDoc(userRef, {
+        ayudas_applied: arrayRemove(selectedAyuda.id),
+        ayudas_beneficiary: arrayUnion(selectedAyuda.id)
+      });
+      console.log(`Direct updated user doc ${applicantId} for ayuda ${selectedAyuda.id}`);
+    } catch (err) {
+      console.error(`Direct update failed for user ${applicantId}:`, err);
+    }
 
-  setModalList(prev => prev.filter(a => a.uuid !== applicantId));
-  
-  // Refresh main list
-  const querySnapshot = await getDocs(collection(db, "ayudas"));
-  const data = querySnapshot.docs.map(doc => ({
-    id: doc.id,
-    ...doc.data()
-  }));
-  setAyudas(data);
-};
+    setModalList(prev => prev.filter(a => a.uuid !== applicantId));
+    
+    // Refresh main list
+    const querySnapshot = await getDocs(collection(db, "ayudas"));
+    const data = querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+    setAyudas(data);
+    setConfirmDialog({ isOpen: false });
+  };
 
   const rejectApplicant = async (applicantObj) => {
-  if (!selectedAyuda || !applicantObj.uuid) return;
-  const applicantId = applicantObj.uuid;
-  const ayudaRef = doc(db, "ayudas", selectedAyuda.id);
+    setConfirmDialog({
+      isOpen: true,
+      title: "Reject Applicant",
+      message: `Are you sure you want to reject ${applicantObj.displayName} from ${selectedAyuda.title}? This action cannot be undone.`,
+      onConfirm: () => performReject(applicantObj),
+      type: "danger"
+    });
+  };
 
-  await updateDoc(ayudaRef, {
-    applicants: arrayRemove(applicantId)
-  });
+  const performReject = async (applicantObj) => {
+    if (!selectedAyuda || !applicantObj.uuid) return;
+    const applicantId = applicantObj.uuid;
+    const ayudaRef = doc(db, "ayudas", selectedAyuda.id);
 
-  setModalList(prev => prev.filter(a => a.uuid !== applicantId));
-  
-  // Refresh main list
-  const querySnapshot = await getDocs(collection(db, "ayudas"));
-  const data = querySnapshot.docs.map(doc => ({
-    id: doc.id,
-    ...doc.data()
-  }));
-  setAyudas(data);
-};
+    await updateDoc(ayudaRef, {
+      applicants: arrayRemove(applicantId)
+    });
+
+    setModalList(prev => prev.filter(a => a.uuid !== applicantId));
+    
+    // Refresh main list
+    const querySnapshot = await getDocs(collection(db, "ayudas"));
+    const data = querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+    setAyudas(data);
+    setConfirmDialog({ isOpen: false });
+  };
   const openListModal = async (title, list, ayuda) => {
     setModalTitle(title);
     setSelectedAyuda(ayuda);
@@ -131,7 +164,8 @@ const [modalList, setModalList] = useState([]); // Will store [{displayName, uui
       barangay: formData.barangay,
       city: formData.city,
       requirements: formData.requirements,
-      schedule: formData.schedule
+      schedule: formData.schedule,
+      status: formData.status
     });
 
     setUpdateModal(false);
@@ -156,13 +190,30 @@ const [modalList, setModalList] = useState([]); // Will store [{displayName, uui
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value.toLowerCase())}
         />
+        <select 
+          className="input-field"
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          style={{marginTop: '1rem'}}
+        >
+          <option value="ALL">All Status</option>
+          <option value="ONGOING">Ongoing</option>
+          <option value="COMPLETED">Completed</option>
+          <option value="CANCELLED">Cancelled</option>
+        </select>
       </div>
       <div className="admin-grid">
         {ayudas.filter(ayuda => 
-          ayuda.title.toLowerCase().includes(searchTerm)
+          ayuda.title.toLowerCase().includes(searchTerm) &&
+          (statusFilter === "ALL" || ayuda.status === statusFilter)
         ).map((ayuda) => (
         <div key={ayuda.id} className="base-card">
-          <h3 className="auth-title">{ayuda.title}</h3>
+          <div className="ayuda-header">
+            <h3 className="auth-title">{ayuda.title}</h3>
+            <span className={`status-badge status-${ayuda.status?.toLowerCase() || 'ongoing'}`}>
+              {ayuda.status || 'ONGOING'}
+            </span>
+          </div>
 
           <div className="detail-row">
             <div className="detail-icon"><Package size={24} /></div>
@@ -225,8 +276,7 @@ const [modalList, setModalList] = useState([]); // Will store [{displayName, uui
             </button>
           </div>
         </div>
-      ))}
-
+      ))}      </div>
       {/* LIST MODAL */}
       {modalOpen && (
         <div className="modal-overlay">
@@ -310,6 +360,15 @@ const [modalList, setModalList] = useState([]); // Will store [{displayName, uui
               <input className="input-field" type="date" name="schedule" value={formData.schedule || ""} onChange={handleChange}/>
             </div>
 
+            <div className="input-group">
+              <label>Status</label>
+              <select className="input-field" name="status" value={formData.status || "ONGOING"} onChange={handleChange}>
+                <option value="ONGOING">Ongoing</option>
+                <option value="COMPLETED">Completed</option>
+                <option value="CANCELLED">Cancelled</option>
+              </select>
+            </div>
+
             <div className="button-group">
               <button className="auth-button" onClick={saveUpdate}>
                 Save
@@ -321,7 +380,16 @@ const [modalList, setModalList] = useState([]); // Will store [{displayName, uui
           </div>
         </div>
       )}
-      </div>
+
+      {/* Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        onConfirm={confirmDialog.onConfirm}
+        onCancel={() => setConfirmDialog({ isOpen: false })}
+        type={confirmDialog.type}
+      />
     </div>
   );
 }

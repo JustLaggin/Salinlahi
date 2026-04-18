@@ -12,7 +12,8 @@ function AdminCreateAyuda() {
     schedule: "",
     requirements: "",
     address: "",
-    description: ""
+    description: "",
+    status: "ONGOING"
   });
 
   const barangays = {
@@ -73,6 +74,7 @@ function AdminCreateAyuda() {
         requirements: formData.requirements,
         address: formData.address,
         description: formData.description,
+        status: formData.status,
         available: true,
         beneficiaries: [],
         applicants: [],
@@ -91,7 +93,8 @@ function AdminCreateAyuda() {
         schedule: "",
         requirements: "",
         address: "",
-        description: ""
+        description: "",
+        status: "ONGOING"
       });
 
     } catch (error) {
@@ -214,6 +217,21 @@ function AdminCreateAyuda() {
             rows="4"
             required
           />
+        </div>
+
+        <div className="input-group">
+          <label>Status</label>
+          <select
+            className="input-field"
+            name="status"
+            value={formData.status}
+            onChange={handleChange}
+            required
+          >
+            <option value="ONGOING">Ongoing</option>
+            <option value="COMPLETED">Completed</option>
+            <option value="CANCELLED">Cancelled</option>
+          </select>
         </div>
 
         <button type="submit" className="auth-button">

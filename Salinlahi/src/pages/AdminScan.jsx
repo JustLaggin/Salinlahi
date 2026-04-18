@@ -39,7 +39,7 @@ function AdminScan() {
     try {
       const snapshot = await getDocs(collection(db, "ayudas"));
       const ayudaList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      const filteredList = hasLoadedAyuda ? ayudaList : ayudaList.filter(a => a.status === 'ONGOING');
+      const filteredList = ayudaList.filter(a => a.status === 'ONGOING');
       setAyudas(filteredList);
       // Set target for add mode after loading
       if (hasLoadedAyuda) {
