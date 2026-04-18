@@ -1,32 +1,40 @@
 import { useNavigate } from "react-router-dom";
+import { ScanLine, PlusSquare, List } from "lucide-react";
 
 function AdminHome() {
   const navigate = useNavigate();
   return (
-    <div className="app-container">
-      <h1 className="auth-title">Admin Dashboard</h1>
-      <div className="admin-grid">
-        <div className="base-card">
-          <h3 className="auth-title">Scan QR</h3>
-          <p className="settings-text">Verify beneficiary and process claim</p>
+    <div>
+      <div style={{ marginBottom: "2.5rem" }}>
+        <h1 className="auth-title" style={{ textAlign: "left", marginBottom: "0.5rem" }}>Admin Dashboard</h1>
+        <p className="settings-text" style={{ textAlign: "left" }}>Welcome to the Salinlahi Ayuda Management System</p>
+      </div>
+      
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "2rem" }}>
+        <div className="base-card" style={{ alignItems: "flex-start" }}>
+          <ScanLine size={36} color="var(--accent-blue)" style={{ marginBottom: "0.5rem" }} />
+          <h3 className="auth-title" style={{ textAlign: "left", margin: 0 }}>Scan QR</h3>
+          <p className="settings-text" style={{ textAlign: "left", marginBottom: "1rem" }}>Verify beneficiary identity offline and process claims instantly.</p>
           <button className="auth-button" onClick={() => navigate("/admin/scan")}>
-            Scan QR
+            Launch Scanner
           </button>
         </div>
 
-        <div className="base-card">
-          <h3 className="auth-title">Create Ayuda</h3>
-          <p className="settings-text">Launch new aid distribution program</p>
+        <div className="base-card" style={{ alignItems: "flex-start" }}>
+          <PlusSquare size={36} color="var(--accent-green)" style={{ marginBottom: "0.5rem" }} />
+          <h3 className="auth-title" style={{ textAlign: "left", margin: 0 }}>Create Ayuda</h3>
+          <p className="settings-text" style={{ textAlign: "left", marginBottom: "1rem" }}>Initialize a new localized aid event with target budgets and items.</p>
           <button className="auth-button" onClick={() => navigate("/admin/CreateAyuda")}>
-            Create Ayuda
+            Create Distribution
           </button>
         </div>
 
-        <div className="base-card">
-          <h3 className="auth-title">Current Ayudas</h3>
-          <p className="settings-text">Manage active distributions</p>
+        <div className="base-card" style={{ alignItems: "flex-start" }}>
+          <List size={36} color="var(--text-tertiary)" style={{ marginBottom: "0.5rem" }} />
+          <h3 className="auth-title" style={{ textAlign: "left", margin: 0 }}>Current Ayudas</h3>
+          <p className="settings-text" style={{ textAlign: "left", marginBottom: "1rem" }}>View, update, and manage all active aid distributions in the system.</p>
           <button className="auth-button" onClick={() => navigate("/admin/CurrentAyuda")}>
-            View Ayudas
+            View Database
           </button>
         </div>
       </div>

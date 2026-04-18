@@ -198,7 +198,7 @@ function AdminScan() {
   }, []);
 
   return (
-    <div className="app-container">
+    <div style={{ maxWidth: '800px', margin: '0 auto', paddingBottom: '2rem' }}>
         <div className="base-card qr-scanner-card">
           <h2 className="auth-title">
             {isClaimingMode 

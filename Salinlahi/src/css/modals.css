@@ -15,10 +15,12 @@
 
 /* Sizing layer on top of .base-card (gradient border + surface) */
 .base-card.modal-panel {
-  max-width: 550px;
-  max-height: 85vh;
+  max-width: 750px;
+  max-height: 90vh;
   width: 90vw;
   overflow-y: auto;
+  overflow-x: hidden;
+  margin-bottom: 0;
   animation: modalZoomIn 0.22s ease-out;
 }
 

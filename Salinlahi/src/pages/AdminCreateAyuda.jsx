@@ -10,6 +10,8 @@ function AdminCreateAyuda() {
     city: "",
     barangay: "",
     schedule: "",
+    timeStart: "",
+    timeEnd: "",
     requirements: "",
     address: "",
     description: ""
@@ -17,19 +19,19 @@ function AdminCreateAyuda() {
 
   const barangays = {
     "Batangas City": [
-      "Alangilan","Pallocan","Sta. Rita","San Isidro",
-      "Kumintang Ibaba","Bolbok","Calicanto",
-      "Libjo","Tingga Itaas","Santo Niño"
+      "Alangilan", "Pallocan", "Sta. Rita", "San Isidro",
+      "Kumintang Ibaba", "Bolbok", "Calicanto",
+      "Libjo", "Tingga Itaas", "Santo Niño", "Santo Tomas"
     ],
     "Lipa City": [
-      "Balintawak","Sabang","Anilao","Marawoy",
-      "Banaybanay","Bolbok","Sico",
-      "Tambo","Plaridel","San Carlos"
+      "Balintawak", "Sabang", "Anilao", "Marawoy",
+      "Banaybanay", "Bolbok", "Sico",
+      "Tambo", "Plaridel", "San Carlos"
     ],
     "Tanauan City": [
-      "Altura Bata","Altura Matanda","Darasa",
-      "Janopol","Mabini","Sambat",
-      "Santol","Ulango","Wawa"
+      "Altura Bata", "Altura Matanda", "Darasa",
+      "Janopol", "Mabini", "Sambat",
+      "Santol", "Ulango", "Wawa"
     ]
   };
 
@@ -70,6 +72,8 @@ function AdminCreateAyuda() {
         city: formData.city,
         barangay: formData.barangay,
         schedule: formData.schedule,
+        timeStart: formData.timeStart,
+        timeEnd: formData.timeEnd,
         requirements: formData.requirements,
         address: formData.address,
         description: formData.description,
@@ -89,6 +93,8 @@ function AdminCreateAyuda() {
         city: "",
         barangay: "",
         schedule: "",
+        timeStart: "",
+        timeEnd: "",
         requirements: "",
         address: "",
         description: ""
@@ -101,37 +107,41 @@ function AdminCreateAyuda() {
   };
 
   return (
-    <div className="app-container">
-      <form onSubmit={handleSubmit} className="base-card auth-form">
-        <h2 className="auth-title">Create New Ayuda</h2>
+    <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+      <div style={{ marginBottom: '2rem' }}>
+        <h1 className="auth-title" style={{ textAlign: "left", marginBottom: "0.5rem" }}>Create New Distribution</h1>
+        <p className="settings-text" style={{ textAlign: "left" }}>Provide the details below to initialize a new Ayuda event.</p>
+      </div>
 
-        <div className="input-group">
-          <label>Title</label>
-          <input
-            className="input-field"
-            name="title"
-            value={formData.title}
-            onChange={handleChange}
-            placeholder="Enter Title"
-            required
-          />
-        </div>
+      <form onSubmit={handleSubmit} className="base-card">
 
-        <div className="input-group">
-          <label>Amount (₱)</label>
-          <input
-            className="input-field"
-            type="number"
-            name="amount"
-            value={formData.amount}
-            onChange={handleChange}
-            placeholder="Enter Amount"
-            min="0"
-            required
-          />
-        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem', marginBottom: '1rem' }}>
+          <div className="input-group">
+            <label>Title</label>
+            <input
+              className="input-field"
+              name="title"
+              value={formData.title}
+              onChange={handleChange}
+              placeholder="Enter Title"
+              required
+            />
+          </div>
 
-<div className="input-row">
+          <div className="input-group">
+            <label>Amount (₱)</label>
+            <input
+              className="input-field"
+              type="number"
+              name="amount"
+              value={formData.amount}
+              onChange={handleChange}
+              placeholder="Enter Amount"
+              min="0"
+              required
+            />
+          </div>
+
           <div className="input-group">
             <label>City / Municipality</label>
             <select
@@ -141,12 +151,13 @@ function AdminCreateAyuda() {
               onChange={handleCityChange}
               required
             >
-              <option value="">Select City / Municipality</option>
+              <option value="">Select City</option>
               <option value="Batangas City">Batangas City</option>
               <option value="Lipa City">Lipa City</option>
               <option value="Tanauan City">Tanauan City</option>
             </select>
           </div>
+
           <div className="input-group">
             <label>Barangay</label>
             <select
@@ -165,41 +176,64 @@ function AdminCreateAyuda() {
               ))}
             </select>
           </div>
-        </div>
 
-        <div className="input-row">
           <div className="input-group">
-            <label>Schedule</label>
+            <label>Schedule (Date)</label>
             <input
               className="input-field"
               type="date"
               name="schedule"
               value={formData.schedule}
               onChange={handleChange}
+              required
             />
           </div>
 
           <div className="input-group">
-            <label>Address</label>
+            <label>Time Start</label>
+            <input
+              className="input-field"
+              type="time"
+              name="timeStart"
+              value={formData.timeStart}
+              onChange={handleChange}
+              required
+            />
+          </div>
+
+          <div className="input-group">
+            <label>Time End</label>
+            <input
+              className="input-field"
+              type="time"
+              name="timeEnd"
+              value={formData.timeEnd}
+              onChange={handleChange}
+              required
+            />
+          </div>
+
+          <div className="input-group">
+            <label>Designation Point (Location)</label>
             <input
               className="input-field"
               name="address"
               value={formData.address}
               onChange={handleChange}
-              placeholder="e.g. 123 Mabini St."
+              placeholder="e.g. Barangay Hall"
+              required
             />
           </div>
         </div>
 
         <div className="input-group">
           <label>Requirements</label>
-          <textarea
+          <input
             className="input-field"
             name="requirements"
             value={formData.requirements}
             onChange={handleChange}
             placeholder="List of Requirements"
-            rows="3"
           />
         </div>
 
@@ -211,12 +245,12 @@ function AdminCreateAyuda() {
             value={formData.description}
             onChange={handleChange}
             placeholder="Describe the Ayuda"
-            rows="4"
+            rows="3"
             required
           />
         </div>
 
-        <button type="submit" className="auth-button">
+        <button type="submit" className="auth-button" style={{ maxWidth: '240px', alignSelf: 'flex-start', marginTop: '1rem' }}>
           Create Ayuda
         </button>
 

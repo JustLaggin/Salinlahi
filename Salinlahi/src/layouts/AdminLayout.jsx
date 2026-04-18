@@ -1,39 +1,44 @@
-import { Link, Outlet } from "react-router-dom";
-import { useEffect } from "react";
+import { Link, Outlet, useLocation } from "react-router-dom";
+import { LayoutDashboard, PlusSquare, ScanLine, List, Settings } from "lucide-react";
 
 function AdminLayout() {
-  useEffect(() => {
-    const setActiveNav = () => {
-      document.querySelectorAll('.nav-item').forEach(item => {
-        item.classList.remove('active');
-      });
-      const currentPath = window.location.pathname;
-      document.querySelectorAll('.nav-item').forEach(item => {
-        if (item.getAttribute('href') === currentPath) {
-          item.classList.add('active');
-        }
-      });
-    };
-    setActiveNav();
-    window.addEventListener('popstate', setActiveNav);
-    return () => window.removeEventListener('popstate', setActiveNav);
-  }, []);
+  const location = useLocation();
+  const path = location.pathname;
 
   return (
-
-      <div className="app-container">
-        <main className="page-content">
-          <Outlet />
-        </main>
-
-        <nav className="bottom-nav">
-          <Link to="/admin/AdminHome" className="nav-item">🏠 Home</Link>
-          <Link to="/admin/CreateAyuda" className="nav-item">➕ New</Link>
-          <Link to="/admin/scan" className="nav-item">📷 Scan</Link>
-          <Link to="/admin/CurrentAyuda" className="nav-item">📋 List</Link>
-          <Link to="/admin/Settings" className="nav-item">⚙️ Settings</Link>
+    <div className="admin-dashboard">
+      <aside className="admin-sidebar">
+        <div className="admin-sidebar-header">
+          <h2>Salinlahi Admin</h2>
+        </div>
+        <nav className="admin-nav">
+          <Link to="/admin/AdminHome" className={`admin-nav-item ${path === '/admin/AdminHome' ? 'active' : ''}`}>
+            <LayoutDashboard size={20} />
+            <span>Dashboard</span>
+          </Link>
+          <Link to="/admin/CreateAyuda" className={`admin-nav-item ${path === '/admin/CreateAyuda' ? 'active' : ''}`}>
+            <PlusSquare size={20} />
+            <span>Create</span>
+          </Link>
+          <Link to="/admin/scan" className={`admin-nav-item ${path === '/admin/scan' ? 'active' : ''}`}>
+            <ScanLine size={20} />
+            <span>Scan QR</span>
+          </Link>
+          <Link to="/admin/CurrentAyuda" className={`admin-nav-item ${path === '/admin/CurrentAyuda' ? 'active' : ''}`}>
+            <List size={20} />
+            <span>Active Ayuda</span>
+          </Link>
+          <Link to="/admin/Settings" className={`admin-nav-item ${path === '/admin/Settings' ? 'active' : ''}`}>
+            <Settings size={20} />
+            <span>Settings</span>
+          </Link>
         </nav>
-      </div>
+      </aside>
+
+      <main className="dashboard-content page-transition" key={path}>
+        <Outlet />
+      </main>
+    </div>
   );
 }
 
