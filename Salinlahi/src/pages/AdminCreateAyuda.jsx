@@ -78,6 +78,7 @@ function AdminCreateAyuda() {
         address: formData.address,
         description: formData.description,
         available: true,
+        status: "ONGOING",
         beneficiaries: [],
         applicants: [],
         created_by: user.uid,

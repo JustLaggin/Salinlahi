@@ -4,6 +4,7 @@ import { createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 import { v4 as uuidv4 } from "uuid";
 import { Link } from "react-router-dom";
+import { generateUniqueCitizenCode } from "../utils/citizenCode";
 
 function Register() {
   const [form, setForm] = useState({
@@ -42,9 +43,11 @@ function Register() {
 
       const user = userCredential.user;
       const generatedUUID = uuidv4();
+      const citizenCode = await generateUniqueCitizenCode(db);
 
       await setDoc(doc(db, "users", user.uid), {
         uuid: generatedUUID,
+        citizenCode,
         first_name: form.first_name,
         last_name: form.last_name,
         middle_name: form.middle_name,
@@ -56,11 +59,11 @@ function Register() {
         city: form.city,
         province: form.province,
         created_at: new Date(),
-        role: "user",
+        role: "citizen",
         ayudas_applied: [],
         ayudas_beneficiary: [],
-        ayudas_received: []
-        
+        ayudas_received: [],
+        claim_history: [],
       });
 
       alert("Registration successful!");

@@ -7,42 +7,65 @@ import AdminLayout from "./layouts/AdminLayout";
 import AdminScanner from "./pages/AdminScan";
 import AdminCreateAyuda from "./pages/AdminCreateAyuda";
 import AdminCurrentAyuda from "./pages/AdminCurrentAyuda";
+import AdminAyudaDetail from "./pages/AdminAyudaDetail";
 import AdminHome from "./pages/AdminHome";
-import Settings from "./pages/Settings";
+import { ProtectedRoute, RequireAdmin } from "./components/ProtectedRoute";
 import UserLayout from "./layouts/UserLayout";
 import UserHome from "./pages/UserHome";
 import ForgotPassword from "./pages/ForgotPassword";
 import UserCurrentAyuda from "./pages/UserCurrentAyuda";
-{/*import CurrentAyuda from "./pages/CurrentAyuda";*/}
 
 function App() {
   return (
     <div>
-      {/* Top Banner */}
       <header className="header-banner">
         <img src={logo} className="header-banner__logo" alt="Salinlahi Logo" />
         <ThemeToggle />
       </header>
 
-      {/* Page Content */}
       <div>
         <Routes>
-          <Route path="/" element={<Navigate to="/register" />} />
+          <Route path="/" element={<Navigate to="/register" replace />} />
           <Route path="/register" element={<Register />} />
           <Route path="/login" element={<Login />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/user" element={<UserLayout/>}>
+
+          <Route
+            path="/user"
+            element={
+              <ProtectedRoute allowedRoles={["citizen"]}>
+                <UserLayout />
+              </ProtectedRoute>
+            }
+          >
             <Route index element={<UserHome />} />
             <Route path="currentayuda" element={<UserCurrentAyuda />} />
-            <Route path="settings" element={<Settings />} />
           </Route>
-          <Route path="/admin" element={<AdminLayout/>}>
-            <Route path="/admin/AdminHome" element={<AdminHome />} />
-            <Route path="/admin/CreateAyuda" element={<AdminCreateAyuda />} />
-            <Route path="/admin/scan" element={<AdminScanner />} />
-            <Route path="/admin/CurrentAyuda" element={<AdminCurrentAyuda />} />
-            <Route path="/admin/Settings" element={<Settings />} />
+
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute allowedRoles={["staff", "admin"]}>
+                <AdminLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<Navigate to="AdminHome" replace />} />
+            <Route path="AdminHome" element={<AdminHome />} />
+            <Route
+              path="CreateAyuda"
+              element={
+                <RequireAdmin>
+                  <AdminCreateAyuda />
+                </RequireAdmin>
+              }
+            />
+            <Route path="scan" element={<AdminScanner />} />
+            <Route path="CurrentAyuda" element={<AdminCurrentAyuda />} />
+            <Route path="ayuda/:ayudaId" element={<AdminAyudaDetail />} />
           </Route>
+
+          <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </div>
     </div>

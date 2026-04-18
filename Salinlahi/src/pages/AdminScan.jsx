@@ -1,192 +1,252 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Html5Qrcode } from "html5-qrcode";
-import { useSearchParams, useNavigate } from "react-router-dom";
-import { doc, getDoc, collection, query, where, getDocs, updateDoc, arrayUnion } from "firebase/firestore";
+import {
+  arrayUnion,
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  query,
+  setDoc,
+  updateDoc,
+  where,
+  Timestamp,
+} from "firebase/firestore";
 import { db } from "../firebase";
+import { useActiveAyuda } from "../context/ActiveAyudaContext";
+import { normalizeCitizenCodeInput } from "../utils/citizenCode";
+import { playSuccessBeep } from "../utils/playSuccessBeep";
+
+async function findUserDocByScanPayload(decodedText) {
+  const raw = String(decodedText || "").trim();
+  if (!raw) return null;
+  const byUuid = query(collection(db, "users"), where("uuid", "==", raw));
+  let snap = await getDocs(byUuid);
+  if (!snap.empty) return snap.docs[0];
+  const code = normalizeCitizenCodeInput(raw);
+  if (code.length >= 4) {
+    snap = await getDocs(
+      query(collection(db, "users"), where("citizenCode", "==", code))
+    );
+    if (!snap.empty) return snap.docs[0];
+  }
+  return null;
+}
 
 function AdminScan() {
-  const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
-  const modeParam = searchParams.get('mode');
-  const ayudaIdParam = searchParams.get('ayudaId');
-  const hasLoadedAyuda = !!ayudaIdParam;
-  const isClaimingMode = modeParam === 'claiming';
-  const [scanning, setScanning] = useState(false);
-  const [scanResult, setScanResult] = useState('');
-  const [showModal, setShowModal] = useState(false);
-  const [ayudas, setAyudas] = useState([]);
-  const [selectedAyuda, setSelectedAyuda] = useState('');
+  const {
+    activeAyudaId,
+    activeAyudaTitle,
+    setActiveAyuda,
+    clearActiveAyuda,
+  } = useActiveAyuda();
+
+  const [ongoingAyudas, setOngoingAyudas] = useState([]);
+  const [pickerValue, setPickerValue] = useState("");
   const [loadingAyudas, setLoadingAyudas] = useState(false);
+
+  const [scanning, setScanning] = useState(false);
+  const [scanResult, setScanResult] = useState("");
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [manualOpen, setManualOpen] = useState(false);
+  const [manualInput, setManualInput] = useState("");
   const [userUid, setUserUid] = useState(null);
-  const [loadingUser, setLoadingUser] = useState(false);
-  const [targetAyuda, setTargetAyuda] = useState(null);
   const [userData, setUserData] = useState(null);
-  const [userStatus, setUserStatus] = useState(null); // 'applicant', 'beneficiary', or null
-  const [showUserInfo, setShowUserInfo] = useState(false);
-  
+  const [loadingUser, setLoadingUser] = useState(false);
+  const [claiming, setClaiming] = useState(false);
+  const [claimError, setClaimError] = useState("");
+
+  const [successOverlay, setSuccessOverlay] = useState(null);
+
   const scannerRef = useRef(null);
   const isRunningRef = useRef(false);
+  const [pendingMethod, setPendingMethod] = useState("qr");
 
-  useEffect(() => {
-    loadAyudas();
-    if (hasLoadedAyuda) {
-      setSelectedAyuda(ayudaIdParam);
-    }
-  }, []);
-
-  const loadAyudas = async () => {
+  const loadOngoing = useCallback(async () => {
     setLoadingAyudas(true);
     try {
       const snapshot = await getDocs(collection(db, "ayudas"));
-      const ayudaList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      const filteredList = hasLoadedAyuda ? ayudaList : ayudaList.filter(a => a.status === 'ONGOING');
-      setAyudas(filteredList);
-      // Set target for add mode after loading
-      if (hasLoadedAyuda) {
-        const target = ayudaList.find(a => a.id === ayudaIdParam);
-        if (target) setTargetAyuda(target);
-      }
+      const list = snapshot.docs
+        .map((d) => ({ id: d.id, ...d.data() }))
+        .filter(
+          (a) =>
+            a.status === "ONGOING" ||
+            (a.available !== false && !a.status)
+        );
+      setOngoingAyudas(list);
     } catch (err) {
-      console.error('Load ayundas error:', err);
+      console.error(err);
     }
     setLoadingAyudas(false);
-  };
+  }, []);
 
-  const startScanner = async () => {
-    try {
-      setScanning(true);
-      setScanResult('Starting camera...');
-      
-      scannerRef.current = new Html5Qrcode("reader", { verbose: false });
-      
-      await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-      
-      await scannerRef.current.start(
-        { facingMode: "environment" },
-        { fps: 5, qrbox: { width: 200, height: 200 } },
-        async (decodedText) => {
-          console.log('✅ QR SCANNED:', decodedText);
-          scannerRef.current.pause(true);
-          setScanResult(`✅ Scanned: ${decodedText}`);
-          
-          // Lookup user by uuid
-          setLoadingUser(true);
-          const userQuery = query(collection(db, "users"), where("uuid", "==", decodedText));
-          const userSnap = await getDocs(userQuery);
-          if (userSnap.docs.length > 0) {
-            const userDoc = userSnap.docs[0];
-            setUserUid(userDoc.id);
-            setUserData(userDoc.data());
-          } else {
-            alert('User not found for this QR');
-            setLoadingUser(false);
-            return;
-          }
-          setLoadingUser(false);
-          
-          // Check status if ayuda loaded
-          if (hasLoadedAyuda) {
-            await checkUserStatus(ayudaIdParam);
-          }
-          setShowModal(true);
-        },
-        () => {} // silent no QR
-      );
-      
-      isRunningRef.current = true;
-      setScanResult('📷 Scanning...');
-    } catch (err) {
-      setScanResult(`❌ ${err.name}`);
-      setScanning(false);
-    }
-  };
+  useEffect(() => {
+    void loadOngoing();
+  }, [loadOngoing]);
+
+  useEffect(() => {
+    if (activeAyudaId) setPickerValue(activeAyudaId);
+  }, [activeAyudaId]);
 
   const stopScanner = async () => {
     if (scannerRef.current && isRunningRef.current) {
       await scannerRef.current.stop().catch(() => {});
       isRunningRef.current = false;
     }
+    scannerRef.current = null;
     setScanning(false);
-    setScanResult('');
+    setScanResult("");
   };
 
-  const closeModal = () => {
-    setShowModal(false);
-    setSelectedAyuda('');
-    setUserStatus(null);
-    setShowUserInfo(false);
-  };
-
-  const checkUserStatus = async (ayudaId) => {
-    if (!userUid || !ayudaId) return;
-    
+  const startScanner = async () => {
+    if (!activeAyudaId) return;
     try {
-      const ayudaRef = doc(db, 'ayudas', ayudaId);
-      const ayudaSnap = await getDoc(ayudaRef);
-      if (!ayudaSnap.exists()) return;
-      
-      const data = ayudaSnap.data();
-      if (data.applicants?.includes(userUid)) {
-        setUserStatus('applicant');
+      await stopScanner();
+      const readerEl = document.getElementById("reader");
+      if (readerEl) readerEl.innerHTML = "";
+      setScanning(true);
+      setScanResult("Starting camera…");
+      scannerRef.current = new Html5Qrcode("reader", { verbose: false });
+      await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "environment" },
+      });
+      await scannerRef.current.start(
+        { facingMode: "environment" },
+        { fps: 5, qrbox: { width: 200, height: 200 } },
+        async (decodedText) => {
+          scannerRef.current.pause(true);
+          setScanResult("Scanned");
+          setPendingMethod("qr");
+          await openConfirmForPayload(decodedText);
+        },
+        () => {}
+      );
+      isRunningRef.current = true;
+      setScanResult("Scanning…");
+    } catch (err) {
+      setScanResult(`Camera error: ${err?.message || err}`);
+      setScanning(false);
+    }
+  };
+
+  const openConfirmForPayload = async (payload) => {
+    setClaimError("");
+    setLoadingUser(true);
+    try {
+      const userDoc = await findUserDocByScanPayload(payload);
+      if (!userDoc) {
+        alert("Citizen not found for this code.");
+        setLoadingUser(false);
+        await scannerRef.current?.resume();
         return;
       }
-      if (data.beneficiaries?.includes(userUid)) {
-        setUserStatus('beneficiary');
-        return;
-      }
-      setUserStatus(null);
-    } catch (err) {
-      console.error('Status check error:', err);
+      setUserUid(userDoc.id);
+      setUserData(userDoc.data());
+      setConfirmOpen(true);
+    } catch (e) {
+      console.error(e);
+      alert("Lookup failed.");
     }
+    setLoadingUser(false);
   };
 
-  const addToApplicants = async () => {
-    if (!ayudaIdParam || !userUid) return;
-    
-    try {
-      const ayudaRef = doc(db, 'ayudas', ayudaIdParam);
-      await updateDoc(ayudaRef, {
-        applicants: arrayUnion(userUid)
-      });
-      
-      const userRef = doc(db, 'users', userUid);
-      await updateDoc(userRef, {
-        ayudas_applied: arrayUnion(ayudaIdParam)
-      });
-      
-      alert('✅ Added to applicants');
-      closeModal();
-      navigate('/admin/currentayuda');
-    } catch (err) {
-      alert('❌ Add error: ' + err.message);
-    }
-  };
-
-  const markAsReceived = async () => {
-    if (!ayudaIdParam || !userUid) return;
-    
-    try {
-      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-      const userRef = doc(db, 'users', userUid);
-      await updateDoc(userRef, {
-        ayudas_received: arrayUnion(today)
-      });
-      
-      alert(`✅ Marked as received on ${today} for ${targetAyuda?.title}`);
-      closeModal();
-      navigate('/admin/currentayuda');
-    } catch (err) {
-      alert('❌ Claim error: ' + err.message);
-    }
-  };
-
-  const restartScan = () => {
-    setUserData(null);
+  const closeConfirm = async () => {
+    setConfirmOpen(false);
     setUserUid(null);
-    setUserStatus(null);
-    setShowUserInfo(false);
-    setScanResult('');
-    startScanner();
+    setUserData(null);
+    setClaimError("");
+    if (scannerRef.current && isRunningRef.current) {
+      try {
+        await scannerRef.current.resume();
+      } catch {
+        /* */
+      }
+    }
+  };
+
+  const confirmClaim = async () => {
+    if (!activeAyudaId || !userUid || !userData) return;
+    setClaiming(true);
+    setClaimError("");
+    try {
+      const ayudaSnap = await getDoc(doc(db, "ayudas", activeAyudaId));
+      if (!ayudaSnap.exists()) {
+        setClaimError("Ayuda not found.");
+        setClaiming(false);
+        return;
+      }
+      const beneficiaries = ayudaSnap.data().beneficiaries || [];
+      if (!beneficiaries.includes(userUid)) {
+        setClaimError("This citizen is not an approved beneficiary for this Ayuda.");
+        setClaiming(false);
+        return;
+      }
+      const claimRef = doc(db, "ayudas", activeAyudaId, "claims", userUid);
+      const existing = await getDoc(claimRef);
+      if (existing.exists()) {
+        setClaimError("Claim already recorded for this citizen.");
+        setClaiming(false);
+        return;
+      }
+      const displayName =
+        `${userData.first_name || ""} ${userData.last_name || ""}`.trim() ||
+        "Citizen";
+      await setDoc(claimRef, {
+        claimedAt: Timestamp.now(),
+        method: pendingMethod,
+        displayName,
+        citizenCode: userData.citizenCode || null,
+      });
+      await updateDoc(doc(db, "users", userUid), {
+        claim_history: arrayUnion({
+          ayudaId: activeAyudaId,
+          claimedAt: Timestamp.now(),
+        }),
+      });
+      await stopScanner();
+      setConfirmOpen(false);
+      setManualOpen(false);
+      setManualInput("");
+      setUserUid(null);
+      setUserData(null);
+      setSuccessOverlay({
+        name: displayName,
+        ayudaTitle: activeAyudaTitle || ayudaSnap.data().title || activeAyudaId,
+      });
+      playSuccessBeep();
+    } catch (e) {
+      console.error(e);
+      setClaimError(e.message || "Could not save claim.");
+    }
+    setClaiming(false);
+  };
+
+  const dismissSuccess = () => setSuccessOverlay(null);
+
+  const openManual = () => {
+    setManualInput("");
+    setManualOpen(true);
+    setPendingMethod("manual");
+  };
+
+  const submitManual = async () => {
+    const norm = normalizeCitizenCodeInput(manualInput);
+    if (norm.length < 4) {
+      alert("Enter the manual code (at least 4 characters).");
+      return;
+    }
+    setManualOpen(false);
+    setPendingMethod("manual");
+    await openConfirmForPayload(norm);
+  };
+
+  const handlePickAyuda = () => {
+    const a = ongoingAyudas.find((x) => x.id === pickerValue);
+    if (!a) {
+      alert("Select an Ayuda event.");
+      return;
+    }
+    setActiveAyuda(a.id, a.title || "");
   };
 
   useEffect(() => {
@@ -197,126 +257,215 @@ function AdminScan() {
     };
   }, []);
 
-  return (
-    <div style={{ maxWidth: '800px', margin: '0 auto', paddingBottom: '2rem' }}>
-        <div className="base-card qr-scanner-card">
-          <h2 className="auth-title">
-            {isClaimingMode 
-              ? `Claiming Scanner - ${targetAyuda?.title || 'Ayuda ID: ' + ayudaIdParam}` 
-              : hasLoadedAyuda 
-              ? `QR Scanner - ${targetAyuda?.title || 'Ayuda ID: ' + ayudaIdParam}` 
-              : 'QR Scanner'
-            }
-          </h2>
-          {hasLoadedAyuda && (
-            <p className="settings-text" style={{textAlign: 'center', marginBottom: '1rem'}}>
-              {isClaimingMode 
-                ? 'Scan beneficiary QR to mark ayuda as received (adds date to user record)'
-                : 'Check scanned QR against applicants/beneficiaries for this ayuda'
-              }
-            </p>
-          )}
-        
-        <div className="scanner-controls">
-          {!scanning ? (
-            <button className="auth-button" onClick={startScanner}>
-              🎥 Start Scan
-            </button>
+  if (!activeAyudaId) {
+    return (
+      <div style={{ maxWidth: "560px", margin: "0 auto", paddingBottom: "2rem" }}>
+        <div className="base-card">
+          <h2 className="auth-title">Select active Ayuda</h2>
+          <p className="settings-text" style={{ marginBottom: "1.25rem" }}>
+            Choose the distribution you are scanning for. This is required before
+            opening the camera.
+          </p>
+          {loadingAyudas ? (
+            <p className="settings-text">Loading events…</p>
+          ) : ongoingAyudas.length === 0 ? (
+            <p className="settings-text">No ongoing Ayuda events available.</p>
           ) : (
-            <button className="auth-button btn-neutral-gradient" onClick={stopScanner}>
-              ⏹️ Stop
-            </button>
+            <>
+              <div className="input-group" style={{ marginBottom: "1rem" }}>
+                <label>Ongoing event</label>
+                <select
+                  className="input-field"
+                  value={pickerValue}
+                  onChange={(e) => setPickerValue(e.target.value)}
+                >
+                  <option value="">— Select —</option>
+                  {ongoingAyudas.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.title || a.id}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <button type="button" className="auth-button" onClick={handlePickAyuda}>
+                Continue to scanner
+              </button>
+            </>
           )}
         </div>
+      </div>
+    );
+  }
 
-        <div id="reader" style={{minHeight: '350px', width: '100%'}}></div>
-        
-        <div className="scanner-status mono-text scanner-status-panel">
-          {scanResult || "Ready"}
+  return (
+    <div style={{ maxWidth: "800px", margin: "0 auto", paddingBottom: "2rem" }}>
+      <div
+        className="scanner-ayuda-banner"
+        style={{
+          marginBottom: "1rem",
+          padding: "1rem 1.25rem",
+          borderRadius: "14px",
+          border: "1px solid var(--border-subtle)",
+          background: "var(--bg-muted)",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "0.75rem",
+          }}
+        >
+          <div>
+            <div
+              style={{
+                fontSize: "0.75rem",
+                fontWeight: 700,
+                textTransform: "uppercase",
+                letterSpacing: "0.06em",
+                color: "var(--text-secondary)",
+              }}
+            >
+              Scanning for
+            </div>
+            <div style={{ fontWeight: 700, color: "var(--text-primary)" }}>
+              {activeAyudaTitle || activeAyudaId}
+            </div>
+          </div>
+          <button
+            type="button"
+            className="action-btn"
+            onClick={() => {
+              void stopScanner();
+              clearActiveAyuda();
+            }}
+          >
+            Change event
+          </button>
         </div>
       </div>
 
-      {/* Dynamic Modal - Ayuda-specific check OR Base user info OR Ayuda selection */}
-      {showModal && (
+      <div className="base-card qr-scanner-card">
+        <h2 className="auth-title">QR Scanner</h2>
+
+        <div className="scanner-controls" style={{ flexWrap: "wrap", gap: "0.75rem" }}>
+          {!scanning ? (
+            <button type="button" className="auth-button" onClick={startScanner}>
+              Start camera
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="auth-button btn-neutral-gradient"
+              onClick={() => void stopScanner()}
+            >
+              Stop camera
+            </button>
+          )}
+          <button type="button" className="action-btn" onClick={openManual}>
+            Manual ID
+          </button>
+        </div>
+
+        <div id="reader" style={{ minHeight: "350px", width: "100%" }} />
+
+        <div className="scanner-status mono-text scanner-status-panel">
+          {loadingUser ? "Looking up citizen…" : scanResult || "Ready"}
+        </div>
+      </div>
+
+      {manualOpen && (
         <div className="modal-overlay modal-overlay--padded">
           <div className="base-card modal-panel modal-panel--scan">
-            {hasLoadedAyuda ? (
-              // Ayuda loaded: Show user data + status + conditional add
-              <>
-                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem'}}>
-                  <h3 className="auth-title" style={{margin: 0}}>
-                    {isClaimingMode ? `Claim Status for ${targetAyuda?.title}` : `User Status for ${targetAyuda?.title}`}
-                  </h3>
-                  <button onClick={closeModal} style={{background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: 'var(--color-text-muted)'}}>×</button>
-                </div>
-
-                <div style={{marginBottom: '1rem'}}>
-                  <h4 style={{marginBottom: '0.5rem'}}>User: {(userData?.first_name || '') + ' ' + (userData?.last_name || '')}</h4>
-                  {userData?.middle_name && <p><strong>Middle Name:</strong> {userData.middle_name}</p>}
-                  {userData?.birth_date && <p><strong>Birth Date:</strong> {userData.birth_date}</p>}
-                  {userData?.contact_number && <p><strong>Contact:</strong> {userData.contact_number}</p>}
-                  {userData?.email && <p><strong>Email:</strong> {userData.email}</p>}
-                  {userData?.address_line && <p><strong>Address:</strong> {userData.address_line}, {userData.barangay}, {userData.city}, {userData.province}</p>}
-                  {userData?.created_at && <p><strong>Created:</strong> {new Date(userData.created_at).toLocaleString('en-US', { timeZone: 'Asia/Manila', dateStyle: 'medium', timeStyle: 'short' })}</p>}
-                </div>
-                <div className="modal-inset-panel">
-
-
-                  <h4 style={{margin: '0 0 0.5rem 0'}}>Status:</h4>
-                  {userStatus === 'applicant' && <p style={{color: 'orange', fontWeight: 'bold'}}>Already in Applicants</p>}
-                  {userStatus === 'beneficiary' && <p style={{color: 'green', fontWeight: 'bold'}}>✅ Approved Beneficiary - Eligible for claiming</p>}
-                  {userStatus === null && <p style={{color: 'red', fontWeight: 'bold'}}>{isClaimingMode ? '❌ Not a beneficiary - Must be approved first' : 'Not registered - Can add to applicants'}</p>}
-                </div>
-
-                <div style={{display: 'flex', gap: '1rem', justifyContent: 'center'}}>
-                  {isClaimingMode ? (
-                    userStatus === 'beneficiary' && (
-                      <button className="auth-button approve-btn" onClick={markAsReceived}>
-                        ✅ Mark as Received
-                      </button>
-                    )
-                  ) : (
-                    userStatus === null && (
-                      <button className="auth-button" onClick={addToApplicants}>
-                        ➕ Add to Applicants
-                      </button>
-                    )
-                  )}
-                  <button className="auth-button btn-neutral-gradient" onClick={closeModal}>
-                    Close
-                  </button>
-                </div>
-              </>
-            ) : (
-
-              // Base scan OR Ayuda select: User info only + restart
-              <>
-                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem'}}>
-                  <h3 className="auth-title" style={{margin: 0}}>User Info</h3>
-                  <button onClick={closeModal} style={{background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: 'var(--color-text-muted)'}}>×</button>
-                </div>
-
-                <div style={{marginBottom: '1.5rem'}}>
-                  <h4 style={{marginBottom: '0.5rem'}}>User: {(userData?.first_name || '') + ' ' + (userData?.last_name || '')}</h4>
-                  {userData?.middle_name && <p><strong>Middle Name:</strong> {userData.middle_name}</p>}
-                  {userData?.birth_date && <p><strong>Birth Date:</strong> {userData.birth_date}</p>}
-                  {userData?.contact_number && <p><strong>Contact:</strong> {userData.contact_number}</p>}
-                  {userData?.email && <p><strong>Email:</strong> {userData.email}</p>}
-                  {userData?.address_line && <p><strong>Address:</strong> {userData.address_line}, {userData.barangay}, {userData.city}, {userData.province}</p>}
-                  {userData?.created_at && <p><strong>Created:</strong> {new Date(userData.created_at).toLocaleString('en-US', { timeZone: 'Asia/Manila', dateStyle: 'medium', timeStyle: 'short' })}</p>}
-                </div>
-
-                <div style={{display: 'flex', gap: '1rem', justifyContent: 'center'}}>
-                  <button className="auth-button btn-neutral-gradient" onClick={closeModal}>
-                    Close
-                  </button>
-                </div>
-              </>
-            )}
+            <h3 className="auth-title">Manual citizen code</h3>
+            <p className="settings-text" style={{ marginBottom: "1rem" }}>
+              Enter the code shown under the citizen&apos;s QR (letters and numbers
+              only).
+            </p>
+            <input
+              className="input-field"
+              value={manualInput}
+              onChange={(e) => setManualInput(e.target.value)}
+              placeholder="e.g. ABC12F"
+              autoCapitalize="characters"
+            />
+            <div style={{ display: "flex", gap: "0.75rem", marginTop: "1.25rem" }}>
+              <button type="button" className="auth-button" onClick={submitManual}>
+                Look up
+              </button>
+              <button
+                type="button"
+                className="auth-button btn-neutral-gradient"
+                onClick={() => setManualOpen(false)}
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         </div>
       )}
 
+      {confirmOpen && userData && (
+        <div className="modal-overlay modal-overlay--padded">
+          <div className="base-card modal-panel modal-panel--scan">
+            <h3 className="auth-title">Confirm claim</h3>
+            <p className="settings-text" style={{ marginBottom: "1rem" }}>
+              Ayuda:{" "}
+              <strong>{activeAyudaTitle || activeAyudaId}</strong>
+            </p>
+            <div className="modal-inset-panel" style={{ marginBottom: "1rem" }}>
+              <p style={{ fontWeight: 700, fontSize: "1.1rem" }}>
+                {userData.first_name} {userData.last_name}
+              </p>
+              {userData.citizenCode && (
+                <p className="settings-text">Code: {userData.citizenCode}</p>
+              )}
+            </div>
+            {claimError && (
+              <p style={{ color: "#f87171", marginBottom: "1rem" }}>{claimError}</p>
+            )}
+            <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
+              <button
+                type="button"
+                className="auth-button approve-btn"
+                disabled={claiming}
+                onClick={() => void confirmClaim()}
+              >
+                {claiming ? "Saving…" : "Confirm claim"}
+              </button>
+              <button
+                type="button"
+                className="auth-button btn-neutral-gradient"
+                disabled={claiming}
+                onClick={() => void closeConfirm()}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {successOverlay && (
+        <button
+          type="button"
+          className="claim-success-overlay"
+          onClick={dismissSuccess}
+          aria-label="Dismiss success"
+        >
+          <div className="claim-success-card">
+            <div className="claim-success-icon" aria-hidden>
+              ✓
+            </div>
+            <h2 className="claim-success-title">Claim recorded</h2>
+            <p className="claim-success-name">{successOverlay.name}</p>
+            <p className="claim-success-ayuda">{successOverlay.ayudaTitle}</p>
+            <p className="claim-success-tap">Tap to continue</p>
+          </div>
+        </button>
+      )}
     </div>
   );
 }
