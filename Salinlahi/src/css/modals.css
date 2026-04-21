@@ -55,15 +55,21 @@
 
 .modal-list-row {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
+  gap: 0.75rem 1rem;
   padding: 1.25rem 0;
   border-bottom: 1px solid var(--modal-row-border);
   transition: background 0.2s ease;
+}
+
+/* Read-only rows can stay subtly interactive on hover */
+.modal-list-row--interactive {
   cursor: pointer;
 }
 
-.modal-list-row:hover {
+.modal-list-row--interactive:hover {
   background: var(--modal-row-hover);
   border-radius: 12px;
   padding-left: 1rem;
@@ -76,20 +82,32 @@
 }
 
 .modal-list-row span {
-  flex: 1;
+  flex: 1 1 auto;
+  min-width: 0;
   color: var(--text-primary);
   font-weight: 500;
 }
 
 .row-buttons {
   display: flex;
-  gap: 0.75rem;
-  opacity: 0;
-  transition: opacity 0.2s ease;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.75rem;
+  justify-content: flex-end;
+  flex: 0 1 auto;
+  opacity: 1;
 }
 
-.modal-list-row:hover .row-buttons {
-  opacity: 1;
+@media (max-width: 520px) {
+  .modal-list-row .row-buttons {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .modal-list-row .row-buttons .approve-btn,
+  .modal-list-row .row-buttons .reject-btn {
+    flex: 1;
+    min-width: 0;
+  }
 }
 
 .approve-btn,

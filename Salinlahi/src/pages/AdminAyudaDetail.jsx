@@ -4,9 +4,13 @@ import { useAuth } from "../context/AuthContext";
 
 export default function AdminAyudaDetail() {
   const { ayudaId } = useParams();
-  const { isAdmin } = useAuth();
+  const { isStaffOrAdmin } = useAuth();
 
   return (
-    <AyudaDetailContent ayudaId={ayudaId} readOnly={!isAdmin} embedded={false} />
+    <AyudaDetailContent
+      ayudaId={ayudaId}
+      readOnly={!isStaffOrAdmin}
+      embedded={false}
+    />
   );
 }

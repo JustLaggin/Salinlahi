@@ -180,7 +180,7 @@ export default function AyudaDetailContent({
       </h2>
       {readOnly && (
         <p className="settings-text" style={{ marginBottom: "1rem" }}>
-          Read-only (staff). Kapitan approves or rejects applicants here.
+          You can view applicants but cannot accept or reject them on this account.
         </p>
       )}
       {applicants.length === 0 ? (

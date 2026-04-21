@@ -55,6 +55,8 @@ function AdminScan() {
   const [loadingUser, setLoadingUser] = useState(false);
   const [claiming, setClaiming] = useState(false);
   const [claimError, setClaimError] = useState("");
+  /** Role of this citizen for the active Ayuda (set when scan confirm opens). */
+  const [scanAyudaStatus, setScanAyudaStatus] = useState(null);
 
   const [successOverlay, setSuccessOverlay] = useState(null);
 
@@ -131,6 +133,7 @@ function AdminScan() {
 
   const openConfirmForPayload = async (payload) => {
     setClaimError("");
+    setScanAyudaStatus(null);
     setLoadingUser(true);
     try {
       const userDoc = await findUserDocByScanPayload(payload);
@@ -140,8 +143,27 @@ function AdminScan() {
         await scannerRef.current?.resume();
         return;
       }
-      setUserUid(userDoc.id);
+      const uid = userDoc.id;
+      setUserUid(uid);
       setUserData(userDoc.data());
+
+      if (activeAyudaId) {
+        const ayudaSnap = await getDoc(doc(db, "ayudas", activeAyudaId));
+        if (ayudaSnap.exists()) {
+          const d = ayudaSnap.data();
+          const applicants = d.applicants || [];
+          const beneficiaries = d.beneficiaries || [];
+          setScanAyudaStatus({
+            isApplicant: applicants.includes(uid),
+            isBeneficiary: beneficiaries.includes(uid),
+          });
+        } else {
+          setScanAyudaStatus({ isApplicant: false, isBeneficiary: false });
+        }
+      } else {
+        setScanAyudaStatus(null);
+      }
+
       setConfirmOpen(true);
     } catch (e) {
       console.error(e);
@@ -155,6 +177,7 @@ function AdminScan() {
     setUserUid(null);
     setUserData(null);
     setClaimError("");
+    setScanAyudaStatus(null);
     if (scannerRef.current && isRunningRef.current) {
       try {
         await scannerRef.current.resume();
@@ -164,12 +187,103 @@ function AdminScan() {
     }
   };
 
-  const confirmClaim = async () => {
+  /** Gate / registration: add scanned citizen to this Ayuda's applicants (Admin approves later). */
+  const registerAsApplicant = async () => {
     if (!activeAyudaId || !userUid || !userData) return;
     setClaiming(true);
     setClaimError("");
     try {
-      const ayudaSnap = await getDoc(doc(db, "ayudas", activeAyudaId));
+      const ayudaRef = doc(db, "ayudas", activeAyudaId);
+      const ayudaSnap = await getDoc(ayudaRef);
+      if (!ayudaSnap.exists()) {
+        setClaimError("Ayuda not found.");
+        setClaiming(false);
+        return;
+      }
+      const applicants = ayudaSnap.data().applicants || [];
+      const beneficiaries = ayudaSnap.data().beneficiaries || [];
+
+      if (beneficiaries.includes(userUid)) {
+        setClaimError(
+          "This citizen is already an approved beneficiary. Use “Record claim” to log pickup, or manage them in Active Ayuda."
+        );
+        setClaiming(false);
+        return;
+      }
+
+      const displayName =
+        `${userData.first_name || ""} ${userData.last_name || ""}`.trim() ||
+        "Citizen";
+      const ayudaTitle =
+        activeAyudaTitle || ayudaSnap.data().title || activeAyudaId;
+
+      if (applicants.includes(userUid)) {
+        await stopScanner();
+        setConfirmOpen(false);
+        setManualOpen(false);
+        setManualInput("");
+        setUserUid(null);
+        setUserData(null);
+        setScanAyudaStatus(null);
+        setSuccessOverlay({
+          type: "already_applicant",
+          name: displayName,
+          ayudaTitle,
+        });
+        setClaiming(false);
+        return;
+      }
+
+      try {
+        await updateDoc(ayudaRef, {
+          applicants: arrayUnion(userUid),
+        });
+      } catch (err) {
+        console.error(err);
+        setClaimError(
+          err?.message ||
+            "Could not add applicant. Check your connection and Firestore rules."
+        );
+        setClaiming(false);
+        return;
+      }
+
+      try {
+        await updateDoc(doc(db, "users", userUid), {
+          ayudas_applied: arrayUnion(activeAyudaId),
+        });
+      } catch (userErr) {
+        console.error(userErr);
+      }
+
+      await stopScanner();
+      setConfirmOpen(false);
+      setManualOpen(false);
+      setManualInput("");
+      setUserUid(null);
+      setUserData(null);
+      setScanAyudaStatus(null);
+      setSuccessOverlay({
+        type: "applicant",
+        name: displayName,
+        ayudaTitle,
+      });
+      playSuccessBeep();
+    } catch (e) {
+      console.error(e);
+      setClaimError(e.message || "Could not register applicant.");
+    }
+    setClaiming(false);
+  };
+
+  /** After approval only: log physical distribution (pickup). */
+  const recordClaim = async () => {
+    if (!activeAyudaId || !userUid || !userData) return;
+    setClaiming(true);
+    setClaimError("");
+    try {
+      const ayudaRef = doc(db, "ayudas", activeAyudaId);
+      const ayudaSnap = await getDoc(ayudaRef);
       if (!ayudaSnap.exists()) {
         setClaimError("Ayuda not found.");
         setClaiming(false);
@@ -177,10 +291,13 @@ function AdminScan() {
       }
       const beneficiaries = ayudaSnap.data().beneficiaries || [];
       if (!beneficiaries.includes(userUid)) {
-        setClaimError("This citizen is not an approved beneficiary for this Ayuda.");
+        setClaimError(
+          "Only approved beneficiaries can have a claim recorded. Add them as an applicant first, then accept them in Active Ayuda."
+        );
         setClaiming(false);
         return;
       }
+
       const claimRef = doc(db, "ayudas", activeAyudaId, "claims", userUid);
       const existing = await getDoc(claimRef);
       if (existing.exists()) {
@@ -188,6 +305,7 @@ function AdminScan() {
         setClaiming(false);
         return;
       }
+
       const displayName =
         `${userData.first_name || ""} ${userData.last_name || ""}`.trim() ||
         "Citizen";
@@ -209,7 +327,9 @@ function AdminScan() {
       setManualInput("");
       setUserUid(null);
       setUserData(null);
+      setScanAyudaStatus(null);
       setSuccessOverlay({
+        type: "claim",
         name: displayName,
         ayudaTitle: activeAyudaTitle || ayudaSnap.data().title || activeAyudaId,
       });
@@ -410,11 +530,36 @@ function AdminScan() {
       {confirmOpen && userData && (
         <div className="modal-overlay modal-overlay--padded">
           <div className="base-card modal-panel modal-panel--scan">
-            <h3 className="auth-title">Confirm claim</h3>
+            <h3 className="auth-title">
+              {scanAyudaStatus?.isBeneficiary
+                ? "Record pickup"
+                : scanAyudaStatus?.isApplicant
+                  ? "Already an applicant"
+                  : "Add to applicants"}
+            </h3>
             <p className="settings-text" style={{ marginBottom: "1rem" }}>
               Ayuda:{" "}
               <strong>{activeAyudaTitle || activeAyudaId}</strong>
             </p>
+            {scanAyudaStatus?.isBeneficiary ? (
+              <p className="settings-text" style={{ marginBottom: "1rem" }}>
+                This citizen is already an <strong>approved beneficiary</strong>. Use
+                the button below only to record that aid was physically handed out.
+                Approvals stay in <strong>Active Ayuda</strong> (applicants list).
+              </p>
+            ) : scanAyudaStatus?.isApplicant ? (
+              <p className="settings-text" style={{ marginBottom: "1rem" }}>
+                They are already on the <strong>applicant</strong> list for this
+                event. An admin or staff member can <strong>Accept</strong> or{" "}
+                <strong>Reject</strong> them under Active Ayuda → Applicants.
+              </p>
+            ) : (
+              <p className="settings-text" style={{ marginBottom: "1rem" }}>
+                Register them as an <strong>applicant</strong> for this Ayuda. They
+                are <strong>not</strong> a beneficiary until someone accepts them in
+                Active Ayuda.
+              </p>
+            )}
             <div className="modal-inset-panel" style={{ marginBottom: "1rem" }}>
               <p style={{ fontWeight: 700, fontSize: "1.1rem" }}>
                 {userData.first_name} {userData.last_name}
@@ -427,21 +572,32 @@ function AdminScan() {
               <p style={{ color: "#f87171", marginBottom: "1rem" }}>{claimError}</p>
             )}
             <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
-              <button
-                type="button"
-                className="auth-button approve-btn"
-                disabled={claiming}
-                onClick={() => void confirmClaim()}
-              >
-                {claiming ? "Saving…" : "Confirm claim"}
-              </button>
+              {scanAyudaStatus?.isBeneficiary ? (
+                <button
+                  type="button"
+                  className="auth-button approve-btn"
+                  disabled={claiming}
+                  onClick={() => void recordClaim()}
+                >
+                  {claiming ? "Saving…" : "Record claim"}
+                </button>
+              ) : scanAyudaStatus?.isApplicant ? null : (
+                <button
+                  type="button"
+                  className="auth-button approve-btn"
+                  disabled={claiming}
+                  onClick={() => void registerAsApplicant()}
+                >
+                  {claiming ? "Saving…" : "Add to applicants"}
+                </button>
+              )}
               <button
                 type="button"
                 className="auth-button btn-neutral-gradient"
                 disabled={claiming}
                 onClick={() => void closeConfirm()}
               >
-                Cancel
+                {scanAyudaStatus?.isApplicant ? "Close" : "Cancel"}
               </button>
             </div>
           </div>
@@ -457,11 +613,27 @@ function AdminScan() {
         >
           <div className="claim-success-card">
             <div className="claim-success-icon" aria-hidden>
-              ✓
+              {successOverlay.type === "already_applicant" ? "ℹ" : "✓"}
             </div>
-            <h2 className="claim-success-title">Claim recorded</h2>
+            <h2 className="claim-success-title">
+              {successOverlay.type === "claim"
+                ? "Claim recorded"
+                : successOverlay.type === "already_applicant"
+                  ? "Already on applicant list"
+                  : "Applicant registered"}
+            </h2>
             <p className="claim-success-name">{successOverlay.name}</p>
             <p className="claim-success-ayuda">{successOverlay.ayudaTitle}</p>
+            {successOverlay.type === "applicant" && (
+              <p className="settings-text" style={{ marginTop: "0.75rem", opacity: 0.9 }}>
+                Approve or reject in Active Ayuda → Applicants.
+              </p>
+            )}
+            {successOverlay.type === "already_applicant" && (
+              <p className="settings-text" style={{ marginTop: "0.75rem", opacity: 0.9 }}>
+                Waiting for approval in Active Ayuda.
+              </p>
+            )}
             <p className="claim-success-tap">Tap to continue</p>
           </div>
         </button>

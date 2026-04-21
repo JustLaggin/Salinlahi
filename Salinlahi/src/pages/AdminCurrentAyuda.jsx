@@ -41,7 +41,7 @@ function useWideLayout() {
 
 function AdminCurrentAyuda() {
   const navigate = useNavigate();
-  const { isAdmin } = useAuth();
+  const { isAdmin, isStaff, isStaffOrAdmin } = useAuth();
   const { setActiveAyuda } = useActiveAyuda();
   const wide = useWideLayout();
 
@@ -79,10 +79,18 @@ function AdminCurrentAyuda() {
     const applicantId = applicantObj.uuid;
     const ayudaRef = doc(db, "ayudas", selectedAyuda.id);
 
-    await updateDoc(ayudaRef, {
-      applicants: arrayRemove(applicantId),
-      beneficiaries: arrayUnion(applicantId),
-    });
+    try {
+      await updateDoc(ayudaRef, {
+        applicants: arrayRemove(applicantId),
+        beneficiaries: arrayUnion(applicantId),
+      });
+    } catch (err) {
+      console.error(err);
+      alert(
+        "Could not approve this applicant. Check your connection and Firestore permissions."
+      );
+      return;
+    }
 
     try {
       const userRef = doc(db, "users", applicantId);
@@ -103,9 +111,17 @@ function AdminCurrentAyuda() {
     const applicantId = applicantObj.uuid;
     const ayudaRef = doc(db, "ayudas", selectedAyuda.id);
 
-    await updateDoc(ayudaRef, {
-      applicants: arrayRemove(applicantId),
-    });
+    try {
+      await updateDoc(ayudaRef, {
+        applicants: arrayRemove(applicantId),
+      });
+    } catch (err) {
+      console.error(err);
+      alert(
+        "Could not reject this applicant. Check your connection and Firestore permissions."
+      );
+      return;
+    }
 
     try {
       const userRef = doc(db, "users", applicantId);
@@ -223,7 +239,9 @@ function AdminCurrentAyuda() {
           <p className="settings-text" style={{ textAlign: "left" }}>
             {isAdmin
               ? "Manage distributions, update details, or accept and reject applicants."
-              : "View ongoing events, open details, and set the active event for scanning."}
+              : isStaff
+                ? "View ongoing events, accept or reject applicants, and set the active event for scanning."
+                : "View ongoing events, open details, and set the active event for scanning."}
           </p>
         </div>
 
@@ -403,7 +421,7 @@ function AdminCurrentAyuda() {
           </div>
           <AyudaDetailContent
             ayudaId={panelAyudaId}
-            readOnly={!isAdmin}
+            readOnly={!isStaffOrAdmin}
             embedded
             onDataChange={fetchAyudas}
           />
@@ -419,31 +437,51 @@ function AdminCurrentAyuda() {
               {modalList.length === 0 ? (
                 <p className="settings-text">No data found</p>
               ) : (
-                modalList.map((item, index) => (
-                  <div key={index} className="modal-list-row">
+                modalList.map((item, index) => {
+                  const showApplicantActions =
+                    modalTitle === "Applicants" && isStaffOrAdmin;
+                  return (
+                  <div
+                    key={index}
+                    className={`modal-list-row${
+                      !showApplicantActions ? " modal-list-row--interactive" : ""
+                    }`}
+                  >
                     <span>{item.displayName}</span>
 
-                    {modalTitle === "Applicants" && isAdmin && (
+                    {showApplicantActions && (
                       <div className="row-buttons">
                         <button
                           type="button"
                           className="approve-btn"
-                          onClick={() => approveApplicant(item)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            void approveApplicant(item);
+                          }}
                         >
                           Approve
                         </button>
-
                         <button
                           type="button"
                           className="reject-btn"
-                          onClick={() => rejectApplicant(item)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (
+                              window.confirm(
+                                `Reject ${item.displayName}? They will be removed from applicants for this Ayuda.`
+                              )
+                            ) {
+                              void rejectApplicant(item);
+                            }
+                          }}
                         >
                           Reject
                         </button>
                       </div>
                     )}
                   </div>
-                ))
+                  );
+                })
               )}
 
               <button

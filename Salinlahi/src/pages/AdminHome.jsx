@@ -40,8 +40,8 @@ function AdminHome() {
             className="settings-text"
             style={{ textAlign: "left", marginBottom: "1rem" }}
           >
-            Select an active Ayuda, then verify beneficiaries and confirm
-            claims.
+            Select an active Ayuda and scan a citizen to add them as an applicant.
+            After approval in Active Ayuda, scan again to record a pickup claim.
           </p>
           <button
             className="auth-button"
