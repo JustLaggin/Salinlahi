@@ -19,12 +19,10 @@ function Login() {
   const { firebaseUser, role, loading: authLoading } = useAuth();
 
   if (!authLoading && firebaseUser && role) {
-    return (
-      <Navigate
-        to={role === "citizen" ? "/user" : "/admin/AdminHome"}
-        replace
-      />
-    );
+    let redirectPath = "/user";
+    if (role === "admin") redirectPath = "/admin/AdminHome";
+    if (role === "staff") redirectPath = "/staff/StaffHome";
+    return <Navigate to={redirectPath} replace />;
   }
 
   const handleLogin = async (e) => {
@@ -45,8 +43,10 @@ function Login() {
       if (docSnap.exists()) {
         const r = normalizeRole(docSnap.data().role);
 
-        if (r === "admin" || r === "staff") {
+        if (r === "admin") {
           navigate("/admin/AdminHome");
+        } else if (r === "staff") {
+          navigate("/staff/StaffHome");
         } else {
           navigate("/user");
         }

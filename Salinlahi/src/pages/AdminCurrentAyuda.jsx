@@ -212,7 +212,7 @@ function AdminCurrentAyuda() {
 
   const goClaiming = (ayuda) => {
     setActiveAyuda(ayuda.id, ayuda.title || "");
-    navigate("/admin/scan");
+    navigate(isAdmin ? "/admin/scan" : "/staff/scan");
   };
 
   const filtered = ayudas.filter((ayuda) =>
@@ -351,7 +351,7 @@ function AdminCurrentAyuda() {
                     <div className="table-actions table-actions--stack">
                       <Link
                         className="action-btn"
-                        to={`/admin/ayuda/${ayuda.id}`}
+                        to={isAdmin ? `/admin/ayuda/${ayuda.id}` : `/staff/ayuda/${ayuda.id}`}
                       >
                         Details
                       </Link>

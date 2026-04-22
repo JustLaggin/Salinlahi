@@ -3,6 +3,7 @@ import { doc, getDoc, updateDoc, arrayUnion, arrayRemove } from "firebase/firest
 import { db } from "../firebase";
 import { Link } from "react-router-dom";
 import { Calendar, MapPin, Package, Users, CheckCircle } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
 
 const formatTime = (time24) => {
   if (!time24) return "";
@@ -25,6 +26,8 @@ export default function AyudaDetailContent({
   const [ayuda, setAyuda] = useState(null);
   const [applicants, setApplicants] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { isAdmin } = useAuth();
+  const backLink = isAdmin ? "/admin/CurrentAyuda" : "/staff/CurrentAyuda";
 
   const refresh = useCallback(async () => {
     if (!ayudaId) return;
@@ -119,7 +122,7 @@ export default function AyudaDetailContent({
       <div className="base-card ayuda-detail-card">
         <p className="settings-text">Ayuda not found.</p>
         {!embedded && (
-          <Link to="/admin/CurrentAyuda" className="auth-link">
+          <Link to={backLink} className="auth-link">
             Back to list
           </Link>
         )}
@@ -131,7 +134,7 @@ export default function AyudaDetailContent({
     <div className="base-card ayuda-detail-card">
       {!embedded && (
         <Link
-          to="/admin/CurrentAyuda"
+          to={backLink}
           className="auth-link"
           style={{ display: "inline-block", marginBottom: "1rem" }}
         >

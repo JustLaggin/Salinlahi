@@ -45,7 +45,7 @@ function AdminHome() {
           </p>
           <button
             className="auth-button"
-            onClick={() => navigate("/admin/scan")}
+            onClick={() => navigate(isAdmin ? "/admin/scan" : "/staff/scan")}
           >
             Launch Scanner
           </button>
@@ -96,7 +96,7 @@ function AdminHome() {
           </p>
           <button
             className="auth-button"
-            onClick={() => navigate("/admin/CurrentAyuda")}
+            onClick={() => navigate(isAdmin ? "/admin/CurrentAyuda" : "/staff/CurrentAyuda")}
           >
             View Ayudas
           </button>

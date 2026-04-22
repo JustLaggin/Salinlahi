@@ -23,8 +23,8 @@ export function ProtectedRoute({ children, allowedRoles }) {
   }
   if (!role || !allowedRoles.includes(role)) {
     if (role === "citizen") return <Navigate to="/user" replace />;
-    if (role === "staff" || role === "admin")
-      return <Navigate to="/admin/AdminHome" replace />;
+    if (role === "staff") return <Navigate to="/staff/StaffHome" replace />;
+    if (role === "admin") return <Navigate to="/admin/AdminHome" replace />;
     return <Navigate to="/login" replace />;
   }
   return children;

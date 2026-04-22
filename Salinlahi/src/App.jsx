@@ -4,11 +4,13 @@ import Login from "./pages/Login";
 import logo from "./assets/Logo_Black.png";
 import { ThemeToggle } from "./components/ThemeToggle";
 import AdminLayout from "./layouts/AdminLayout";
+import StaffLayout from "./layouts/StaffLayout";
 import AdminScanner from "./pages/AdminScan";
 import AdminCreateAyuda from "./pages/AdminCreateAyuda";
 import AdminCurrentAyuda from "./pages/AdminCurrentAyuda";
 import AdminAyudaDetail from "./pages/AdminAyudaDetail";
 import AdminHome from "./pages/AdminHome";
+import AdminManageStaff from "./pages/AdminManageStaff";
 import { ProtectedRoute, RequireAdmin } from "./components/ProtectedRoute";
 import UserLayout from "./layouts/UserLayout";
 import UserHome from "./pages/UserHome";
@@ -45,7 +47,7 @@ function App() {
           <Route
             path="/admin"
             element={
-              <ProtectedRoute allowedRoles={["staff", "admin"]}>
+              <ProtectedRoute allowedRoles={["admin"]}>
                 <AdminLayout />
               </ProtectedRoute>
             }
@@ -60,6 +62,29 @@ function App() {
                 </RequireAdmin>
               }
             />
+            <Route path="scan" element={<AdminScanner />} />
+            <Route path="CurrentAyuda" element={<AdminCurrentAyuda />} />
+            <Route path="ayuda/:ayudaId" element={<AdminAyudaDetail />} />
+            <Route
+              path="StaffManagement"
+              element={
+                <RequireAdmin>
+                  <AdminManageStaff />
+                </RequireAdmin>
+              }
+            />
+          </Route>
+
+          <Route
+            path="/staff"
+            element={
+              <ProtectedRoute allowedRoles={["staff"]}>
+                <StaffLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<Navigate to="StaffHome" replace />} />
+            <Route path="StaffHome" element={<AdminHome />} />
             <Route path="scan" element={<AdminScanner />} />
             <Route path="CurrentAyuda" element={<AdminCurrentAyuda />} />
             <Route path="ayuda/:ayudaId" element={<AdminAyudaDetail />} />

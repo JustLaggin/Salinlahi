@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { auth } from "../firebase";
 import { db } from "../firebase";
 import { doc, getDoc } from "firebase/firestore";
-import { Package, Users, CheckCircle } from "lucide-react";
+import { Package, Users, CheckCircle, RefreshCw, MapPin } from "lucide-react";
 
 function mightBeAyudaId(s) {
   return typeof s === "string" && /^[A-Za-z0-9]{15,}$/.test(s);
@@ -21,6 +21,30 @@ function UserCurrentAyuda() {
   const [loading, setLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
   const [error, setError] = useState(null);
+
+  const stats = [
+    {
+      key: "applied",
+      label: "Applied",
+      count: userAyudas.applied.length,
+      icon: Package,
+      tone: "amber",
+    },
+    {
+      key: "beneficiary",
+      label: "Approved",
+      count: userAyudas.beneficiary.length,
+      icon: Users,
+      tone: "green",
+    },
+    {
+      key: "received",
+      label: "Received",
+      count: userAyudas.received.length,
+      icon: CheckCircle,
+      tone: "blue",
+    },
+  ];
 
   useEffect(() => {
     const fetchUserAyudas = async () => {
@@ -129,62 +153,103 @@ function UserCurrentAyuda() {
     );
   }
 
-  const Section = ({ title, icon: Icon, items, statusColor }) => (
-    <div className="base-card">
-      <div className="detail-row" style={{ marginBottom: "1.5rem" }}>
-        <div className="detail-icon" style={{ background: statusColor }}>
-          <Icon size={24} />
+  const Section = ({ title, icon: Icon, items, tone }) => (
+    <section className="base-card user-ayuda-section">
+      <div className="user-ayuda-section__header">
+        <div className={`user-ayuda-icon user-ayuda-icon--${tone}`}>
+          <Icon size={20} />
         </div>
-        <div className="detail-content">
-          <h3 className="auth-title">{title}</h3>
-          <p className="settings-text">{items.length} records</p>
+        <div>
+          <h2 className="user-ayuda-section__title">{title}</h2>
+          <p className="settings-text">{items.length} total records</p>
         </div>
       </div>
 
       {items.length === 0 ? (
-        <p className="settings-text" style={{ textAlign: "center", opacity: 0.7 }}>
+        <p className="settings-text user-ayuda-empty">
           No {title.toLowerCase()} yet
         </p>
       ) : (
-        items.map((ayuda) => (
-          <div
-            key={ayuda.id}
-            className="base-card"
-            style={{ padding: "1.5rem", marginBottom: "1rem" }}
-          >
-            <h4 style={{ color: "var(--color-text-main)", marginBottom: "0.5rem" }}>
-              {ayuda.title || "Untitled Ayuda"}
-            </h4>
-            <div className="detail-row">
-              <span style={{ color: "var(--color-text-muted)", fontSize: "0.95rem" }}>
-                {ayuda.description || "No description"} •{" "}
-                {ayuda.amount ? `₱${ayuda.amount}` : "Amount TBD"}
-              </span>
-            </div>
-            <div className="detail-row">
-              <span style={{ color: "var(--color-text-accent)", fontSize: "0.9rem" }}>
-                {ayuda.barangay}, {ayuda.schedule || "TBA"}
-              </span>
-            </div>
-          </div>
-        ))
+        <div className="data-table-container">
+          <table className="data-table user-ayuda-table">
+            <thead>
+              <tr>
+                <th>Ayuda</th>
+                <th>Details</th>
+                <th>Schedule</th>
+                <th>Location</th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.map((ayuda) => (
+                <tr key={ayuda.id}>
+                  <td>
+                    <div className="data-table__title-block">
+                      <div className="data-table__title">
+                        {ayuda.title || "Untitled Ayuda"}
+                      </div>
+                      <span className={`pill-badge user-ayuda-badge--${tone}`}>
+                        {title}
+                      </span>
+                    </div>
+                  </td>
+                  <td>
+                    <div className="user-ayuda-description">
+                      {ayuda.description || "No description available"}
+                    </div>
+                    <div className="data-table__sub">
+                      {ayuda.amount ? `₱${ayuda.amount}` : "Amount TBD"}
+                    </div>
+                  </td>
+                  <td>
+                    <div className="data-table__loc-main">
+                      {ayuda.schedule || "TBA"}
+                    </div>
+                  </td>
+                  <td>
+                    <div className="user-ayuda-location">
+                      <MapPin size={14} />
+                      <span>{ayuda.barangay || "Barangay TBA"}</span>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
-    </div>
+    </section>
   );
 
   return (
-    <div className="app-container">
-      <div className="search-container">
+    <div className="app-container user-ayuda-page">
+      <div className="base-card user-ayuda-hero">
         <h1 className="auth-title">My Ayuda History</h1>
         <p className="settings-text">
           Track your applications, approvals, and received benefits
         </p>
+        <div className="user-ayuda-stats">
+          {stats.map((stat) => {
+            const StatIcon = stat.icon;
+            return (
+              <div key={stat.key} className="user-ayuda-stat-card">
+                <div className={`user-ayuda-icon user-ayuda-icon--${stat.tone}`}>
+                  <StatIcon size={18} />
+                </div>
+                <div>
+                  <p className="user-ayuda-stat-card__label">{stat.label}</p>
+                  <p className="user-ayuda-stat-card__value">{stat.count}</p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
         <button
           type="button"
-          className="approve-btn"
+          className="action-btn user-ayuda-refresh-btn"
           onClick={() => setRefreshKey((k) => k + 1)}
-          style={{ marginBottom: "2rem" }}
         >
+          <RefreshCw size={16} />
           Refresh data
         </button>
       </div>
@@ -193,21 +258,21 @@ function UserCurrentAyuda() {
         title="Applied"
         icon={Package}
         items={userAyudas.applied}
-        statusColor="rgba(245,158,11,0.2)"
+        tone="amber"
       />
 
       <Section
         title="Approved (Beneficiary)"
         icon={Users}
         items={userAyudas.beneficiary}
-        statusColor="rgba(34,197,94,0.2)"
+        tone="green"
       />
 
       <Section
         title="Received"
         icon={CheckCircle}
         items={userAyudas.received}
-        statusColor="rgba(34,197,94,0.3)"
+        tone="blue"
       />
     </div>
   );
