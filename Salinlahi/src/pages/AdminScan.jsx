@@ -57,6 +57,7 @@ function AdminScan() {
   const [claimError, setClaimError] = useState("");
   /** Role of this citizen for the active Ayuda (set when scan confirm opens). */
   const [scanAyudaStatus, setScanAyudaStatus] = useState(null);
+  const [activeAyudaMeta, setActiveAyudaMeta] = useState(null);
 
   const [successOverlay, setSuccessOverlay] = useState(null);
 
@@ -89,6 +90,30 @@ function AdminScan() {
   useEffect(() => {
     if (activeAyudaId) setPickerValue(activeAyudaId);
   }, [activeAyudaId]);
+
+  useEffect(() => {
+    if (!activeAyudaId) {
+      setActiveAyudaMeta(null);
+      return;
+    }
+    const local = ongoingAyudas.find((a) => a.id === activeAyudaId);
+    if (local) {
+      setActiveAyudaMeta(local);
+      return;
+    }
+    const loadAyudaMeta = async () => {
+      try {
+        const snap = await getDoc(doc(db, "ayudas", activeAyudaId));
+        if (snap.exists()) setActiveAyudaMeta({ id: snap.id, ...snap.data() });
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    void loadAyudaMeta();
+  }, [activeAyudaId, ongoingAyudas]);
+
+  const isServiceProgram = (activeAyudaMeta?.programType || "ONE_TIME") === "SERVICE";
+  const requiredDays = Math.max(1, Number(activeAyudaMeta?.requiredDays || 1));
 
   const stopScanner = async () => {
     if (scannerRef.current && isRunningRef.current) {
@@ -300,27 +325,77 @@ function AdminScan() {
 
       const claimRef = doc(db, "ayudas", activeAyudaId, "claims", userUid);
       const existing = await getDoc(claimRef);
-      if (existing.exists()) {
-        setClaimError("Claim already recorded for this citizen.");
-        setClaiming(false);
-        return;
-      }
+      const programType = (ayudaSnap.data().programType || "ONE_TIME").toUpperCase();
+      const todayKey = new Date().toISOString().slice(0, 10);
 
       const displayName =
         `${userData.first_name || ""} ${userData.last_name || ""}`.trim() ||
         "Citizen";
-      await setDoc(claimRef, {
-        claimedAt: Timestamp.now(),
-        method: pendingMethod,
-        displayName,
-        citizenCode: userData.citizenCode || null,
-      });
-      await updateDoc(doc(db, "users", userUid), {
-        claim_history: arrayUnion({
-          ayudaId: activeAyudaId,
-          claimedAt: Timestamp.now(),
-        }),
-      });
+      if (programType === "SERVICE") {
+        const previousAttendance = existing.exists()
+          ? existing.data().attendance || []
+          : [];
+        const alreadyToday = previousAttendance.some((a) => a.dateKey === todayKey);
+        if (alreadyToday) {
+          setClaimError("Attendance already recorded for today.");
+          setClaiming(false);
+          return;
+        }
+
+        const required = Math.max(1, Number(ayudaSnap.data().requiredDays || 1));
+        if (previousAttendance.length >= required) {
+          setClaimError("Required attendance days already completed.");
+          setClaiming(false);
+          return;
+        }
+
+        const now = Timestamp.now();
+        const nextAttendance = [
+          ...previousAttendance,
+          { dateKey: todayKey, checkedAt: now, method: pendingMethod },
+        ];
+
+        await setDoc(claimRef, {
+          displayName,
+          citizenCode: userData.citizenCode || null,
+          programType: "SERVICE",
+          requiredDays: required,
+          attendance: nextAttendance,
+          completed: nextAttendance.length >= required,
+          lastCheckInAt: now,
+        });
+
+        await updateDoc(doc(db, "users", userUid), {
+          claim_history: arrayUnion({
+            ayudaId: activeAyudaId,
+            claimedAt: now,
+            type: "SERVICE_ATTENDANCE",
+            attendanceDay: nextAttendance.length,
+            requiredDays: required,
+          }),
+        });
+      } else {
+        if (existing.exists()) {
+          setClaimError("Claim already recorded for this citizen.");
+          setClaiming(false);
+          return;
+        }
+        const now = Timestamp.now();
+        await setDoc(claimRef, {
+          claimedAt: now,
+          method: pendingMethod,
+          displayName,
+          citizenCode: userData.citizenCode || null,
+          programType: "ONE_TIME",
+        });
+        await updateDoc(doc(db, "users", userUid), {
+          claim_history: arrayUnion({
+            ayudaId: activeAyudaId,
+            claimedAt: now,
+            type: "ONE_TIME_CLAIM",
+          }),
+        });
+      }
       await stopScanner();
       setConfirmOpen(false);
       setManualOpen(false);
@@ -329,7 +404,7 @@ function AdminScan() {
       setUserData(null);
       setScanAyudaStatus(null);
       setSuccessOverlay({
-        type: "claim",
+        type: isServiceProgram ? "attendance" : "claim",
         name: displayName,
         ayudaTitle: activeAyudaTitle || ayudaSnap.data().title || activeAyudaId,
       });
@@ -453,6 +528,11 @@ function AdminScan() {
             <div style={{ fontWeight: 700, color: "var(--text-primary)" }}>
               {activeAyudaTitle || activeAyudaId}
             </div>
+            <div className="settings-text" style={{ marginTop: "0.3rem" }}>
+              {isServiceProgram
+                ? `SERVICE · ${requiredDays} required attendance day${requiredDays > 1 ? "s" : ""}`
+                : `ONE_TIME · ${(activeAyudaMeta?.aidKind || "RELIEF_GOODS").replaceAll("_", " ")}`}
+            </div>
           </div>
           <button
             type="button"
@@ -532,7 +612,9 @@ function AdminScan() {
           <div className="base-card modal-panel modal-panel--scan">
             <h3 className="auth-title">
               {scanAyudaStatus?.isBeneficiary
-                ? "Record pickup"
+                ? isServiceProgram
+                  ? "Record attendance"
+                  : "Record pickup"
                 : scanAyudaStatus?.isApplicant
                   ? "Already an applicant"
                   : "Add to applicants"}
@@ -544,7 +626,10 @@ function AdminScan() {
             {scanAyudaStatus?.isBeneficiary ? (
               <p className="settings-text" style={{ marginBottom: "1rem" }}>
                 This citizen is already an <strong>approved beneficiary</strong>. Use
-                the button below only to record that aid was physically handed out.
+                the button below to{" "}
+                {isServiceProgram
+                  ? "record today's attendance."
+                  : "record that aid was physically handed out."}{" "}
                 Approvals stay in <strong>Active Ayuda</strong> (applicants list).
               </p>
             ) : scanAyudaStatus?.isApplicant ? (
@@ -579,7 +664,11 @@ function AdminScan() {
                   disabled={claiming}
                   onClick={() => void recordClaim()}
                 >
-                  {claiming ? "Saving…" : "Record claim"}
+                  {claiming
+                    ? "Saving…"
+                    : isServiceProgram
+                      ? "Record attendance"
+                      : "Record claim"}
                 </button>
               ) : scanAyudaStatus?.isApplicant ? null : (
                 <button
@@ -618,6 +707,8 @@ function AdminScan() {
             <h2 className="claim-success-title">
               {successOverlay.type === "claim"
                 ? "Claim recorded"
+                : successOverlay.type === "attendance"
+                  ? "Attendance recorded"
                 : successOverlay.type === "already_applicant"
                   ? "Already on applicant list"
                   : "Applicant registered"}

@@ -7,6 +7,9 @@ function AdminCreateAyuda() {
   const [formData, setFormData] = useState({
     title: "",
     amount: "",
+    programType: "ONE_TIME",
+    aidKind: "RELIEF_GOODS",
+    requiredDays: "",
     city: "",
     barangay: "",
     schedule: "",
@@ -69,6 +72,12 @@ function AdminCreateAyuda() {
       await addDoc(collection(db, "ayudas"), {
         title: formData.title,
         amount: Number(formData.amount),
+        programType: formData.programType,
+        aidKind: formData.programType === "ONE_TIME" ? formData.aidKind : null,
+        requiredDays:
+          formData.programType === "SERVICE"
+            ? Math.max(1, Number(formData.requiredDays || 1))
+            : null,
         city: formData.city,
         barangay: formData.barangay,
         schedule: formData.schedule,
@@ -91,6 +100,9 @@ function AdminCreateAyuda() {
       setFormData({
         title: "",
         amount: "",
+        programType: "ONE_TIME",
+        aidKind: "RELIEF_GOODS",
+        requiredDays: "",
         city: "",
         barangay: "",
         schedule: "",
@@ -144,6 +156,50 @@ function AdminCreateAyuda() {
           </div>
 
           <div className="input-group">
+            <label>Program Type</label>
+            <select
+              className="input-field"
+              name="programType"
+              value={formData.programType}
+              onChange={handleChange}
+              required
+            >
+              <option value="ONE_TIME">ONE_TIME</option>
+              <option value="SERVICE">SERVICE</option>
+            </select>
+          </div>
+
+          {formData.programType === "ONE_TIME" ? (
+            <div className="input-group">
+              <label>Aid Selection</label>
+              <select
+                className="input-field"
+                name="aidKind"
+                value={formData.aidKind}
+                onChange={handleChange}
+                required
+              >
+                <option value="RELIEF_GOODS">Relief Goods</option>
+                <option value="CASH">Cash</option>
+              </select>
+            </div>
+          ) : (
+            <div className="input-group">
+              <label>Required Days (Attendance)</label>
+              <input
+                className="input-field"
+                type="number"
+                min="1"
+                name="requiredDays"
+                value={formData.requiredDays}
+                onChange={handleChange}
+                placeholder="e.g. 10"
+                required
+              />
+            </div>
+          )}
+
+          <div className="input-group">
             <label>City / Municipality</label>
             <select
               className="input-field"
@@ -189,7 +245,17 @@ function AdminCreateAyuda() {
               required
             />
           </div>
-
+          <div className="input-group">
+            <label>Designation Point (Location)</label>
+            <input
+              className="input-field"
+              name="address"
+              value={formData.address}
+              onChange={handleChange}
+              placeholder="e.g. Barangay Hall"
+              required
+            />
+          </div>
           <div className="input-group">
             <label>Time Start</label>
             <input
@@ -214,17 +280,7 @@ function AdminCreateAyuda() {
             />
           </div>
 
-          <div className="input-group">
-            <label>Designation Point (Location)</label>
-            <input
-              className="input-field"
-              name="address"
-              value={formData.address}
-              onChange={handleChange}
-              placeholder="e.g. Barangay Hall"
-              required
-            />
-          </div>
+          
         </div>
 
         <div className="input-group">

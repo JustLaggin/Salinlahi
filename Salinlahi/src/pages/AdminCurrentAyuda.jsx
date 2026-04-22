@@ -181,6 +181,15 @@ function AdminCurrentAyuda() {
       title: formData.title,
       description: formData.description,
       amount: Number(formData.amount),
+      programType: formData.programType || "ONE_TIME",
+      aidKind:
+        (formData.programType || "ONE_TIME") === "ONE_TIME"
+          ? formData.aidKind || "RELIEF_GOODS"
+          : null,
+      requiredDays:
+        (formData.programType || "ONE_TIME") === "SERVICE"
+          ? Math.max(1, Number(formData.requiredDays || 1))
+          : null,
       address: formData.address,
       barangay: formData.barangay,
       city: formData.city,
@@ -541,6 +550,46 @@ function AdminCurrentAyuda() {
                   onChange={handleChange}
                 />
               </div>
+
+              <div className="input-group">
+                <label>Program Type</label>
+                <select
+                  className="input-field"
+                  name="programType"
+                  value={formData.programType || "ONE_TIME"}
+                  onChange={handleChange}
+                >
+                  <option value="ONE_TIME">ONE_TIME</option>
+                  <option value="SERVICE">SERVICE</option>
+                </select>
+              </div>
+
+              {(formData.programType || "ONE_TIME") === "ONE_TIME" ? (
+                <div className="input-group">
+                  <label>Aid Selection</label>
+                  <select
+                    className="input-field"
+                    name="aidKind"
+                    value={formData.aidKind || "RELIEF_GOODS"}
+                    onChange={handleChange}
+                  >
+                    <option value="RELIEF_GOODS">Relief Goods</option>
+                    <option value="CASH">Cash</option>
+                  </select>
+                </div>
+              ) : (
+                <div className="input-group">
+                  <label>Required Days (Attendance)</label>
+                  <input
+                    className="input-field"
+                    type="number"
+                    min="1"
+                    name="requiredDays"
+                    value={formData.requiredDays || ""}
+                    onChange={handleChange}
+                  />
+                </div>
+              )}
 
               <div className="input-row">
                 <div className="input-group">

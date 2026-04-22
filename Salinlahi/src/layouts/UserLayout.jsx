@@ -1,16 +1,17 @@
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { Home, ClipboardList, LogOut } from "lucide-react";
-import { signOut } from "firebase/auth";
-import { auth } from "../firebase";
+import { useAuth } from "../context/AuthContext";
 
 function UserLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const path = location.pathname;
 
-  const logout = async () => {
+  const { logout: authLogout } = useAuth();
+
+  const handleLogout = async () => {
     try {
-      await signOut(auth);
+      await authLogout();
       navigate("/login");
     } catch (e) {
       console.error(e);
@@ -41,7 +42,7 @@ function UserLayout() {
         <button
           type="button"
           className="nav-item nav-item--button"
-          onClick={logout}
+          onClick={handleLogout}
           aria-label="Log out"
         >
           <LogOut size={24} />

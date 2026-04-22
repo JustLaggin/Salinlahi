@@ -5,17 +5,18 @@ import {
   List,
   LogOut,
 } from "lucide-react";
-import { signOut } from "firebase/auth";
-import { auth } from "../firebase";
+import { useAuth } from "../context/AuthContext";
 
 function StaffLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const path = location.pathname;
 
-  const logout = async () => {
+  const { logout } = useAuth();
+
+  const handleLogout = async () => {
     try {
-      await signOut(auth);
+      await logout();
       navigate("/login");
     } catch (e) {
       console.error(e);
@@ -53,7 +54,7 @@ function StaffLayout() {
           <button
             type="button"
             className="admin-nav-item admin-nav-item--button"
-            onClick={logout}
+            onClick={handleLogout}
             aria-label="Log out"
           >
             <LogOut size={20} />

@@ -1,10 +1,16 @@
 import { useState } from "react";
 import { auth } from "../firebase";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import {
+  browserLocalPersistence,
+  browserSessionPersistence,
+  setPersistence,
+  signInWithEmailAndPassword,
+} from "firebase/auth";
 import { useNavigate, Navigate, Link } from "react-router-dom";
-import { doc, getDoc } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs, query, where } from "firebase/firestore";
 import { db } from "../firebase";
 import { useAuth } from "../context/AuthContext";
+import { normalizeCitizenCodeInput } from "../utils/citizenCode";
 
 function normalizeRole(raw) {
   if (raw === "admin" || raw === "staff" || raw === "citizen") return raw;
@@ -13,10 +19,12 @@ function normalizeRole(raw) {
 }
 
 function Login() {
-  const [email, setEmail] = useState("");
+  const [citizenCode, setCitizenCode] = useState("");
   const [password, setPassword] = useState("");
+  const [autoLogin, setAutoLogin] = useState(true);
+  const [mode, setMode] = useState("citizen");
   const navigate = useNavigate();
-  const { firebaseUser, role, loading: authLoading } = useAuth();
+  const { firebaseUser, role, loading: authLoading, loginCitizenByCode } = useAuth();
 
   if (!authLoading && firebaseUser && role) {
     let redirectPath = "/user";
@@ -29,9 +37,48 @@ function Login() {
     e.preventDefault();
 
     try {
+      const normalizedCode = normalizeCitizenCodeInput(citizenCode);
+      if (!normalizedCode) {
+        alert("Citizen code is required.");
+        return;
+      }
+
+      if (mode === "citizen") {
+        await loginCitizenByCode(normalizedCode);
+        navigate("/user");
+        return;
+      }
+
+      if (!password) {
+        alert("Password is required for staff/admin login.");
+        return;
+      }
+
+      const codeSnap = await getDocs(
+        query(collection(db, "users"), where("citizenCode", "==", normalizedCode))
+      );
+      if (codeSnap.empty) {
+        alert("Citizen code not found.");
+        return;
+      }
+      const matched = codeSnap.docs[0].data();
+      const matchedRole = normalizeRole(matched.role);
+      if (matchedRole !== "staff" && matchedRole !== "admin") {
+        alert("This code is not a staff/admin account.");
+        return;
+      }
+      if (!matched.email) {
+        alert("Staff/admin account has no email credential.");
+        return;
+      }
+
+      await setPersistence(
+        auth,
+        autoLogin ? browserLocalPersistence : browserSessionPersistence
+      );
       const userCredential = await signInWithEmailAndPassword(
         auth,
-        email,
+        matched.email,
         password
       );
 
@@ -48,7 +95,7 @@ function Login() {
         } else if (r === "staff") {
           navigate("/staff/StaffHome");
         } else {
-          navigate("/user");
+          alert("This account is not staff/admin.");
         }
       } else {
         alert("No user record found.");
@@ -63,48 +110,74 @@ function Login() {
       <form onSubmit={handleLogin} className="base-card auth-form">
         <h2 className="auth-title">Login</h2>
 
-        <div className="input-row">
-          <input
-            className="input-field"
-            type="email"
-            placeholder="Email"
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
+        <div className="button-group" style={{ marginTop: 0 }}>
+          <button
+            type="button"
+            className={`admin-btn ${mode === "citizen" ? "" : "btn-neutral-gradient"}`}
+            onClick={() => setMode("citizen")}
+          >
+            Citizen Login
+          </button>
+          <button
+            type="button"
+            className={`admin-btn ${mode === "staffAdmin" ? "" : "btn-neutral-gradient"}`}
+            onClick={() => setMode("staffAdmin")}
+          >
+            Staff/Admin Login
+          </button>
         </div>
 
         <div className="input-row">
           <input
             className="input-field"
-            type="password"
-            placeholder="Password"
-            onChange={(e) => setPassword(e.target.value)}
+            type="text"
+            placeholder="Citizen Code"
+            onChange={(e) => setCitizenCode(e.target.value)}
             required
           />
         </div>
+
+        {mode === "staffAdmin" && (
+          <div className="input-row">
+            <input
+              className="input-field"
+              type="password"
+              placeholder="Password"
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
+        )}
+
+        <label
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "0.5rem",
+            color: "var(--text-secondary)",
+            fontSize: "0.9rem",
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={autoLogin}
+            onChange={(e) => setAutoLogin(e.target.checked)}
+          />
+          Auto login on this device
+        </label>
 
         <button type="submit" className="auth-button">
           Login
         </button>
 
-        <p className="settings-text" style={{ textAlign: "center", marginTop: "0.5rem" }}>
-          <Link to="/forgot-password" className="auth-link">
-            Forgot Password?
-          </Link>
-        </p>
+        {mode === "staffAdmin" && (
+          <p className="settings-text" style={{ textAlign: "center", marginTop: "0.5rem" }}>
+            <Link to="/forgot-password" className="auth-link">
+              Forgot Password?
+            </Link>
+          </p>
+        )}
 
-        <p
-          style={{
-            textAlign: "center",
-            marginTop: "1rem",
-            color: "var(--color-text-muted)",
-          }}
-        >
-          Don&apos;t have an account?{" "}
-          <Link to="/register" className="auth-link">
-            Register here
-          </Link>
-        </p>
       </form>
     </div>
   );

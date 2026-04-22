@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { auth } from "../firebase";
 import { db } from "../firebase";
 import { doc, getDoc } from "firebase/firestore";
 import { Package, Users, CheckCircle, RefreshCw, MapPin } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
 
 function mightBeAyudaId(s) {
   return typeof s === "string" && /^[A-Za-z0-9]{15,}$/.test(s);
@@ -13,6 +13,7 @@ function isLegacyDateEntry(s) {
 }
 
 function UserCurrentAyuda() {
+  const { firebaseUser } = useAuth();
   const [userAyudas, setUserAyudas] = useState({
     applied: [],
     beneficiary: [],
@@ -48,7 +49,7 @@ function UserCurrentAyuda() {
 
   useEffect(() => {
     const fetchUserAyudas = async () => {
-      const user = auth.currentUser;
+      const user = firebaseUser;
       if (!user) return;
 
       try {
@@ -120,7 +121,7 @@ function UserCurrentAyuda() {
     };
 
     fetchUserAyudas();
-  }, [refreshKey]);
+  }, [refreshKey, firebaseUser]);
 
   if (loading) {
     return (

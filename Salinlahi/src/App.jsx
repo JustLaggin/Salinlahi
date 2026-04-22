@@ -1,5 +1,4 @@
 import { Routes, Route, Navigate } from "react-router-dom";
-import Register from "./pages/Register";
 import Login from "./pages/Login";
 import logo from "./assets/Logo_Black.png";
 import { ThemeToggle } from "./components/ThemeToggle";
@@ -11,6 +10,7 @@ import AdminCurrentAyuda from "./pages/AdminCurrentAyuda";
 import AdminAyudaDetail from "./pages/AdminAyudaDetail";
 import AdminHome from "./pages/AdminHome";
 import AdminManageStaff from "./pages/AdminManageStaff";
+import AdminManageCitizens from "./pages/AdminManageCitizens";
 import { ProtectedRoute, RequireAdmin } from "./components/ProtectedRoute";
 import UserLayout from "./layouts/UserLayout";
 import UserHome from "./pages/UserHome";
@@ -27,8 +27,8 @@ function App() {
 
       <div>
         <Routes>
-          <Route path="/" element={<Navigate to="/register" replace />} />
-          <Route path="/register" element={<Register />} />
+          <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route path="/register" element={<Navigate to="/login" replace />} />
           <Route path="/login" element={<Login />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
 
@@ -70,6 +70,14 @@ function App() {
               element={
                 <RequireAdmin>
                   <AdminManageStaff />
+                </RequireAdmin>
+              }
+            />
+            <Route
+              path="ManageCitizens"
+              element={
+                <RequireAdmin>
+                  <AdminManageCitizens />
                 </RequireAdmin>
               }
             />

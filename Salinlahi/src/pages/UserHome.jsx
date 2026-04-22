@@ -1,17 +1,19 @@
 import { useEffect, useState } from "react";
-import { auth, db } from "../firebase";
+import { db } from "../firebase";
 import { doc, getDoc } from "firebase/firestore";
 import QRCode from "react-qr-code";
 import { Download, QrCode } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
 
 function UserHome() {
+  const { firebaseUser } = useAuth();
   const [uuid, setUuid] = useState("");
   const [citizenCode, setCitizenCode] = useState("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchUserData = async () => {
-      const user = auth.currentUser;
+      const user = firebaseUser;
       if (!user) return;
       const docRef = doc(db, "users", user.uid);
       const docSnap = await getDoc(docRef);
@@ -23,7 +25,7 @@ function UserHome() {
       setLoading(false);
     };
     fetchUserData();
-  }, []);
+  }, [firebaseUser]);
 
   const qrValue = citizenCode || uuid;
   const downloadQR = () => {

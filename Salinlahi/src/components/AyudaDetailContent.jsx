@@ -169,6 +169,14 @@ export default function AyudaDetailContent({
           <span>₱{Number(ayuda.amount || 0).toLocaleString()}</span>
         </div>
         <div className="ayuda-detail-meta__item">
+          <Package size={18} />
+          <span>
+            {(ayuda.programType || "ONE_TIME") === "SERVICE"
+              ? `SERVICE · ${Math.max(1, Number(ayuda.requiredDays || 1))} day(s)`
+              : `ONE_TIME · ${(ayuda.aidKind || "RELIEF_GOODS").replaceAll("_", " ")}`}
+          </span>
+        </div>
+        <div className="ayuda-detail-meta__item">
           <Users size={18} />
           <span>Applicants: {applicants.length}</span>
         </div>

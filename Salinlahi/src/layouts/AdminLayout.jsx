@@ -4,22 +4,21 @@ import {
   PlusSquare,
   ScanLine,
   List,
+  UserRoundPlus,
   UsersRound,
   LogOut,
 } from "lucide-react";
-import { signOut } from "firebase/auth";
-import { auth } from "../firebase";
 import { useAuth } from "../context/AuthContext";
 
 function AdminLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const path = location.pathname;
-  const { isAdmin } = useAuth();
+  const { isAdmin, logout } = useAuth();
 
-  const logout = async () => {
+  const handleLogout = async () => {
     try {
-      await signOut(auth);
+      await logout();
       navigate("/login");
     } catch (e) {
       console.error(e);
@@ -72,10 +71,19 @@ function AdminLayout() {
               <span>Manage Staff</span>
             </Link>
           )}
+          {isAdmin && (
+            <Link
+              to="/admin/ManageCitizens"
+              className={`admin-nav-item ${path === "/admin/ManageCitizens" ? "active" : ""}`}
+            >
+              <UserRoundPlus size={20} />
+              <span>Add Citizens</span>
+            </Link>
+          )}
           <button
             type="button"
             className="admin-nav-item admin-nav-item--button"
-            onClick={logout}
+            onClick={handleLogout}
             aria-label="Log out"
           >
             <LogOut size={20} />
