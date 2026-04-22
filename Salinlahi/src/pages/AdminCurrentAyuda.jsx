@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link, useNavigate } from "react-router-dom";
+import { Users2, UserCheck2 } from "lucide-react";
 import {
   collection,
   getDocs,
@@ -328,24 +329,40 @@ function AdminCurrentAyuda() {
                     </div>
                   </td>
                   <td>
-                    <span
-                      className="pill-badge"
-                      style={{ cursor: "pointer" }}
-                      onClick={() =>
-                        openListModal("Applicants", ayuda.applicants, ayuda)
-                      }
-                    >
-                      App: {ayuda.applicants?.length || 0}
-                    </span>
-                    <span
-                      className="pill-badge green"
-                      style={{ cursor: "pointer" }}
-                      onClick={() =>
-                        openListModal("Beneficiaries", ayuda.beneficiaries, ayuda)
-                      }
-                    >
-                      Ben: {ayuda.beneficiaries?.length || 0}
-                    </span>
+                    <div className="ayuda-people-actions">
+                      <button
+                        type="button"
+                        className="ayuda-people-btn"
+                        onClick={() =>
+                          openListModal("Applicants", ayuda.applicants, ayuda)
+                        }
+                        aria-label="View applicants list"
+                      >
+                        <span className="ayuda-people-btn__title">
+                          <Users2 size={15} />
+                          Applicants
+                        </span>
+                        <span className="ayuda-people-btn__meta">
+                          {ayuda.applicants?.length || 0} records
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        className="ayuda-people-btn ayuda-people-btn--green"
+                        onClick={() =>
+                          openListModal("Beneficiaries", ayuda.beneficiaries, ayuda)
+                        }
+                        aria-label="View beneficiaries list"
+                      >
+                        <span className="ayuda-people-btn__title">
+                          <UserCheck2 size={15} />
+                          Beneficiaries
+                        </span>
+                        <span className="ayuda-people-btn__meta">
+                          {ayuda.beneficiaries?.length || 0} records
+                        </span>
+                      </button>
+                    </div>
                   </td>
                   <td>
                     <div className="table-actions table-actions--stack">
@@ -364,15 +381,6 @@ function AdminCurrentAyuda() {
                           Update
                         </button>
                       )}
-                      <button
-                        type="button"
-                        className="action-btn"
-                        onClick={() =>
-                          openListModal("Applicants", ayuda.applicants, ayuda)
-                        }
-                      >
-                        Applicants
-                      </button>
                       <button
                         type="button"
                         className="action-btn"
