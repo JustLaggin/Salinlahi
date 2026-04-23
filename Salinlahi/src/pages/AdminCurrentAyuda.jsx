@@ -44,7 +44,6 @@ function AdminCurrentAyuda() {
   const navigate = useNavigate();
   const { isAdmin, isStaff, isStaffOrAdmin } = useAuth();
   const { setActiveAyuda } = useActiveAyuda();
-  const wide = useWideLayout();
 
   const [ayudas, setAyudas] = useState([]);
   const [modalOpen, setModalOpen] = useState(false);
@@ -56,7 +55,6 @@ function AdminCurrentAyuda() {
 
   const [formData, setFormData] = useState({});
   const [searchTerm, setSearchTerm] = useState("");
-  const [panelAyudaId, setPanelAyudaId] = useState(null);
   const [deleteModalAyuda, setDeleteModalAyuda] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
@@ -73,10 +71,6 @@ function AdminCurrentAyuda() {
   useEffect(() => {
     void fetchAyudas();
   }, [fetchAyudas]);
-
-  useEffect(() => {
-    if (!wide) setPanelAyudaId(null);
-  }, [wide]);
 
   const approveApplicant = async (applicantObj) => {
     if (!selectedAyuda || !applicantObj.uuid) return;
@@ -216,7 +210,6 @@ function AdminCurrentAyuda() {
     try {
       await deleteDoc(doc(db, "ayudas", deleteModalAyuda.id));
       setAyudas((prev) => prev.filter((a) => a.id !== deleteModalAyuda.id));
-      if (panelAyudaId === deleteModalAyuda.id) setPanelAyudaId(null);
       setDeleteModalAyuda(null);
     } catch (err) {
       console.error("Error deleting Ayuda:", err);
@@ -239,9 +232,7 @@ function AdminCurrentAyuda() {
 
   return (
     <div
-      className={`admin-current-ayuda-root ${
-        wide && panelAyudaId ? "admin-current-ayuda-root--split" : ""
-      }`}
+      className="admin-current-ayuda-root"
       style={{ paddingBottom: "2rem" }}
     >
       <div className="admin-current-ayuda-main">
@@ -293,37 +284,8 @@ function AdminCurrentAyuda() {
                 </tr>
               )}
               {filtered.map((ayuda) => (
-                <tr
-                  key={ayuda.id}
-                  className={
-                    panelAyudaId === ayuda.id ? "data-table__row--active" : ""
-                  }
-                >
+                <tr key={ayuda.id}>
                   <td>
-                    {wide ? (
-                      <button
-                        type="button"
-                        className="data-table__title-hit"
-                        onClick={() => setPanelAyudaId(ayuda.id)}
-                        title="Show in side panel"
-                      >
-                        <div className="data-table__title">{ayuda.title}</div>
-                        <div className="data-table__sub">
-                          {ayuda.schedule || "TBA"}
-                          {ayuda.timeStart && ayuda.timeEnd
-                            ? ` · ${formatTime(ayuda.timeStart)} → ${formatTime(
-                                ayuda.timeEnd
-                              )}`
-                            : ""}
-                          {" · ₱"}
-                          {ayuda.amount?.toLocaleString?.() ?? ayuda.amount}
-                          {" · "}
-                          {(ayuda.programType || "ONE_TIME") === "SERVICE"
-                            ? "SERVICE"
-                            : "ONE_TIME"}
-                        </div>
-                      </button>
-                    ) : (
                       <div className="data-table__title-block">
                         <div className="data-table__title">{ayuda.title}</div>
                         <div className="data-table__sub">
@@ -341,7 +303,6 @@ function AdminCurrentAyuda() {
                             : "ONE_TIME"}
                         </div>
                       </div>
-                    )}
                   </td>
                   <td>
                     <div className="data-table__loc-main">
@@ -435,29 +396,6 @@ function AdminCurrentAyuda() {
           </table>
         </div>
       </div>
-
-      {wide && panelAyudaId && (
-        <aside className="admin-current-ayuda-panel">
-          <div className="admin-current-ayuda-panel__head">
-            <h2 className="auth-title" style={{ fontSize: "1rem", margin: 0 }}>
-              Ayuda details
-            </h2>
-            <button
-              type="button"
-              className="action-btn"
-              onClick={() => setPanelAyudaId(null)}
-            >
-              Close
-            </button>
-          </div>
-          <AyudaDetailContent
-            ayudaId={panelAyudaId}
-            readOnly={!isStaffOrAdmin}
-            embedded
-            onDataChange={fetchAyudas}
-          />
-        </aside>
-      )}
 
       {modalOpen &&
         createPortal(

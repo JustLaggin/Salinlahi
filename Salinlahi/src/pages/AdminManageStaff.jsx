@@ -277,8 +277,8 @@ function AdminManageStaff() {
             />
           </div>
           <div className="input-group admin-staff-add-btn-wrap">
-            <label>&nbsp;</label>
-            <button type="button" className="auth-button" onClick={handleCreateStaff} disabled={creatingStaff}>
+            <label style={{ visibility: "hidden" }}>Action</label>
+            <button type="button" className="auth-button" onClick={handleCreateStaff} disabled={creatingStaff} style={{ margin: 0 }}>
               {creatingStaff ? "Creating..." : "Create Staff Account"}
             </button>
           </div>
@@ -365,14 +365,16 @@ function AdminManageStaff() {
                     </td>
                     <td>
                       <div className="table-actions">
-                        <button
-                          type="button"
-                          className="action-btn action-btn--danger"
-                          disabled={isMe || isDeleting}
-                          onClick={() => setUserToDelete(user)}
-                        >
-                          Delete Account
-                        </button>
+                        {user.role !== "admin" && (
+                          <button
+                            type="button"
+                            className="action-btn action-btn--danger"
+                            disabled={isMe || isDeleting}
+                            onClick={() => setUserToDelete(user)}
+                          >
+                            Delete Account
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>

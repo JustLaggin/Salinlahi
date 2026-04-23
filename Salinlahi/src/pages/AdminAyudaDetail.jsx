@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { doc, getDoc, updateDoc, arrayUnion, arrayRemove, collection, getDocs } from "firebase/firestore";
+import { doc, getDoc, updateDoc, arrayUnion, arrayRemove, collection, getDocs, addDoc, writeBatch } from "firebase/firestore";
 import { db } from "../firebase";
 import { useAuth } from "../context/AuthContext";
 import {
@@ -169,6 +169,69 @@ export default function AdminAyudaDetail() {
     }
   };
 
+  const [isCloning, setIsCloning] = useState(false);
+
+  const handleCloneEvent = async () => {
+    if (!isAdmin || !ayuda) return;
+    if (!window.confirm("This will create a new Ayuda event and copy all currently APPROVED beneficiaries over. Claims will be reset to 0. Proceed?")) return;
+    
+    setIsCloning(true);
+    try {
+      // 1. Create the new Ayuda document
+      const newAyudaData = {
+        title: `${ayuda.title} - Iteration`,
+        description: ayuda.description || "",
+        amount: Number(ayuda.amount || 0),
+        programType: ayuda.programType || "ONE_TIME",
+        requiredDays: ayuda.requiredDays || null,
+        aidKind: ayuda.aidKind || null,
+        address: ayuda.address || "",
+        barangay: ayuda.barangay || "",
+        city: ayuda.city || "",
+        requirements: ayuda.requirements || "",
+        schedule: "",
+        timeStart: "",
+        timeEnd: "",
+        applicants: [],
+        beneficiaries: [...(ayuda.beneficiaries || [])],
+        status: "ONGOING"
+      };
+
+      const newAyudaRef = await addDoc(collection(db, "ayudas"), newAyudaData);
+      const newId = newAyudaRef.id;
+
+      // 2. Batch update users to add the new Ayuda ID to their ayudas_beneficiary array
+      const batch = writeBatch(db);
+      let batchCount = 0;
+
+      for (const b of beneficiaries) {
+        const userRef = doc(db, "users", b.uid);
+        batch.update(userRef, {
+          ayudas_beneficiary: arrayUnion(newId)
+        });
+        batchCount++;
+        
+        // Firestore batch has a limit of 500 operations
+        if (batchCount === 450) {
+          await batch.commit();
+          batchCount = 0;
+        }
+      }
+      
+      if (batchCount > 0) {
+        await batch.commit();
+      }
+
+      alert("Event successfully cloned! Redirecting to the new event...");
+      navigate(`/admin/ayuda/${newId}`);
+    } catch (err) {
+      console.error("Clone failed:", err);
+      alert("Error cloning event. Check console.");
+    } finally {
+      setIsCloning(false);
+    }
+  };
+
   if (loading) {
     return <div className="page-content" style={{ padding: "2rem" }}><p className="settings-text">Loading command center...</p></div>;
   }
@@ -218,9 +281,23 @@ export default function AdminAyudaDetail() {
   return (
     <div className="ayuda-detail-command-center">
       <div style={{ marginBottom: "1.5rem" }}>
-        <Link to={isAdmin ? "/admin/CurrentAyuda" : "/staff/CurrentAyuda"} className="action-btn" style={{ marginBottom: "1rem" }}>
-          <ArrowLeft size={16} /> Back to List
-        </Link>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "1rem", marginBottom: "1rem" }}>
+          <Link to={isAdmin ? "/admin/CurrentAyuda" : "/staff/CurrentAyuda"} className="action-btn">
+            <ArrowLeft size={16} /> Back to List
+          </Link>
+          
+          {isAdmin && (
+            <button 
+              type="button" 
+              className="action-btn" 
+              style={{ background: "var(--accent-gradient)", color: "white", border: "none" }}
+              onClick={handleCloneEvent}
+              disabled={isCloning}
+            >
+              {isCloning ? "Cloning..." : "Start Next Iteration"}
+            </button>
+          )}
+        </div>
         <h1 className="auth-title" style={{ textAlign: "left", marginBottom: "0.25rem", marginTop: 0 }}>Command Center</h1>
         <p className="settings-text">Manage operations and monitor analytics for {ayuda.title}.</p>
       </div>

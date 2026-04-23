@@ -364,7 +364,7 @@ function AdminScan() {
           
           const alreadyToday = previousAttendance.some((a) => a.dateKey === todayKey);
           if (alreadyToday) {
-            throw new Error("Attendance already recorded for today.");
+            throw new Error("Error: Attendance already recorded for today. Please scan again tomorrow.");
           }
 
           if (previousAttendance.length >= required) {
@@ -599,7 +599,7 @@ function AdminScan() {
               Stop camera
             </button>
           )}
-          <button type="button" className="action-btn" onClick={openManual}>
+          <button type="button" className="auth-button" style={{ flex: 1, minWidth: "140px", background: "var(--bg-elevated)", color: "var(--text-primary)", border: "1px solid var(--border-subtle)" }} onClick={openManual}>
             Manual ID
           </button>
         </div>
@@ -749,14 +749,14 @@ function AdminScan() {
               </p>
             )}
             
-            <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
+            <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", width: "100%" }}>
               {scanAyudaStatus?.isBeneficiary ? (
                 <button
                   type="button"
                   className="auth-button approve-btn"
                   disabled={claiming || !idVerified}
                   onClick={() => void recordClaim()}
-                  style={{ opacity: (!idVerified || claiming) ? 0.6 : 1 }}
+                  style={{ opacity: (!idVerified || claiming) ? 0.6 : 1, flex: 1, minWidth: "160px" }}
                 >
                   {claiming
                     ? "Saving…"
@@ -770,7 +770,7 @@ function AdminScan() {
                   className="auth-button approve-btn"
                   disabled={claiming || !idVerified}
                   onClick={() => void registerAsApplicant()}
-                  style={{ opacity: (!idVerified || claiming) ? 0.6 : 1 }}
+                  style={{ opacity: (!idVerified || claiming) ? 0.6 : 1, flex: 1, minWidth: "160px" }}
                 >
                   {claiming ? "Saving…" : "Add to applicants"}
                 </button>
@@ -780,6 +780,7 @@ function AdminScan() {
                 className="auth-button btn-neutral-gradient"
                 disabled={claiming}
                 onClick={() => void closeConfirm()}
+                style={{ flex: 1, minWidth: "160px" }}
               >
                 {scanAyudaStatus?.isApplicant ? "Close" : "Cancel"}
               </button>

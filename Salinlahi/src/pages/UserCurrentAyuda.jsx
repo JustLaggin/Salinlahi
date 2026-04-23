@@ -94,10 +94,27 @@ function UserCurrentAyuda() {
             let status = "applied";
             if (receivedFromClaims.has(ayudaId)) status = "received";
             else if (beneficiaryIds.includes(ayudaId)) status = "beneficiary";
+
+            let serviceProgress = null;
+            if ((base.programType || "ONE_TIME") === "SERVICE") {
+              try {
+                const claimSnap = await getDoc(doc(db, "ayudas", ayudaId, "claims", user.uid));
+                if (claimSnap.exists()) {
+                  const claim = claimSnap.data();
+                  serviceProgress = { attended: (claim.attendance || []).length, required: Math.max(1, Number(claim.requiredDays || base.requiredDays || 1)) };
+                } else {
+                  serviceProgress = { attended: 0, required: Math.max(1, Number(base.requiredDays || 1)) };
+                }
+              } catch (e) {
+                // ignore
+              }
+            }
+
             return {
               id: ayudaId,
               ...base,
               status,
+              serviceProgress
             };
           });
 
@@ -171,6 +188,8 @@ function UserCurrentAyuda() {
       } catch (err) {
         console.error(err);
       }
+    } else if (ayuda.serviceProgress) {
+      serviceProgress = ayuda.serviceProgress;
     }
     setSelectedAyuda({ ...ayuda, serviceProgress });
   };
@@ -217,8 +236,13 @@ function UserCurrentAyuda() {
                     <div className="user-ayuda-description">
                       {ayuda.description || "No description available"}
                     </div>
-                    <div className="data-table__sub">
-                      {ayuda.amount ? `₱${ayuda.amount}` : "Amount TBD"}
+                    <div className="data-table__sub" style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap", marginTop: "0.25rem" }}>
+                      <span>{ayuda.amount ? `₱${ayuda.amount}` : "Amount TBD"}</span>
+                      {ayuda.serviceProgress && (
+                        <span style={{ fontSize: "0.75rem", padding: "2px 6px", background: "var(--bg-muted)", borderRadius: "4px", color: "var(--text-primary)", fontWeight: 600 }}>
+                          {ayuda.serviceProgress.attended} / {ayuda.serviceProgress.required} Days Served
+                        </span>
+                      )}
                     </div>
                   </td>
                   <td>
