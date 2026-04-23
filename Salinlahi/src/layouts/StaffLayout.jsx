@@ -95,12 +95,10 @@ function StaffLayout() {
         <Outlet />
       </main>
 
-      {/* Mobile Overlay Background */}
-      <div 
-        className="admin-mobile-overlay" 
-        onClick={() => setMobileMenuOpen(false)}
-        aria-hidden="true"
-      />
+      {/* Mobile Overlay */}
+      {mobileMenuOpen && (
+        <div className="admin-mobile-overlay" onClick={() => setMobileMenuOpen(false)} />
+      )}
     </div>
   );
 }
