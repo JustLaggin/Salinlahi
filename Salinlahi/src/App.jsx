@@ -21,8 +21,13 @@ function App() {
   return (
     <div>
       <header className="header-banner">
-        <img src={logo} className="header-banner__logo" alt="Salinlahi Logo" />
-        <ThemeToggle />
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          <img src={logo} className="header-banner__logo" alt="Salinlahi Logo" />
+          <div id="global-header-title"></div>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }} id="global-header-actions">
+          <ThemeToggle />
+        </div>
       </header>
 
       <div>

@@ -1483,14 +1483,17 @@ html[data-theme="dark"] .claim-success-card {
 /* ------------------------------------------------------------------ */
 .admin-mobile-topbar {
   display: none;
-  align-items: center;
-  justify-content: space-between;
-  padding: 1rem 1.5rem;
-  background: var(--bg-elevated);
-  border-bottom: 1px solid var(--border-subtle);
-  position: sticky;
-  top: 0;
-  z-index: 40;
+}
+
+.admin-mobile-title {
+  font-size: 1rem;
+  font-weight: 700;
+  background: var(--accent-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin: 0;
+  display: none; /* hidden on desktop */
 }
 
 .admin-mobile-topbar h2 {
@@ -1509,7 +1512,7 @@ html[data-theme="dark"] .claim-success-card {
   color: var(--text-primary);
   cursor: pointer;
   padding: 0.25rem;
-  display: flex;
+  display: none; /* hidden on desktop */
   align-items: center;
   justify-content: center;
 }
@@ -1624,6 +1627,14 @@ html[data-theme="dark"] .claim-success-card {
 @media (max-width: 1024px) {
   .admin-mobile-topbar {
     display: flex;
+  }
+  
+  .admin-mobile-toggle {
+    display: flex;
+  }
+
+  .admin-mobile-title {
+    display: block;
   }
   
   .admin-dashboard {

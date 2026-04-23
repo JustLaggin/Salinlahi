@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -34,18 +35,24 @@ function AdminLayout() {
     }
   };
 
+  const headerActionsNode = document.getElementById("global-header-actions");
+  const headerTitleNode = document.getElementById("global-header-title");
+
   return (
     <div className="admin-dashboard">
-      {/* Mobile Top Bar */}
-      <div className="admin-mobile-topbar">
-        <h2>Salinlahi Admin</h2>
+      {headerTitleNode && createPortal(
+        <span className="admin-mobile-title">Admin</span>,
+        headerTitleNode
+      )}
+      {headerActionsNode && createPortal(
         <button 
           className="admin-mobile-toggle" 
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
         >
           {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-        </button>
-      </div>
+        </button>,
+        headerActionsNode
+      )}
 
       <aside className={`admin-sidebar ${mobileMenuOpen ? "open" : ""}`}>
         <div className="admin-sidebar-header">
