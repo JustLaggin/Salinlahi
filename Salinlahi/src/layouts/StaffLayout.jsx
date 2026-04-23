@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -5,6 +6,8 @@ import {
   List,
   LogOut,
   UserRoundPlus,
+  Menu,
+  X
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 
@@ -14,6 +17,12 @@ function StaffLayout() {
   const path = location.pathname;
 
   const { logout } = useAuth();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Close mobile menu on route change
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [path]);
 
   const handleLogout = async () => {
     try {
@@ -26,7 +35,18 @@ function StaffLayout() {
 
   return (
     <div className="admin-dashboard">
-      <aside className="admin-sidebar">
+      {/* Mobile Top Bar */}
+      <div className="admin-mobile-topbar">
+        <h2>Salinlahi Staff</h2>
+        <button 
+          className="admin-mobile-toggle" 
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+        >
+          {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+        </button>
+      </div>
+
+      <aside className={`admin-sidebar ${mobileMenuOpen ? "open" : ""}`}>
         <div className="admin-sidebar-header">
           <h2>Salinlahi Staff</h2>
         </div>
@@ -74,6 +94,13 @@ function StaffLayout() {
       <main className="dashboard-content page-transition" key={path}>
         <Outlet />
       </main>
+
+      {/* Mobile Overlay Background */}
+      <div 
+        className="admin-mobile-overlay" 
+        onClick={() => setMobileMenuOpen(false)}
+        aria-hidden="true"
+      />
     </div>
   );
 }

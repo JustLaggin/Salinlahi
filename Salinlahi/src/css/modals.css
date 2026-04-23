@@ -2,14 +2,15 @@
   position: fixed;
   top: 0;
   left: 0;
-  width: 100vw;
+  right: 0;
+  bottom: 0;
   height: 100vh;
   background: var(--modal-overlay-bg);
   backdrop-filter: blur(12px);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 3000;
+  z-index: 9999;
   animation: modalFadeIn 0.2s ease-out;
 }
 
@@ -20,7 +21,7 @@
   width: 90vw;
   overflow-y: auto;
   overflow-x: hidden;
-  margin-bottom: 0;
+  margin: 0; /* Removing any margin-top or bottom pushing it off-center */
   animation: modalZoomIn 0.22s ease-out;
 }
 
@@ -30,11 +31,7 @@
 }
 
 .modal-overlay--scroll-follow {
-  position: absolute;
-  min-height: 100%;
-  height: auto;
-  padding-top: 3rem;
-  padding-bottom: 3rem;
+  /* Removed absolute positioning to enforce strict fixed viewport behavior */
 }
 
 .base-card.modal-panel--scan {

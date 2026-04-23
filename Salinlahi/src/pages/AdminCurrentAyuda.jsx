@@ -681,7 +681,7 @@ function AdminCurrentAyuda() {
                 <p><strong>Email:</strong> {selectedUser.profile?.email || "N/A"}</p>
                 <p><strong>Citizen Code:</strong> {selectedUser.profile?.citizenCode || "N/A"}</p>
                 <p><strong>Phone:</strong> {selectedUser.profile?.phone || selectedUser.profile?.contact_number || "N/A"}</p>
-                <p><strong>Birthday:</strong> {selectedUser.profile?.birthday || "N/A"}</p>
+                <p><strong>Birthday:</strong> {selectedUser.profile?.birth_date || "N/A"}</p>
                 <p><strong>Address:</strong> {selectedUser.profile?.address || "N/A"}</p>
                 <p><strong>Barangay:</strong> {selectedUser.profile?.barangay || "N/A"}</p>
                 <p><strong>City:</strong> {selectedUser.profile?.city || "N/A"}</p>
