@@ -1,5 +1,5 @@
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
-import { Home, ClipboardList, LogOut } from "lucide-react";
+import { Home, QrCode, LogOut } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 
 function UserLayout() {
@@ -36,8 +36,8 @@ function UserLayout() {
           to="/user/currentayuda"
           className={`nav-item ${path === "/user/currentayuda" ? "active" : ""}`}
         >
-          <ClipboardList size={24} />
-          <span>Ayuda</span>
+          <QrCode size={24} />
+          <span>QR</span>
         </Link>
         <button
           type="button"

@@ -127,7 +127,7 @@ function AdminScan() {
       try {
         await scannerRef.current.stop();
         if (scannerRef.current) scannerRef.current.clear();
-      } catch (e) {
+      } catch {
         // ignore
       }
       isRunningRef.current = false;
@@ -686,6 +686,14 @@ function AdminScan() {
               {userData.citizenCode && (
                 <p className="settings-text" style={{ color: "#15803d" }}>Code: {userData.citizenCode}</p>
               )}
+              <div className="settings-text" style={{ color: "#166534", marginTop: "0.75rem", textAlign: "left" }}>
+                <p><strong>Email:</strong> {userData.email || "N/A"}</p>
+                <p><strong>Phone:</strong> {userData.phone || userData.contact_number || "N/A"}</p>
+                <p><strong>Birthday:</strong> {userData.birthday || "N/A"}</p>
+                <p><strong>Address:</strong> {userData.address || "N/A"}</p>
+                <p><strong>Barangay:</strong> {userData.barangay || "N/A"}</p>
+                <p><strong>City:</strong> {userData.city || "N/A"}</p>
+              </div>
             </div>
 
             {/* Mitigation 2: Mandatory Physical ID Verification */}

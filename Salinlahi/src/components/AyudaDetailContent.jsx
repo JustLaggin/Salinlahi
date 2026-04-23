@@ -1,9 +1,45 @@
 import { useEffect, useState, useCallback } from "react";
-import { doc, getDoc, updateDoc, arrayUnion, arrayRemove } from "firebase/firestore";
+import { doc, getDoc, updateDoc, arrayUnion, arrayRemove, collection, getDocs } from "firebase/firestore";
 import { db } from "../firebase";
 import { Link } from "react-router-dom";
-import { Calendar, MapPin, Package, Users, CheckCircle } from "lucide-react";
+import { Calendar, MapPin, Package, Users, CheckCircle, Briefcase } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import {
+  PieChart,
+  Pie,
+  Cell,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
+} from "recharts";
+
+const CLAIMED_COLOR = "#34d399";
+const PENDING_COLOR = "#475569";
+
+function RatioTooltip({ active, payload }) {
+  if (!active || !payload?.length) return null;
+  const { name, value } = payload[0];
+  return (
+    <div className="dashboard-chart-tooltip">
+      <span style={{ color: payload[0].payload.fill, fontWeight: 700 }}>{name}</span>
+      <span style={{ marginLeft: "0.5rem" }}>{value}</span>
+    </div>
+  );
+}
+
+function RatioLegend({ payload }) {
+  if (!payload) return null;
+  return (
+    <div className="dashboard-chart-legend">
+      {payload.map((entry, i) => (
+        <div key={i} className="dashboard-chart-legend-item">
+          <span className="dashboard-chart-legend-dot" style={{ background: entry.color }} />
+          <span>{entry.value}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 const formatTime = (time24) => {
   if (!time24) return "";
@@ -25,6 +61,10 @@ export default function AyudaDetailContent({
 }) {
   const [ayuda, setAyuda] = useState(null);
   const [applicants, setApplicants] = useState([]);
+  const [beneficiaries, setBeneficiaries] = useState([]);
+  const [workers, setWorkers] = useState([]);
+  const [claimRatio, setClaimRatio] = useState([]);
+  const [selectedUser, setSelectedUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const { isAdmin } = useAuth();
   const backLink = isAdmin ? "/admin/CurrentAyuda" : "/staff/CurrentAyuda";
@@ -43,6 +83,7 @@ export default function AyudaDetailContent({
       const data = { id: snap.id, ...snap.data() };
       setAyuda(data);
       const list = data.applicants || [];
+      const beneficiaryList = data.beneficiaries || [];
       const objs = [];
       for (const applicantId of list) {
         try {
@@ -54,12 +95,56 @@ export default function AyudaDetailContent({
               `${ud.first_name || ""} ${ud.last_name || ""}`.trim() ||
               applicantId;
           }
-          objs.push({ uid: applicantId, displayName });
+          objs.push({ uid: applicantId, displayName, profile: u.exists() ? u.data() : null });
         } catch {
-          objs.push({ uid: applicantId, displayName: applicantId });
+          objs.push({ uid: applicantId, displayName: applicantId, profile: null });
         }
       }
       setApplicants(objs);
+      const bObjs = [];
+      for (const beneficiaryId of beneficiaryList) {
+        try {
+          const u = await getDoc(doc(db, "users", beneficiaryId));
+          let displayName = beneficiaryId;
+          if (u.exists()) {
+            const ud = u.data();
+            displayName =
+              `${ud.first_name || ""} ${ud.last_name || ""}`.trim() ||
+              beneficiaryId;
+          }
+          bObjs.push({ uid: beneficiaryId, displayName, profile: u.exists() ? u.data() : null });
+        } catch {
+          bObjs.push({ uid: beneficiaryId, displayName: beneficiaryId, profile: null });
+        }
+      }
+      setBeneficiaries(bObjs);
+
+      const claimsSnap = await getDocs(collection(db, "ayudas", ayudaId, "claims"));
+      const claims = claimsSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      const programType = (data.programType || "ONE_TIME").toUpperCase();
+      if (programType === "ONE_TIME") {
+        const claimed = claims.length;
+        const totalExpected = Math.max(
+          claimed,
+          Number((data.beneficiaries || []).length || 0)
+        );
+        const unclaimed = Math.max(0, totalExpected - claimed);
+        setClaimRatio([
+          { name: "Claimed", value: claimed, fill: CLAIMED_COLOR },
+          { name: "Unclaimed", value: unclaimed, fill: PENDING_COLOR },
+        ]);
+        setWorkers([]);
+      } else {
+        const workerRows = claims.map((claim) => ({
+          id: claim.id,
+          name: claim.displayName || claim.id,
+          attended: (claim.attendance || []).length,
+          required: Math.max(1, Number(claim.requiredDays || data.requiredDays || 1)),
+          completed: !!claim.completed,
+        }));
+        setWorkers(workerRows);
+        setClaimRatio([]);
+      }
     } catch (e) {
       console.error(e);
       setAyuda(null);
@@ -200,7 +285,13 @@ export default function AyudaDetailContent({
         <ul className="ayuda-detail-applicants">
           {applicants.map((a) => (
             <li key={a.uid} className="ayuda-detail-applicant-row">
-              <span>{a.displayName}</span>
+              <button
+                type="button"
+                className="linklike-btn"
+                onClick={() => setSelectedUser(a)}
+              >
+                {a.displayName}
+              </button>
               {!readOnly && (
                 <div className="row-buttons">
                   <button
@@ -222,6 +313,126 @@ export default function AyudaDetailContent({
             </li>
           ))}
         </ul>
+      )}
+
+      <h2 className="auth-title" style={{ fontSize: "1.1rem", margin: "1.75rem 0 1rem" }}>
+        Beneficiaries
+      </h2>
+      {beneficiaries.length === 0 ? (
+        <p className="settings-text">No approved beneficiaries yet.</p>
+      ) : (
+        <ul className="ayuda-detail-applicants">
+          {beneficiaries.map((b) => (
+            <li key={b.uid} className="ayuda-detail-applicant-row">
+              <button
+                type="button"
+                className="linklike-btn"
+                onClick={() => setSelectedUser(b)}
+              >
+                {b.displayName}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {(ayuda.programType || "ONE_TIME") === "ONE_TIME" && (
+        <>
+          <h2 className="auth-title" style={{ fontSize: "1.1rem", margin: "1.75rem 0 1rem" }}>
+            Claimed vs Unclaimed
+          </h2>
+          {claimRatio.length === 0 || claimRatio.every((d) => d.value === 0) ? (
+            <p className="settings-text">No claim data available yet for this ayuda.</p>
+          ) : (
+            <div className="dashboard-chart-card" style={{ marginBottom: "0.5rem" }}>
+              <ResponsiveContainer width="100%" height={260}>
+                <PieChart>
+                  <Pie
+                    data={claimRatio}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={55}
+                    outerRadius={90}
+                    paddingAngle={4}
+                    stroke="none"
+                  >
+                    {claimRatio.map((entry, i) => (
+                      <Cell key={i} fill={entry.fill} />
+                    ))}
+                  </Pie>
+                  <Tooltip content={<RatioTooltip />} />
+                  <Legend content={<RatioLegend />} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </>
+      )}
+
+      {(ayuda.programType || "ONE_TIME") === "SERVICE" && (
+        <>
+          <h2 className="auth-title" style={{ fontSize: "1.1rem", margin: "1.75rem 0 1rem" }}>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: "0.35rem" }}>
+              <Briefcase size={18} /> Active Workers
+            </span>
+          </h2>
+          {workers.length === 0 ? (
+            <p className="settings-text">No active workers yet.</p>
+          ) : (
+            <div className="dashboard-tupad-list">
+              {workers.map((w) => {
+                const pct = Math.min(100, Math.round((w.attended / w.required) * 100));
+                return (
+                  <div key={w.id} className="dashboard-tupad-row">
+                    <div className="dashboard-tupad-info">
+                      <span className="dashboard-tupad-name">{w.name}</span>
+                      <span className="dashboard-tupad-meta">
+                        {w.attended}/{w.required} days
+                        {w.completed && <span className="dashboard-tupad-done"> ✓ Done</span>}
+                      </span>
+                    </div>
+                    <div className="dashboard-progress-track">
+                      <div
+                        className="dashboard-progress-fill"
+                        style={{
+                          width: `${pct}%`,
+                          background: w.completed ? CLAIMED_COLOR : "var(--accent-blue)",
+                        }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </>
+      )}
+      {selectedUser && (
+        <div className="modal-overlay modal-overlay--padded">
+          <div className="base-card modal-panel">
+            <h2 className="auth-title">User Information</h2>
+            <div className="modal-inset-panel" style={{ textAlign: "left" }}>
+              <p><strong>Name:</strong> {selectedUser.displayName}</p>
+              <p><strong>UID:</strong> {selectedUser.uid}</p>
+              <p><strong>Email:</strong> {selectedUser.profile?.email || "N/A"}</p>
+              <p><strong>Citizen Code:</strong> {selectedUser.profile?.citizenCode || "N/A"}</p>
+              <p><strong>Phone:</strong> {selectedUser.profile?.phone || selectedUser.profile?.contact_number || "N/A"}</p>
+              <p><strong>Birthday:</strong> {selectedUser.profile?.birthday || "N/A"}</p>
+              <p><strong>Address:</strong> {selectedUser.profile?.address || "N/A"}</p>
+              <p><strong>Barangay:</strong> {selectedUser.profile?.barangay || "N/A"}</p>
+              <p><strong>City:</strong> {selectedUser.profile?.city || "N/A"}</p>
+            </div>
+            <button
+              type="button"
+              className="auth-button close-btn"
+              onClick={() => setSelectedUser(null)}
+            >
+              Close
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );

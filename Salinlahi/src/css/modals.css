@@ -29,6 +29,14 @@
   z-index: 9999;
 }
 
+.modal-overlay--scroll-follow {
+  position: absolute;
+  min-height: 100%;
+  height: auto;
+  padding-top: 3rem;
+  padding-bottom: 3rem;
+}
+
 .base-card.modal-panel--scan {
   min-width: min(400px, 100%);
 }

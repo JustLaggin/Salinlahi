@@ -59,6 +59,7 @@ function AdminCurrentAyuda() {
   const [panelAyudaId, setPanelAyudaId] = useState(null);
   const [deleteModalAyuda, setDeleteModalAyuda] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
 
   const fetchAyudas = useCallback(async () => {
     const querySnapshot = await getDocs(collection(db, "ayudas"));
@@ -155,9 +156,13 @@ function AdminCurrentAyuda() {
             `${userData.first_name || ""} ${userData.last_name || ""}`.trim() ||
             applicantId;
         }
-        applicantObjects.push({ uuid: applicantId, displayName });
+        applicantObjects.push({
+          uuid: applicantId,
+          displayName,
+          profile: userDoc.exists() ? userDoc.data() : null,
+        });
       } catch {
-        applicantObjects.push({ uuid: applicantId, displayName: applicantId });
+        applicantObjects.push({ uuid: applicantId, displayName: applicantId, profile: null });
       }
     }
     setModalList(applicantObjects);
@@ -312,6 +317,10 @@ function AdminCurrentAyuda() {
                             : ""}
                           {" · ₱"}
                           {ayuda.amount?.toLocaleString?.() ?? ayuda.amount}
+                          {" · "}
+                          {(ayuda.programType || "ONE_TIME") === "SERVICE"
+                            ? "SERVICE"
+                            : "ONE_TIME"}
                         </div>
                       </button>
                     ) : (
@@ -326,6 +335,10 @@ function AdminCurrentAyuda() {
                             : ""}
                           {" · ₱"}
                           {ayuda.amount?.toLocaleString?.() ?? ayuda.amount}
+                          {" · "}
+                          {(ayuda.programType || "ONE_TIME") === "SERVICE"
+                            ? "SERVICE"
+                            : "ONE_TIME"}
                         </div>
                       </div>
                     )}
@@ -464,6 +477,7 @@ function AdminCurrentAyuda() {
                     className={`modal-list-row${
                       !showApplicantActions ? " modal-list-row--interactive" : ""
                     }`}
+                    onClick={() => setSelectedUser(item)}
                   >
                     <span>{item.displayName}</span>
 
@@ -714,6 +728,33 @@ function AdminCurrentAyuda() {
                   {isDeleting ? "Deleting..." : "Confirm Delete"}
                 </button>
               </div>
+            </div>
+          </div>,
+          document.body
+        )}
+      {selectedUser &&
+        createPortal(
+          <div className="modal-overlay modal-overlay--padded">
+            <div className="base-card modal-panel">
+              <h2 className="auth-title">User Information</h2>
+              <div className="modal-inset-panel" style={{ textAlign: "left" }}>
+                <p><strong>Name:</strong> {selectedUser.displayName}</p>
+                <p><strong>UID:</strong> {selectedUser.uuid}</p>
+                <p><strong>Email:</strong> {selectedUser.profile?.email || "N/A"}</p>
+                <p><strong>Citizen Code:</strong> {selectedUser.profile?.citizenCode || "N/A"}</p>
+                <p><strong>Phone:</strong> {selectedUser.profile?.phone || selectedUser.profile?.contact_number || "N/A"}</p>
+                <p><strong>Birthday:</strong> {selectedUser.profile?.birthday || "N/A"}</p>
+                <p><strong>Address:</strong> {selectedUser.profile?.address || "N/A"}</p>
+                <p><strong>Barangay:</strong> {selectedUser.profile?.barangay || "N/A"}</p>
+                <p><strong>City:</strong> {selectedUser.profile?.city || "N/A"}</p>
+              </div>
+              <button
+                type="button"
+                className="auth-button close-btn"
+                onClick={() => setSelectedUser(null)}
+              >
+                Close
+              </button>
             </div>
           </div>,
           document.body

@@ -5,9 +5,10 @@ import {
   browserSessionPersistence,
   setPersistence,
   signInWithEmailAndPassword,
+  updatePassword,
 } from "firebase/auth";
 import { useNavigate, Navigate, Link } from "react-router-dom";
-import { collection, doc, getDoc, getDocs, query, where } from "firebase/firestore";
+import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { db } from "../firebase";
 import { useAuth } from "../context/AuthContext";
 import { normalizeCitizenCodeInput } from "../utils/citizenCode";
@@ -24,6 +25,10 @@ function Login() {
   const [password, setPassword] = useState("");
   const [autoLogin, setAutoLogin] = useState(true);
   const [mode, setMode] = useState("citizen");
+  const [mustChangePassword, setMustChangePassword] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
+  const [passwordChanging, setPasswordChanging] = useState(false);
   const navigate = useNavigate();
   const { firebaseUser, role, loading: authLoading, loginCitizenByCode } = useAuth();
 
@@ -72,6 +77,11 @@ function Login() {
       if (docSnap.exists()) {
         const r = normalizeRole(docSnap.data().role);
 
+        if (docSnap.data().requiresPasswordChange && (r === "admin" || r === "staff")) {
+          setMustChangePassword(true);
+          return;
+        }
+
         if (r === "admin") {
           navigate("/admin/AdminHome");
         } else if (r === "staff") {
@@ -84,6 +94,36 @@ function Login() {
       }
     } catch (error) {
       alert(error.message);
+    }
+  };
+
+  const handleForcedPasswordChange = async (e) => {
+    e.preventDefault();
+    if (!auth.currentUser) return;
+    if (newPassword.length < 6) {
+      alert("Password must be at least 6 characters.");
+      return;
+    }
+    if (newPassword !== confirmNewPassword) {
+      alert("Passwords do not match.");
+      return;
+    }
+    setPasswordChanging(true);
+    try {
+      await updatePassword(auth.currentUser, newPassword);
+      await updateDoc(doc(db, "users", auth.currentUser.uid), {
+        requiresPasswordChange: false,
+      });
+      const updatedUserDoc = await getDoc(doc(db, "users", auth.currentUser.uid));
+      const updatedRole = normalizeRole(updatedUserDoc.data()?.role);
+      setMustChangePassword(false);
+      setNewPassword("");
+      setConfirmNewPassword("");
+      navigate(updatedRole === "admin" ? "/admin/AdminHome" : "/staff/StaffHome");
+    } catch (error) {
+      alert(error.message || "Failed to update password.");
+    } finally {
+      setPasswordChanging(false);
     }
   };
 
@@ -175,6 +215,39 @@ function Login() {
         )}
 
       </form>
+      {mustChangePassword && (
+        <div className="modal-overlay modal-overlay--padded">
+          <form className="base-card modal-panel" onSubmit={handleForcedPasswordChange}>
+            <h2 className="auth-title">Change Password Required</h2>
+            <p className="settings-text">
+              This is your first login. You must replace your temporary password before continuing.
+            </p>
+            <div className="input-group">
+              <label>New Password</label>
+              <input
+                className="input-field"
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                required
+              />
+            </div>
+            <div className="input-group">
+              <label>Confirm New Password</label>
+              <input
+                className="input-field"
+                type="password"
+                value={confirmNewPassword}
+                onChange={(e) => setConfirmNewPassword(e.target.value)}
+                required
+              />
+            </div>
+            <button type="submit" className="auth-button" disabled={passwordChanging}>
+              {passwordChanging ? "Saving..." : "Update Password"}
+            </button>
+          </form>
+        </div>
+      )}
     </div>
   );
 }

@@ -21,6 +21,8 @@ function AdminCreateAyuda() {
   });
 
   const [toast, setToast] = useState(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (!toast) return;
@@ -73,8 +75,10 @@ function AdminCreateAyuda() {
     });
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const createAyuda = async () => {
+    if (submitting) return;
+    setSubmitting(true);
+    setConfirmOpen(false);
 
     try {
 
@@ -132,7 +136,14 @@ function AdminCreateAyuda() {
     } catch (error) {
       console.error("Error creating Ayuda:", error);
       alert("Failed to create Ayuda. Please try again.");
+    } finally {
+      setSubmitting(false);
     }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setConfirmOpen(true);
   };
 
   return (
@@ -325,8 +336,13 @@ function AdminCreateAyuda() {
           />
         </div>
 
-        <button type="submit" className="auth-button" style={{ maxWidth: '240px', alignSelf: 'flex-start', marginTop: '1rem' }}>
-          Create Ayuda
+        <button
+          type="submit"
+          className="auth-button"
+          style={{ maxWidth: '240px', alignSelf: 'flex-start', marginTop: '1rem' }}
+          disabled={submitting}
+        >
+          {submitting ? "Creating..." : "Create Ayuda"}
         </button>
 
       </form>
@@ -351,6 +367,46 @@ function AdminCreateAyuda() {
         }}>
           <span style={{ fontSize: "1.25rem" }}>✅</span>
           {toast}
+        </div>
+      )}
+
+      {confirmOpen && (
+        <div className="modal-overlay modal-overlay--scroll-follow modal-overlay--padded">
+          <div className="base-card modal-panel">
+            <h2 className="auth-title" style={{ marginBottom: "1rem" }}>
+              Confirm Ayuda Creation
+            </h2>
+            <p className="settings-text" style={{ marginBottom: "1rem" }}>
+              Please confirm the details before creating this ayuda.
+            </p>
+
+            <div className="modal-inset-panel" style={{ textAlign: "left" }}>
+              <p><strong>Title:</strong> {formData.title}</p>
+              <p><strong>Type:</strong> {formData.programType}</p>
+              <p><strong>Amount:</strong> ₱{Number(formData.amount || 0).toLocaleString()}</p>
+              <p><strong>Location:</strong> {formData.address}, {formData.barangay}, {formData.city}</p>
+              <p><strong>Schedule:</strong> {formData.schedule || "TBA"} {formData.timeStart && formData.timeEnd ? `(${formData.timeStart} - ${formData.timeEnd})` : ""}</p>
+            </div>
+
+            <div style={{ display: "flex", gap: "0.75rem", marginTop: "0.5rem" }}>
+              <button
+                type="button"
+                className="auth-button"
+                onClick={() => void createAyuda()}
+                disabled={submitting}
+              >
+                {submitting ? "Creating..." : "Confirm Create"}
+              </button>
+              <button
+                type="button"
+                className="auth-button btn-neutral-gradient"
+                onClick={() => setConfirmOpen(false)}
+                disabled={submitting}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

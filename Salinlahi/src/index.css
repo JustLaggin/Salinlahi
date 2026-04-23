@@ -1015,6 +1015,22 @@ a.action-btn {
   color: var(--text-primary);
 }
 
+.linklike-btn {
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  color: var(--text-primary);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+}
+
+.linklike-btn:hover {
+  color: var(--accent-blue);
+}
+
 .claim-success-overlay {
   position: fixed;
   inset: 0;

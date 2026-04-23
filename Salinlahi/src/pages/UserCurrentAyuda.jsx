@@ -22,6 +22,7 @@ function UserCurrentAyuda() {
   const [loading, setLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
   const [error, setError] = useState(null);
+  const [selectedAyuda, setSelectedAyuda] = useState(null);
 
   const stats = [
     {
@@ -154,12 +155,29 @@ function UserCurrentAyuda() {
     );
   }
 
-  const Section = ({ title, icon: Icon, items, tone }) => (
+  const openAyudaDetails = async (ayuda) => {
+    let serviceProgress = null;
+    if ((ayuda.programType || "ONE_TIME") === "SERVICE" && firebaseUser?.uid) {
+      try {
+        const claimSnap = await getDoc(doc(db, "ayudas", ayuda.id, "claims", firebaseUser.uid));
+        if (claimSnap.exists()) {
+          const claim = claimSnap.data();
+          const attended = (claim.attendance || []).length;
+          const required = Math.max(1, Number(claim.requiredDays || ayuda.requiredDays || 1));
+          serviceProgress = { attended, required };
+        } else {
+          serviceProgress = { attended: 0, required: Math.max(1, Number(ayuda.requiredDays || 1)) };
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+    setSelectedAyuda({ ...ayuda, serviceProgress });
+  };
+
+  const Section = ({ title, items, tone }) => (
     <section className="base-card user-ayuda-section">
       <div className="user-ayuda-section__header">
-        <div className={`user-ayuda-icon user-ayuda-icon--${tone}`}>
-          <Icon size={20} />
-        </div>
         <div>
           <h2 className="user-ayuda-section__title">{title}</h2>
           <p className="settings-text">{items.length} total records</p>
@@ -179,6 +197,7 @@ function UserCurrentAyuda() {
                 <th>Details</th>
                 <th>Schedule</th>
                 <th>Location</th>
+                <th>Action</th>
               </tr>
             </thead>
             <tbody>
@@ -212,6 +231,15 @@ function UserCurrentAyuda() {
                       <MapPin size={14} />
                       <span>{ayuda.barangay || "Barangay TBA"}</span>
                     </div>
+                  </td>
+                  <td>
+                    <button
+                      type="button"
+                      className="action-btn"
+                      onClick={() => void openAyudaDetails(ayuda)}
+                    >
+                      Details
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -257,24 +285,53 @@ function UserCurrentAyuda() {
 
       <Section
         title="Applied"
-        icon={Package}
         items={userAyudas.applied}
         tone="amber"
       />
 
       <Section
         title="Approved (Beneficiary)"
-        icon={Users}
         items={userAyudas.beneficiary}
         tone="green"
       />
 
       <Section
         title="Received"
-        icon={CheckCircle}
         items={userAyudas.received}
         tone="blue"
       />
+      {selectedAyuda && (
+        <div className="modal-overlay modal-overlay--padded">
+          <div className="base-card modal-panel">
+            <h2 className="auth-title">{selectedAyuda.title || "Ayuda Details"}</h2>
+            <div className="modal-inset-panel" style={{ textAlign: "left" }}>
+              <p><strong>Description:</strong> {selectedAyuda.description || "No description available"}</p>
+              <p><strong>Program Type:</strong> {selectedAyuda.programType || "ONE_TIME"}</p>
+              <p><strong>Amount:</strong> {selectedAyuda.amount ? `₱${selectedAyuda.amount}` : "Amount TBD"}</p>
+              <p><strong>Schedule:</strong> {selectedAyuda.schedule || "TBA"}</p>
+              <p><strong>Location:</strong> {selectedAyuda.address || "N/A"}, {selectedAyuda.barangay || "N/A"}, {selectedAyuda.city || "N/A"}</p>
+              {selectedAyuda.requirements && (
+                <p><strong>Requirements:</strong> {selectedAyuda.requirements}</p>
+              )}
+              {(selectedAyuda.programType || "ONE_TIME") === "SERVICE" && (
+                <p>
+                  <strong>Service Progress:</strong>{" "}
+                  {selectedAyuda.serviceProgress
+                    ? `${selectedAyuda.serviceProgress.attended}/${selectedAyuda.serviceProgress.required} days served`
+                    : `0/${Math.max(1, Number(selectedAyuda.requiredDays || 1))} days served`}
+                </p>
+              )}
+            </div>
+            <button
+              type="button"
+              className="auth-button close-btn"
+              onClick={() => setSelectedAyuda(null)}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

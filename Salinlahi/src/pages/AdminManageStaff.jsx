@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { collection, doc, getDocs, updateDoc, setDoc, deleteDoc } from "firebase/firestore";
+import { collection, doc, getDocs, setDoc, deleteDoc } from "firebase/firestore";
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth, createUserWithEmailAndPassword, signOut } from "firebase/auth";
 import { ShieldCheck, UserPlus, UserMinus, Search } from "lucide-react";
@@ -31,7 +31,6 @@ function AdminManageStaff() {
   const { firebaseUser } = useAuth();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [savingUserId, setSavingUserId] = useState(null);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
@@ -41,6 +40,7 @@ function AdminManageStaff() {
   const [newStaffLastName, setNewStaffLastName] = useState("");
   const [creatingStaff, setCreatingStaff] = useState(false);
   const [generatedStaffPassword, setGeneratedStaffPassword] = useState(null);
+  const [passwordCopied, setPasswordCopied] = useState(false);
   
   const [userToDelete, setUserToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -169,6 +169,7 @@ function AdminManageStaff() {
 
       setUsers((prev) => [...prev, { id: newUserId, ...newUserDoc }]);
       setGeneratedStaffPassword(generatedPwd);
+      setPasswordCopied(false);
     } catch (e) {
       console.error(e);
       if (e.code === 'auth/email-already-in-use') {
@@ -184,10 +185,23 @@ function AdminManageStaff() {
   };
 
   const closePasswordModal = () => {
+    if (!passwordCopied) return;
     setGeneratedStaffPassword(null);
     setStaffEmail("");
     setNewStaffFirstName("");
     setNewStaffLastName("");
+    setPasswordCopied(false);
+  };
+
+  const copyGeneratedPassword = async () => {
+    if (!generatedStaffPassword) return;
+    try {
+      await navigator.clipboard.writeText(generatedStaffPassword);
+      setPasswordCopied(true);
+    } catch (err) {
+      console.error(err);
+      alert("Unable to copy automatically. Please copy manually and try again.");
+    }
   };
 
   return (
@@ -326,7 +340,6 @@ function AdminManageStaff() {
             {!loading &&
               filteredUsers.map((user) => {
                 const isMe = user.id === firebaseUser?.uid;
-                const disabled = savingUserId === user.id;
                 return (
                   <tr key={user.id}>
                     <td>
@@ -393,9 +406,23 @@ function AdminManageStaff() {
             <p className="settings-text" style={{ color: "#ef4444", marginBottom: "2rem", fontWeight: "500", backgroundColor: "rgba(239, 68, 68, 0.1)", padding: "1rem", borderRadius: "8px" }}>
               Please copy this password and give it to the staff member immediately. For security reasons, this password will not be shown again.
             </p>
-            <button className="auth-button" onClick={closePasswordModal} style={{ width: "100%", maxWidth: "300px", margin: "0 auto" }}>
-              Close & Clear Form
-            </button>
+            <div style={{ display: "flex", gap: "0.75rem", justifyContent: "center", flexWrap: "wrap" }}>
+              <button
+                className="auth-button"
+                onClick={() => void copyGeneratedPassword()}
+                style={{ width: "100%", maxWidth: "220px", margin: 0 }}
+              >
+                {passwordCopied ? "Copied" : "Copy Password"}
+              </button>
+              <button
+                className="auth-button btn-neutral-gradient"
+                onClick={closePasswordModal}
+                disabled={!passwordCopied}
+                style={{ width: "100%", maxWidth: "220px", margin: 0, opacity: passwordCopied ? 1 : 0.6 }}
+              >
+                Close & Clear Form
+              </button>
+            </div>
           </div>
         </div>
       )}

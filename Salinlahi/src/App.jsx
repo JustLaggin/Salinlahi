@@ -40,8 +40,8 @@ function App() {
               </ProtectedRoute>
             }
           >
-            <Route index element={<UserHome />} />
-            <Route path="currentayuda" element={<UserCurrentAyuda />} />
+            <Route index element={<UserCurrentAyuda />} />
+            <Route path="currentayuda" element={<UserHome />} />
           </Route>
 
           <Route
