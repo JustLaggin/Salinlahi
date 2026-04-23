@@ -20,6 +20,7 @@ function normalizeRole(raw) {
 
 function Login() {
   const [citizenCode, setCitizenCode] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [autoLogin, setAutoLogin] = useState(true);
   const [mode, setMode] = useState("citizen");
@@ -37,38 +38,19 @@ function Login() {
     e.preventDefault();
 
     try {
-      const normalizedCode = normalizeCitizenCodeInput(citizenCode);
-      if (!normalizedCode) {
-        alert("Citizen code is required.");
-        return;
-      }
-
       if (mode === "citizen") {
+        const normalizedCode = normalizeCitizenCodeInput(citizenCode);
+        if (!normalizedCode) {
+          alert("Citizen code is required.");
+          return;
+        }
         await loginCitizenByCode(normalizedCode);
         navigate("/user");
         return;
       }
 
-      if (!password) {
-        alert("Password is required for staff/admin login.");
-        return;
-      }
-
-      const codeSnap = await getDocs(
-        query(collection(db, "users"), where("citizenCode", "==", normalizedCode))
-      );
-      if (codeSnap.empty) {
-        alert("Citizen code not found.");
-        return;
-      }
-      const matched = codeSnap.docs[0].data();
-      const matchedRole = normalizeRole(matched.role);
-      if (matchedRole !== "staff" && matchedRole !== "admin") {
-        alert("This code is not a staff/admin account.");
-        return;
-      }
-      if (!matched.email) {
-        alert("Staff/admin account has no email credential.");
+      if (!email || !password) {
+        alert("Email and password are required for staff/admin login.");
         return;
       }
 
@@ -78,7 +60,7 @@ function Login() {
       );
       const userCredential = await signInWithEmailAndPassword(
         auth,
-        matched.email,
+        email.trim().toLowerCase(),
         password
       );
 
@@ -127,26 +109,40 @@ function Login() {
           </button>
         </div>
 
-        <div className="input-row">
-          <input
-            className="input-field"
-            type="text"
-            placeholder="Citizen Code"
-            onChange={(e) => setCitizenCode(e.target.value)}
-            required
-          />
-        </div>
-
-        {mode === "staffAdmin" && (
+        {mode === "citizen" ? (
           <div className="input-row">
             <input
               className="input-field"
-              type="password"
-              placeholder="Password"
-              onChange={(e) => setPassword(e.target.value)}
+              type="text"
+              placeholder="Citizen Code"
+              value={citizenCode}
+              onChange={(e) => setCitizenCode(e.target.value)}
               required
             />
           </div>
+        ) : (
+          <>
+            <div className="input-row">
+              <input
+                className="input-field"
+                type="email"
+                placeholder="Email Address"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+            </div>
+            <div className="input-row">
+              <input
+                className="input-field"
+                type="password"
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </div>
+          </>
         )}
 
         <label

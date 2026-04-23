@@ -68,7 +68,7 @@ function AdminLayout() {
               className={`admin-nav-item ${path === "/admin/StaffManagement" ? "active" : ""}`}
             >
               <UsersRound size={20} />
-              <span>Manage Staff</span>
+              <span>Manage Users and Roles</span>
             </Link>
           )}
           {isAdmin && (
