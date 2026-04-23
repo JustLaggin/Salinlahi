@@ -68,7 +68,7 @@ function AdminLayout() {
               className={`admin-nav-item ${path === "/admin/StaffManagement" ? "active" : ""}`}
             >
               <UsersRound size={20} />
-              <span>Manage Users and Roles</span>
+              <span>Manage Staff</span>
             </Link>
           )}
           {isAdmin && (
@@ -77,7 +77,7 @@ function AdminLayout() {
               className={`admin-nav-item ${path === "/admin/ManageCitizens" ? "active" : ""}`}
             >
               <UserRoundPlus size={20} />
-              <span>Add Citizens</span>
+              <span>Manage Citizens</span>
             </Link>
           )}
           <button

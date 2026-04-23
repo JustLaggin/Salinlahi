@@ -57,6 +57,8 @@ function AdminCurrentAyuda() {
   const [formData, setFormData] = useState({});
   const [searchTerm, setSearchTerm] = useState("");
   const [panelAyudaId, setPanelAyudaId] = useState(null);
+  const [deleteModalAyuda, setDeleteModalAyuda] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const fetchAyudas = useCallback(async () => {
     const querySnapshot = await getDocs(collection(db, "ayudas"));
@@ -203,20 +205,19 @@ function AdminCurrentAyuda() {
     await fetchAyudas();
   };
 
-  const deleteAyuda = async (ayudaId) => {
-    if (
-      window.confirm(
-        "Are you sure you want to delete this Ayuda? This action cannot be undone."
-      )
-    ) {
-      try {
-        await deleteDoc(doc(db, "ayudas", ayudaId));
-        setAyudas((prev) => prev.filter((a) => a.id !== ayudaId));
-        if (panelAyudaId === ayudaId) setPanelAyudaId(null);
-      } catch (err) {
-        console.error("Error deleting Ayuda:", err);
-        alert("Failed to delete Ayuda.");
-      }
+  const deleteAyuda = async () => {
+    if (!deleteModalAyuda) return;
+    setIsDeleting(true);
+    try {
+      await deleteDoc(doc(db, "ayudas", deleteModalAyuda.id));
+      setAyudas((prev) => prev.filter((a) => a.id !== deleteModalAyuda.id));
+      if (panelAyudaId === deleteModalAyuda.id) setPanelAyudaId(null);
+      setDeleteModalAyuda(null);
+    } catch (err) {
+      console.error("Error deleting Ayuda:", err);
+      alert("Failed to delete Ayuda.");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -401,7 +402,7 @@ function AdminCurrentAyuda() {
                         <button
                           type="button"
                           className="action-btn action-btn--danger"
-                          onClick={() => deleteAyuda(ayuda.id)}
+                          onClick={() => setDeleteModalAyuda(ayuda)}
                         >
                           Delete
                         </button>
@@ -678,6 +679,39 @@ function AdminCurrentAyuda() {
                   onClick={() => setUpdateModal(false)}
                 >
                   Cancel
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
+      {deleteModalAyuda &&
+        createPortal(
+          <div className="modal-overlay">
+            <div className="base-card modal-panel" style={{ textAlign: "center", padding: "2.5rem" }}>
+              <h2 className="auth-title" style={{ color: "#ef4444", marginBottom: "1rem" }}>
+                Delete Ayuda
+              </h2>
+              <p className="settings-text" style={{ marginBottom: "1.5rem", fontSize: "1.1rem" }}>
+                Are you sure you want to permanently delete <strong>{deleteModalAyuda.title}</strong>?<br/>
+                All applicant and beneficiary data for this event will be lost. This action cannot be undone.
+              </p>
+              <div style={{ display: "flex", gap: "1rem", justifyContent: "center" }}>
+                <button
+                  className="auth-button"
+                  style={{ background: "var(--input-bg)", color: "var(--text-primary)" }}
+                  onClick={() => setDeleteModalAyuda(null)}
+                  disabled={isDeleting}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="auth-button"
+                  style={{ background: "#ef4444" }}
+                  onClick={deleteAyuda}
+                  disabled={isDeleting}
+                >
+                  {isDeleting ? "Deleting..." : "Confirm Delete"}
                 </button>
               </div>
             </div>

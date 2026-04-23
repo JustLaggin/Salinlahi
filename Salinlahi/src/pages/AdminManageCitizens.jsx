@@ -4,6 +4,9 @@ import {
   collection,
   getDocs,
   serverTimestamp,
+  updateDoc,
+  deleteDoc,
+  doc,
 } from "firebase/firestore";
 import { BadgeCheck, UserPlus } from "lucide-react";
 import { db } from "../firebase";
@@ -25,7 +28,8 @@ const initialForm = {
 };
 
 function AdminManageCitizens() {
-  const { firebaseUser } = useAuth();
+  const { firebaseUser, role } = useAuth();
+  const isAdmin = role === "admin";
   const csvInputRef = useRef(null);
   const [form, setForm] = useState(initialForm);
   const [citizens, setCitizens] = useState([]);
@@ -35,6 +39,11 @@ function AdminManageCitizens() {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
+
+  const [editingCitizen, setEditingCitizen] = useState(null);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [citizenToDelete, setCitizenToDelete] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const fetchCitizens = useCallback(async () => {
     setLoading(true);
@@ -158,6 +167,60 @@ function AdminManageCitizens() {
       setError("Could not save citizen to users.");
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleEditChange = (e) => {
+    setEditingCitizen((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  };
+
+  const submitEditCitizen = async (e) => {
+    e.preventDefault();
+    if (!editingCitizen) return;
+
+    setIsUpdating(true);
+    setError("");
+    setNotice("");
+    try {
+      const updateData = {
+        first_name: editingCitizen.first_name.trim(),
+        middle_name: editingCitizen.middle_name.trim(),
+        last_name: editingCitizen.last_name.trim(),
+        birth_date: editingCitizen.birth_date,
+        contact_number: editingCitizen.contact_number.trim(),
+        address_line: editingCitizen.address_line.trim(),
+        barangay: editingCitizen.barangay.trim(),
+        city: editingCitizen.city.trim(),
+        province: editingCitizen.province.trim(),
+      };
+      
+      await updateDoc(doc(db, "users", editingCitizen.id), updateData);
+      setNotice("Citizen updated successfully.");
+      setEditingCitizen(null);
+      await fetchCitizens();
+    } catch (err) {
+      console.error(err);
+      setError("Failed to update citizen.");
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const deleteCitizenAccount = async () => {
+    if (!citizenToDelete) return;
+    setIsDeleting(true);
+    setError("");
+    setNotice("");
+    try {
+      await deleteDoc(doc(db, "users", citizenToDelete.id));
+      setNotice(`Citizen ${citizenToDelete.first_name} deleted successfully.`);
+      setCitizenToDelete(null);
+      await fetchCitizens();
+    } catch (err) {
+      console.error(err);
+      setError("Failed to delete citizen.");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -399,27 +462,29 @@ function AdminManageCitizens() {
           />
         </div>
 
-        <div className="data-table-container" style={{ marginBottom: 0 }}>
+        <div className="data-table-container" style={{ marginBottom: 0, overflowX: "auto" }}>
           <table className="data-table">
             <thead>
               <tr>
+                <th>Citizen Code</th>
                 <th>Name</th>
                 <th>Birth Date</th>
                 <th>Contact</th>
                 <th>Address</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
               {loading && (
                 <tr>
-                  <td colSpan="4" style={{ textAlign: "center", padding: "2rem" }}>
+                  <td colSpan="6" style={{ textAlign: "center", padding: "2rem" }}>
                     Loading records...
                   </td>
                 </tr>
               )}
               {!loading && filteredCitizens.length === 0 && (
                 <tr>
-                  <td colSpan="4" style={{ textAlign: "center", padding: "2rem" }}>
+                  <td colSpan="6" style={{ textAlign: "center", padding: "2rem" }}>
                     No citizen records found.
                   </td>
                 </tr>
@@ -427,6 +492,11 @@ function AdminManageCitizens() {
               {!loading &&
                 filteredCitizens.map((c) => (
                   <tr key={c.id}>
+                    <td>
+                      <span style={{ fontWeight: "bold", background: "var(--input-bg)", padding: "0.25rem 0.5rem", borderRadius: "6px", letterSpacing: "1px" }}>
+                        {c.citizenCode || "-"}
+                      </span>
+                    </td>
                     <td>
                       <div className="data-table__title">
                         {`${c.first_name || ""} ${c.middle_name || ""} ${c.last_name || ""}`
@@ -442,12 +512,194 @@ function AdminManageCitizens() {
                         {[c.barangay, c.city, c.province].filter(Boolean).join(", ") || "-"}
                       </div>
                     </td>
+                    <td>
+                      <div className="table-actions">
+                        <button
+                          type="button"
+                          className="action-btn"
+                          style={{ background: "var(--input-bg)", color: "var(--text-primary)" }}
+                          onClick={() => { setEditingCitizen(c); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                        >
+                          Edit
+                        </button>
+                        {isAdmin && (
+                          <button
+                            type="button"
+                            className="action-btn action-btn--danger"
+                            onClick={() => setCitizenToDelete(c)}
+                          >
+                            Delete
+                          </button>
+                        )}
+                      </div>
+                    </td>
                   </tr>
                 ))}
             </tbody>
           </table>
         </div>
       </div>
+
+      {editingCitizen && (
+        <div className="modal-overlay modal-overlay--padded">
+          <div className="base-card modal-panel" style={{ padding: "2.5rem" }}>
+            <h2 className="auth-title" style={{ textAlign: "left", marginBottom: "1rem" }}>
+              Edit Citizen
+            </h2>
+            <form onSubmit={submitEditCitizen} className="admin-citizens-form">
+              <div className="input-row">
+                <div className="input-group">
+                  <label>First Name</label>
+                  <input
+                    className="input-field"
+                    name="first_name"
+                    value={editingCitizen.first_name || ""}
+                    onChange={handleEditChange}
+                    required
+                  />
+                </div>
+                <div className="input-group">
+                  <label>Last Name</label>
+                  <input
+                    className="input-field"
+                    name="last_name"
+                    value={editingCitizen.last_name || ""}
+                    onChange={handleEditChange}
+                    required
+                  />
+                </div>
+              </div>
+              <div className="input-row">
+                <div className="input-group">
+                  <label>Middle Name</label>
+                  <input
+                    className="input-field"
+                    name="middle_name"
+                    value={editingCitizen.middle_name || ""}
+                    onChange={handleEditChange}
+                  />
+                </div>
+                <div className="input-group">
+                  <label>Birth Date</label>
+                  <input
+                    className="input-field"
+                    name="birth_date"
+                    type="date"
+                    value={editingCitizen.birth_date || ""}
+                    onChange={handleEditChange}
+                    required
+                  />
+                </div>
+              </div>
+              <div className="input-row">
+                <div className="input-group">
+                  <label>Contact Number</label>
+                  <input
+                    className="input-field"
+                    name="contact_number"
+                    value={editingCitizen.contact_number || ""}
+                    onChange={handleEditChange}
+                    required
+                  />
+                </div>
+                <div className="input-group">
+                  <label>Street Address</label>
+                  <input
+                    className="input-field"
+                    name="address_line"
+                    value={editingCitizen.address_line || ""}
+                    onChange={handleEditChange}
+                    required
+                  />
+                </div>
+              </div>
+              <div className="input-row">
+                <div className="input-group">
+                  <label>Barangay</label>
+                  <input
+                    className="input-field"
+                    name="barangay"
+                    value={editingCitizen.barangay || ""}
+                    onChange={handleEditChange}
+                    required
+                  />
+                </div>
+                <div className="input-group">
+                  <label>City</label>
+                  <input
+                    className="input-field"
+                    name="city"
+                    value={editingCitizen.city || ""}
+                    onChange={handleEditChange}
+                    required
+                  />
+                </div>
+                <div className="input-group">
+                  <label>Province</label>
+                  <input
+                    className="input-field"
+                    name="province"
+                    value={editingCitizen.province || ""}
+                    onChange={handleEditChange}
+                    required
+                  />
+                </div>
+              </div>
+              
+              <div style={{ display: "flex", gap: "1rem", marginTop: "1rem", justifyContent: "flex-end" }}>
+                <button 
+                  type="button"
+                  className="auth-button" 
+                  style={{ background: "var(--input-bg)", color: "var(--text-primary)" }}
+                  onClick={() => setEditingCitizen(null)}
+                  disabled={isUpdating}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit"
+                  className="auth-button" 
+                  disabled={isUpdating}
+                >
+                  {isUpdating ? "Saving..." : "Save Changes"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {citizenToDelete && (
+        <div className="modal-overlay modal-overlay--padded">
+          <div className="base-card modal-panel" style={{ textAlign: "center", padding: "2.5rem" }}>
+            <h2 className="auth-title" style={{ color: "#ef4444", marginBottom: "1rem" }}>
+              Delete Citizen Record
+            </h2>
+            <p className="settings-text" style={{ marginBottom: "1.5rem", fontSize: "1.1rem" }}>
+              Are you sure you want to permanently delete the citizen record for <strong>{citizenToDelete.first_name} {citizenToDelete.last_name}</strong>?<br/>
+              This will also remove their Ayuda history. This action cannot be undone.
+            </p>
+            <div style={{ display: "flex", gap: "1rem", justifyContent: "center" }}>
+              <button 
+                className="auth-button" 
+                style={{ background: "var(--input-bg)", color: "var(--text-primary)" }}
+                onClick={() => setCitizenToDelete(null)}
+                disabled={isDeleting}
+              >
+                Cancel
+              </button>
+              <button 
+                className="auth-button" 
+                style={{ background: "#ef4444" }}
+                onClick={deleteCitizenAccount}
+                disabled={isDeleting}
+              >
+                {isDeleting ? "Deleting..." : "Confirm Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

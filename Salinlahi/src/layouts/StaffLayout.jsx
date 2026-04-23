@@ -4,6 +4,7 @@ import {
   ScanLine,
   List,
   LogOut,
+  UserRoundPlus,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 
@@ -50,6 +51,13 @@ function StaffLayout() {
           >
             <List size={20} />
             <span>Active Ayuda</span>
+          </Link>
+          <Link
+            to="/staff/ManageCitizens"
+            className={`admin-nav-item ${path === "/staff/ManageCitizens" ? "active" : ""}`}
+          >
+            <UserRoundPlus size={20} />
+            <span>Manage Citizens</span>
           </Link>
           <button
             type="button"

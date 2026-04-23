@@ -96,6 +96,7 @@ function App() {
             <Route path="scan" element={<AdminScanner />} />
             <Route path="CurrentAyuda" element={<AdminCurrentAyuda />} />
             <Route path="ayuda/:ayudaId" element={<AdminAyudaDetail />} />
+            <Route path="ManageCitizens" element={<AdminManageCitizens />} />
           </Route>
 
           <Route path="*" element={<Navigate to="/login" replace />} />

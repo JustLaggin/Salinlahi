@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { auth, db } from "../firebase";
 import { collection, addDoc } from "firebase/firestore";
 
@@ -20,21 +20,37 @@ function AdminCreateAyuda() {
     description: ""
   });
 
+  const [toast, setToast] = useState(null);
+
+  useEffect(() => {
+    if (!toast) return;
+    const timer = setTimeout(() => setToast(null), 4000);
+    return () => clearTimeout(timer);
+  }, [toast]);
+
   const barangays = {
     "Batangas City": [
       "Alangilan", "Pallocan", "Sta. Rita", "San Isidro",
       "Kumintang Ibaba", "Bolbok", "Calicanto",
       "Libjo", "Tingga Itaas", "Santo Niño", "Santo Tomas"
     ],
+
     "Lipa City": [
       "Balintawak", "Sabang", "Anilao", "Marawoy",
       "Banaybanay", "Bolbok", "Sico",
       "Tambo", "Plaridel", "San Carlos"
     ],
+
     "Tanauan City": [
       "Altura Bata", "Altura Matanda", "Darasa",
       "Janopol", "Mabini", "Sambat",
       "Santol", "Ulango", "Wawa"
+    ],
+
+    "Santo Tomas City": [
+      "San Miguel", "San Bartolome", "San Pablo",
+      "San Jose", "San Roque", "San Vicente", "Barangay I",
+      "Barangay II", "Barangay III", "Barangay IV"
     ]
   };
 
@@ -94,7 +110,7 @@ function AdminCreateAyuda() {
         created_at: new Date()
       });
 
-      alert("Ayuda successfully created!");
+      setToast("Ayuda Created Successfully!");
 
       // Reset form
       setFormData({
@@ -209,9 +225,9 @@ function AdminCreateAyuda() {
               required
             >
               <option value="">Select City</option>
-              <option value="Batangas City">Batangas City</option>
-              <option value="Lipa City">Lipa City</option>
-              <option value="Tanauan City">Tanauan City</option>
+              {Object.keys(barangays).map((city) => (
+                <option key={city} value={city}>{city}</option>
+              ))}
             </select>
           </div>
 
@@ -280,17 +296,19 @@ function AdminCreateAyuda() {
             />
           </div>
 
-          
+
         </div>
 
         <div className="input-group">
-          <label>Requirements</label>
-          <input
+          <label>List of Requirements</label>
+          <textarea
             className="input-field"
             name="requirements"
             value={formData.requirements}
             onChange={handleChange}
-            placeholder="List of Requirements"
+            placeholder="e.g.&#10;- Valid ID&#10;- Barangay Certificate&#10;- Proof of Residence"
+            rows="4"
+            style={{ resize: "vertical" }}
           />
         </div>
 
@@ -312,6 +330,29 @@ function AdminCreateAyuda() {
         </button>
 
       </form>
+
+      {toast && (
+        <div style={{
+          position: "fixed",
+          bottom: "2rem",
+          right: "2rem",
+          background: "linear-gradient(135deg, #10b981, #059669)",
+          color: "#fff",
+          padding: "1rem 1.75rem",
+          borderRadius: "12px",
+          boxShadow: "0 8px 24px rgba(0,0,0,0.2)",
+          zIndex: 9999,
+          display: "flex",
+          alignItems: "center",
+          gap: "0.75rem",
+          fontWeight: 600,
+          fontSize: "1rem",
+          animation: "slideInRight 0.3s ease-out"
+        }}>
+          <span style={{ fontSize: "1.25rem" }}>✅</span>
+          {toast}
+        </div>
+      )}
     </div>
   );
 }

@@ -7,7 +7,7 @@ import {
   getDoc,
   getDocs,
   query,
-  setDoc,
+  runTransaction,
   updateDoc,
   where,
   Timestamp,
@@ -50,11 +50,17 @@ function AdminScan() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [manualOpen, setManualOpen] = useState(false);
   const [manualInput, setManualInput] = useState("");
+  const [manualReason, setManualReason] = useState(""); // <-- Mitigation 3: Fallback Audit
+  
   const [userUid, setUserUid] = useState(null);
   const [userData, setUserData] = useState(null);
   const [loadingUser, setLoadingUser] = useState(false);
+  
   const [claiming, setClaiming] = useState(false);
   const [claimError, setClaimError] = useState("");
+  
+  const [idVerified, setIdVerified] = useState(false); // <-- Mitigation 2: Physical ID Verify
+
   /** Role of this citizen for the active Ayuda (set when scan confirm opens). */
   const [scanAyudaStatus, setScanAyudaStatus] = useState(null);
   const [activeAyudaMeta, setActiveAyudaMeta] = useState(null);
@@ -64,6 +70,7 @@ function AdminScan() {
   const scannerRef = useRef(null);
   const isRunningRef = useRef(false);
   const [pendingMethod, setPendingMethod] = useState("qr");
+  const pendingManualReasonRef = useRef(""); // To store manual reason for the transaction
 
   const loadOngoing = useCallback(async () => {
     setLoadingAyudas(true);
@@ -117,7 +124,12 @@ function AdminScan() {
 
   const stopScanner = async () => {
     if (scannerRef.current && isRunningRef.current) {
-      await scannerRef.current.stop().catch(() => {});
+      try {
+        await scannerRef.current.stop();
+        if (scannerRef.current) scannerRef.current.clear();
+      } catch (e) {
+        // ignore
+      }
       isRunningRef.current = false;
     }
     scannerRef.current = null;
@@ -139,11 +151,13 @@ function AdminScan() {
       });
       await scannerRef.current.start(
         { facingMode: "environment" },
-        { fps: 5, qrbox: { width: 200, height: 200 } },
+        { fps: 5, qrbox: { width: 250, height: 250 } },
         async (decodedText) => {
+          if (claiming || confirmOpen) return; // Prevent double trigger
           scannerRef.current.pause(true);
           setScanResult("Scanned");
           setPendingMethod("qr");
+          pendingManualReasonRef.current = "";
           await openConfirmForPayload(decodedText);
         },
         () => {}
@@ -160,12 +174,15 @@ function AdminScan() {
     setClaimError("");
     setScanAyudaStatus(null);
     setLoadingUser(true);
+    setIdVerified(false); // Reset verification state
     try {
       const userDoc = await findUserDocByScanPayload(payload);
       if (!userDoc) {
         alert("Citizen not found for this code.");
         setLoadingUser(false);
-        await scannerRef.current?.resume();
+        if (scannerRef.current?.getState() === 2) {
+          await scannerRef.current.resume();
+        }
         return;
       }
       const uid = userDoc.id;
@@ -203,7 +220,8 @@ function AdminScan() {
     setUserData(null);
     setClaimError("");
     setScanAyudaStatus(null);
-    if (scannerRef.current && isRunningRef.current) {
+    setIdVerified(false);
+    if (scannerRef.current && isRunningRef.current && scannerRef.current.getState() === 2) {
       try {
         await scannerRef.current.resume();
       } catch {
@@ -215,88 +233,87 @@ function AdminScan() {
   /** Gate / registration: add scanned citizen to this Ayuda's applicants (Admin approves later). */
   const registerAsApplicant = async () => {
     if (!activeAyudaId || !userUid || !userData) return;
+    if (!idVerified) {
+      setClaimError("You must verify the physical ID before proceeding.");
+      return;
+    }
+    
     setClaiming(true);
     setClaimError("");
     try {
       const ayudaRef = doc(db, "ayudas", activeAyudaId);
-      const ayudaSnap = await getDoc(ayudaRef);
-      if (!ayudaSnap.exists()) {
-        setClaimError("Ayuda not found.");
-        setClaiming(false);
-        return;
-      }
-      const applicants = ayudaSnap.data().applicants || [];
-      const beneficiaries = ayudaSnap.data().beneficiaries || [];
-
-      if (beneficiaries.includes(userUid)) {
-        setClaimError(
-          "This citizen is already an approved beneficiary. Use “Record claim” to log pickup, or manage them in Active Ayuda."
-        );
-        setClaiming(false);
-        return;
-      }
-
+      
       const displayName =
         `${userData.first_name || ""} ${userData.last_name || ""}`.trim() ||
         "Citizen";
-      const ayudaTitle =
-        activeAyudaTitle || ayudaSnap.data().title || activeAyudaId;
+      const ayudaTitle = activeAyudaTitle || activeAyudaId;
 
-      if (applicants.includes(userUid)) {
+      // Mitigation 1: Run Transaction to prevent double addition race conditions
+      const success = await runTransaction(db, async (transaction) => {
+        const ayudaSnap = await transaction.get(ayudaRef);
+        if (!ayudaSnap.exists()) {
+          throw new Error("Ayuda not found.");
+        }
+        
+        const applicants = ayudaSnap.data().applicants || [];
+        const beneficiaries = ayudaSnap.data().beneficiaries || [];
+
+        if (beneficiaries.includes(userUid)) {
+          throw new Error("ALREADY_BENEFICIARY");
+        }
+
+        if (applicants.includes(userUid)) {
+          throw new Error("ALREADY_APPLICANT");
+        }
+
+        transaction.update(ayudaRef, { applicants: arrayUnion(userUid) });
+        return true;
+      });
+
+      if (success) {
+        // Non-critical update, safe to run outside transaction
+        try {
+          await updateDoc(doc(db, "users", userUid), {
+            ayudas_applied: arrayUnion(activeAyudaId),
+          });
+        } catch (userErr) {
+          console.error(userErr);
+        }
+
         await stopScanner();
         setConfirmOpen(false);
         setManualOpen(false);
         setManualInput("");
+        setManualReason("");
         setUserUid(null);
         setUserData(null);
         setScanAyudaStatus(null);
         setSuccessOverlay({
-          type: "already_applicant",
+          type: "applicant",
           name: displayName,
           ayudaTitle,
         });
-        setClaiming(false);
-        return;
+        playSuccessBeep();
       }
 
-      try {
-        await updateDoc(ayudaRef, {
-          applicants: arrayUnion(userUid),
-        });
-      } catch (err) {
-        console.error(err);
-        setClaimError(
-          err?.message ||
-            "Could not add applicant. Check your connection and Firestore rules."
-        );
-        setClaiming(false);
-        return;
-      }
-
-      try {
-        await updateDoc(doc(db, "users", userUid), {
-          ayudas_applied: arrayUnion(activeAyudaId),
-        });
-      } catch (userErr) {
-        console.error(userErr);
-      }
-
-      await stopScanner();
-      setConfirmOpen(false);
-      setManualOpen(false);
-      setManualInput("");
-      setUserUid(null);
-      setUserData(null);
-      setScanAyudaStatus(null);
-      setSuccessOverlay({
-        type: "applicant",
-        name: displayName,
-        ayudaTitle,
-      });
-      playSuccessBeep();
     } catch (e) {
       console.error(e);
-      setClaimError(e.message || "Could not register applicant.");
+      if (e.message === "ALREADY_BENEFICIARY") {
+        setClaimError("This citizen is already an approved beneficiary. Use “Record claim” to log pickup.");
+      } else if (e.message === "ALREADY_APPLICANT") {
+        await stopScanner();
+        setConfirmOpen(false);
+        setManualOpen(false);
+        setUserUid(null);
+        setUserData(null);
+        setSuccessOverlay({
+          type: "already_applicant",
+          name: `${userData.first_name || ""} ${userData.last_name || ""}`.trim() || "Citizen",
+          ayudaTitle: activeAyudaTitle || activeAyudaId,
+        });
+      } else {
+        setClaimError(e.message || "Could not register applicant.");
+      }
     }
     setClaiming(false);
   };
@@ -304,109 +321,116 @@ function AdminScan() {
   /** After approval only: log physical distribution (pickup). */
   const recordClaim = async () => {
     if (!activeAyudaId || !userUid || !userData) return;
+    if (!idVerified) {
+      setClaimError("You must verify the physical ID before proceeding.");
+      return;
+    }
+    
     setClaiming(true);
     setClaimError("");
     try {
       const ayudaRef = doc(db, "ayudas", activeAyudaId);
-      const ayudaSnap = await getDoc(ayudaRef);
-      if (!ayudaSnap.exists()) {
-        setClaimError("Ayuda not found.");
-        setClaiming(false);
-        return;
-      }
-      const beneficiaries = ayudaSnap.data().beneficiaries || [];
-      if (!beneficiaries.includes(userUid)) {
-        setClaimError(
-          "Only approved beneficiaries can have a claim recorded. Add them as an applicant first, then accept them in Active Ayuda."
-        );
-        setClaiming(false);
-        return;
-      }
-
       const claimRef = doc(db, "ayudas", activeAyudaId, "claims", userUid);
-      const existing = await getDoc(claimRef);
-      const programType = (ayudaSnap.data().programType || "ONE_TIME").toUpperCase();
-      const todayKey = new Date().toISOString().slice(0, 10);
-
+      
       const displayName =
         `${userData.first_name || ""} ${userData.last_name || ""}`.trim() ||
         "Citizen";
-      if (programType === "SERVICE") {
-        const previousAttendance = existing.exists()
-          ? existing.data().attendance || []
-          : [];
-        const alreadyToday = previousAttendance.some((a) => a.dateKey === todayKey);
-        if (alreadyToday) {
-          setClaimError("Attendance already recorded for today.");
-          setClaiming(false);
-          return;
+
+      const programType = (activeAyudaMeta?.programType || "ONE_TIME").toUpperCase();
+      const required = Math.max(1, Number(activeAyudaMeta?.requiredDays || 1));
+      const todayKey = new Date().toISOString().slice(0, 10);
+      const now = Timestamp.now();
+      const method = pendingMethod;
+      const reason = pendingManualReasonRef.current;
+      
+      // Mitigation 1: Run Transaction to prevent double claiming / double attendance logging
+      await runTransaction(db, async (transaction) => {
+        const ayudaSnap = await transaction.get(ayudaRef);
+        if (!ayudaSnap.exists()) {
+          throw new Error("Ayuda not found.");
+        }
+        
+        const beneficiaries = ayudaSnap.data().beneficiaries || [];
+        if (!beneficiaries.includes(userUid)) {
+          throw new Error("Only approved beneficiaries can have a claim recorded.");
         }
 
-        const required = Math.max(1, Number(ayudaSnap.data().requiredDays || 1));
-        if (previousAttendance.length >= required) {
-          setClaimError("Required attendance days already completed.");
-          setClaiming(false);
-          return;
-        }
+        const existing = await transaction.get(claimRef);
+        
+        if (programType === "SERVICE") {
+          const previousAttendance = existing.exists()
+            ? existing.data().attendance || []
+            : [];
+          
+          const alreadyToday = previousAttendance.some((a) => a.dateKey === todayKey);
+          if (alreadyToday) {
+            throw new Error("Attendance already recorded for today.");
+          }
 
-        const now = Timestamp.now();
-        const nextAttendance = [
-          ...previousAttendance,
-          { dateKey: todayKey, checkedAt: now, method: pendingMethod },
-        ];
+          if (previousAttendance.length >= required) {
+            throw new Error("Required attendance days already completed.");
+          }
 
-        await setDoc(claimRef, {
-          displayName,
-          citizenCode: userData.citizenCode || null,
-          programType: "SERVICE",
-          requiredDays: required,
-          attendance: nextAttendance,
-          completed: nextAttendance.length >= required,
-          lastCheckInAt: now,
-        });
+          const nextAttendance = [
+            ...previousAttendance,
+            { dateKey: todayKey, checkedAt: now, method, manualReason: reason || null },
+          ];
 
-        await updateDoc(doc(db, "users", userUid), {
-          claim_history: arrayUnion({
-            ayudaId: activeAyudaId,
-            claimedAt: now,
-            type: "SERVICE_ATTENDANCE",
-            attendanceDay: nextAttendance.length,
+          transaction.set(claimRef, {
+            displayName,
+            citizenCode: userData.citizenCode || null,
+            programType: "SERVICE",
             requiredDays: required,
-          }),
-        });
-      } else {
-        if (existing.exists()) {
-          setClaimError("Claim already recorded for this citizen.");
-          setClaiming(false);
-          return;
-        }
-        const now = Timestamp.now();
-        await setDoc(claimRef, {
-          claimedAt: now,
-          method: pendingMethod,
-          displayName,
-          citizenCode: userData.citizenCode || null,
-          programType: "ONE_TIME",
-        });
-        await updateDoc(doc(db, "users", userUid), {
-          claim_history: arrayUnion({
-            ayudaId: activeAyudaId,
+            attendance: nextAttendance,
+            completed: nextAttendance.length >= required,
+            lastCheckInAt: now,
+          });
+
+          transaction.update(doc(db, "users", userUid), {
+            claim_history: arrayUnion({
+              ayudaId: activeAyudaId,
+              claimedAt: now,
+              type: "SERVICE_ATTENDANCE",
+              attendanceDay: nextAttendance.length,
+              requiredDays: required,
+            }),
+          });
+        } else {
+          if (existing.exists()) {
+            throw new Error("Claim already recorded for this citizen.");
+          }
+
+          transaction.set(claimRef, {
             claimedAt: now,
-            type: "ONE_TIME_CLAIM",
-          }),
-        });
-      }
+            method,
+            manualReason: reason || null,
+            displayName,
+            citizenCode: userData.citizenCode || null,
+            programType: "ONE_TIME",
+          });
+
+          transaction.update(doc(db, "users", userUid), {
+            claim_history: arrayUnion({
+              ayudaId: activeAyudaId,
+              claimedAt: now,
+              type: "ONE_TIME_CLAIM",
+            }),
+          });
+        }
+      });
+
       await stopScanner();
       setConfirmOpen(false);
       setManualOpen(false);
       setManualInput("");
+      setManualReason("");
       setUserUid(null);
       setUserData(null);
       setScanAyudaStatus(null);
       setSuccessOverlay({
         type: isServiceProgram ? "attendance" : "claim",
         name: displayName,
-        ayudaTitle: activeAyudaTitle || ayudaSnap.data().title || activeAyudaId,
+        ayudaTitle: activeAyudaTitle || activeAyudaId,
       });
       playSuccessBeep();
     } catch (e) {
@@ -420,6 +444,7 @@ function AdminScan() {
 
   const openManual = () => {
     setManualInput("");
+    setManualReason("");
     setManualOpen(true);
     setPendingMethod("manual");
   };
@@ -430,8 +455,13 @@ function AdminScan() {
       alert("Enter the manual code (at least 4 characters).");
       return;
     }
+    if (!manualReason) {
+      alert("Please select a reason for manual entry to maintain the audit trail.");
+      return;
+    }
     setManualOpen(false);
     setPendingMethod("manual");
+    pendingManualReasonRef.current = manualReason;
     await openConfirmForPayload(norm);
   };
 
@@ -444,10 +474,15 @@ function AdminScan() {
     setActiveAyuda(a.id, a.title || "");
   };
 
+  // Clean unmount for Html5Qrcode to fix the persistent camera bug
   useEffect(() => {
     return () => {
       if (scannerRef.current && isRunningRef.current) {
-        scannerRef.current.stop().catch(() => {});
+        scannerRef.current.stop().then(() => {
+          if (scannerRef.current) {
+             scannerRef.current.clear();
+          }
+        }).catch(() => {});
       }
     };
   }, []);
@@ -590,8 +625,28 @@ function AdminScan() {
               onChange={(e) => setManualInput(e.target.value)}
               placeholder="e.g. ABC12F"
               autoCapitalize="characters"
+              style={{ marginBottom: "1rem" }}
             />
-            <div style={{ display: "flex", gap: "0.75rem", marginTop: "1.25rem" }}>
+            
+            {/* Mitigation 3: Fallback Audit Trail */}
+            <label className="settings-text" style={{ display: "block", marginBottom: "0.5rem", fontWeight: "bold" }}>
+              Reason for Manual Entry (Required)
+            </label>
+            <select
+              className="input-field"
+              value={manualReason}
+              onChange={(e) => setManualReason(e.target.value)}
+              style={{ marginBottom: "1.25rem" }}
+            >
+              <option value="">— Select Reason —</option>
+              <option value="SUNLIGHT_GLARE">Sunlight Glare / Poor Lighting</option>
+              <option value="DAMAGED_QR">Damaged or Crumpled QR Printout</option>
+              <option value="CAMERA_FAILURE">Device Camera Failure / Lag</option>
+              <option value="UNREADABLE_SCREEN">Citizen Phone Screen Unreadable</option>
+              <option value="OTHER">Other Technical Issue</option>
+            </select>
+
+            <div style={{ display: "flex", gap: "0.75rem" }}>
               <button type="button" className="auth-button" onClick={submitManual}>
                 Look up
               </button>
@@ -623,6 +678,40 @@ function AdminScan() {
               Ayuda:{" "}
               <strong>{activeAyudaTitle || activeAyudaId}</strong>
             </p>
+            
+            <div className="modal-inset-panel" style={{ marginBottom: "1rem", backgroundColor: "#f0fdf4", border: "1px solid #bbf7d0" }}>
+              <p style={{ fontWeight: 800, fontSize: "1.2rem", color: "#166534" }}>
+                {userData.first_name} {userData.last_name}
+              </p>
+              {userData.citizenCode && (
+                <p className="settings-text" style={{ color: "#15803d" }}>Code: {userData.citizenCode}</p>
+              )}
+            </div>
+
+            {/* Mitigation 2: Mandatory Physical ID Verification */}
+            {!scanAyudaStatus?.isApplicant && (
+              <div style={{ 
+                marginBottom: "1.25rem", 
+                padding: "1rem", 
+                backgroundColor: "var(--bg-muted)", 
+                borderRadius: "8px",
+                borderLeft: "4px solid #f59e0b"
+              }}>
+                <label style={{ display: "flex", alignItems: "flex-start", gap: "0.75rem", cursor: "pointer" }}>
+                  <input 
+                    type="checkbox" 
+                    checked={idVerified}
+                    onChange={(e) => setIdVerified(e.target.checked)}
+                    style={{ width: "20px", height: "20px", marginTop: "0.1rem" }}
+                  />
+                  <span style={{ fontSize: "0.95rem", lineHeight: "1.4" }}>
+                    <strong>Physical ID Verified</strong><br/>
+                    <span className="settings-text">I have checked a physical ID card and confirmed the face matches the registered name above.</span>
+                  </span>
+                </label>
+              </div>
+            )}
+
             {scanAyudaStatus?.isBeneficiary ? (
               <p className="settings-text" style={{ marginBottom: "1rem" }}>
                 This citizen is already an <strong>approved beneficiary</strong>. Use
@@ -645,24 +734,21 @@ function AdminScan() {
                 Active Ayuda.
               </p>
             )}
-            <div className="modal-inset-panel" style={{ marginBottom: "1rem" }}>
-              <p style={{ fontWeight: 700, fontSize: "1.1rem" }}>
-                {userData.first_name} {userData.last_name}
-              </p>
-              {userData.citizenCode && (
-                <p className="settings-text">Code: {userData.citizenCode}</p>
-              )}
-            </div>
+
             {claimError && (
-              <p style={{ color: "#f87171", marginBottom: "1rem" }}>{claimError}</p>
+              <p style={{ color: "#ef4444", fontWeight: 500, marginBottom: "1rem", padding: "0.5rem", backgroundColor: "#fee2e2", borderRadius: "6px" }}>
+                {claimError}
+              </p>
             )}
+            
             <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
               {scanAyudaStatus?.isBeneficiary ? (
                 <button
                   type="button"
                   className="auth-button approve-btn"
-                  disabled={claiming}
+                  disabled={claiming || !idVerified}
                   onClick={() => void recordClaim()}
+                  style={{ opacity: (!idVerified || claiming) ? 0.6 : 1 }}
                 >
                   {claiming
                     ? "Saving…"
@@ -674,8 +760,9 @@ function AdminScan() {
                 <button
                   type="button"
                   className="auth-button approve-btn"
-                  disabled={claiming}
+                  disabled={claiming || !idVerified}
                   onClick={() => void registerAsApplicant()}
+                  style={{ opacity: (!idVerified || claiming) ? 0.6 : 1 }}
                 >
                   {claiming ? "Saving…" : "Add to applicants"}
                 </button>

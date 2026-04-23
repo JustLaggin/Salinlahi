@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { collection, doc, getDocs, updateDoc, setDoc } from "firebase/firestore";
+import { collection, doc, getDocs, updateDoc, setDoc, deleteDoc } from "firebase/firestore";
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth, createUserWithEmailAndPassword, signOut } from "firebase/auth";
 import { ShieldCheck, UserPlus, UserMinus, Search } from "lucide-react";
@@ -41,6 +41,9 @@ function AdminManageStaff() {
   const [newStaffLastName, setNewStaffLastName] = useState("");
   const [creatingStaff, setCreatingStaff] = useState(false);
   const [generatedStaffPassword, setGeneratedStaffPassword] = useState(null);
+  
+  const [userToDelete, setUserToDelete] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
@@ -58,7 +61,7 @@ function AdminManageStaff() {
           city: u.city || "",
           barangay: u.barangay || "",
         };
-      });
+      }).filter(u => u.role === "staff" || u.role === "admin");
 
       data.sort((a, b) => {
         const roleOrder = { admin: 0, staff: 1, citizen: 2 };
@@ -106,28 +109,21 @@ function AdminManageStaff() {
     });
   }, [users, searchTerm]);
 
-  const updateUserRole = async (userId, nextRole) => {
-    if (!userId || !nextRole) return;
-    if (userId === firebaseUser?.uid && nextRole !== "admin") {
-      setError("You cannot remove your own admin role.");
-      return;
-    }
-
-    setSavingUserId(userId);
+  const deleteUserAccount = async () => {
+    if (!userToDelete) return;
+    setIsDeleting(true);
     setError("");
     setNotice("");
-
     try {
-      await updateDoc(doc(db, "users", userId), { role: nextRole });
-      setUsers((prev) =>
-        prev.map((u) => (u.id === userId ? { ...u, role: nextRole } : u))
-      );
-      setNotice(`Role updated to ${prettyRole(nextRole)}.`);
+      await deleteDoc(doc(db, "users", userToDelete.id));
+      setUsers((prev) => prev.filter((u) => u.id !== userToDelete.id));
+      setNotice(`Account for ${userToDelete.first_name} deleted successfully.`);
+      setUserToDelete(null);
     } catch (e) {
       console.error(e);
-      setError("Unable to update role. Check your permissions and try again.");
+      setError("Unable to delete account. Check permissions and try again.");
     } finally {
-      setSavingUserId(null);
+      setIsDeleting(false);
     }
   };
 
@@ -280,7 +276,13 @@ function AdminManageStaff() {
         )}
       </div>
 
-      <div className="search-container ayuda-search-bar" style={{ maxWidth: "640px" }}>
+      <div style={{ marginTop: "2rem", marginBottom: "1rem" }}>
+        <h3 className="settings-text" style={{ fontWeight: 600, color: "var(--text-primary)" }}>
+          List of Staff and Admins
+        </h3>
+      </div>
+
+      <div className="search-container ayuda-search-bar" style={{ maxWidth: "640px", marginBottom: "1.5rem" }}>
         <div className="admin-staff-search">
           <Search size={16} />
           <input
@@ -342,7 +344,7 @@ function AdminManageStaff() {
                     <td>
                       <span
                         className={`pill-badge ${
-                          user.role === "staff" || user.role === "admin" ? "green" : ""
+                          user.role === "admin" ? "green" : "blue"
                         }`}
                       >
                         {prettyRole(user.role)}
@@ -350,26 +352,14 @@ function AdminManageStaff() {
                     </td>
                     <td>
                       <div className="table-actions">
-                        <select
-                          className="input-field admin-staff-role-select"
-                          value={user.role}
-                          disabled={disabled || isMe}
-                          onChange={(e) => updateUserRole(user.id, e.target.value)}
+                        <button
+                          type="button"
+                          className="action-btn action-btn--danger"
+                          disabled={isMe || isDeleting}
+                          onClick={() => setUserToDelete(user)}
                         >
-                          <option value="citizen">Citizen</option>
-                          <option value="staff">Staff</option>
-                          <option value="admin">Admin</option>
-                        </select>
-                        {user.role === "staff" && (
-                          <button
-                            type="button"
-                            className="action-btn action-btn--danger"
-                            disabled={disabled}
-                            onClick={() => updateUserRole(user.id, "citizen")}
-                          >
-                            Remove staff
-                          </button>
-                        )}
+                          Delete Account
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -406,6 +396,38 @@ function AdminManageStaff() {
             <button className="auth-button" onClick={closePasswordModal} style={{ width: "100%", maxWidth: "300px", margin: "0 auto" }}>
               Close & Clear Form
             </button>
+          </div>
+        </div>
+      )}
+
+      {userToDelete && (
+        <div className="modal-overlay modal-overlay--padded">
+          <div className="base-card modal-panel" style={{ textAlign: "center", padding: "2.5rem" }}>
+            <h2 className="auth-title" style={{ color: "#ef4444", marginBottom: "1rem" }}>
+              Delete Account
+            </h2>
+            <p className="settings-text" style={{ marginBottom: "1.5rem", fontSize: "1.1rem" }}>
+              Are you sure you want to delete the account for <strong>{userToDelete.first_name} {userToDelete.last_name}</strong>?
+              This action cannot be undone.
+            </p>
+            <div style={{ display: "flex", gap: "1rem", justifyContent: "center" }}>
+              <button 
+                className="auth-button" 
+                style={{ background: "var(--input-bg)", color: "var(--text-primary)" }}
+                onClick={() => setUserToDelete(null)}
+                disabled={isDeleting}
+              >
+                Cancel
+              </button>
+              <button 
+                className="auth-button" 
+                style={{ background: "#ef4444" }}
+                onClick={deleteUserAccount}
+                disabled={isDeleting}
+              >
+                {isDeleting ? "Deleting..." : "Confirm Delete"}
+              </button>
+            </div>
           </div>
         </div>
       )}
