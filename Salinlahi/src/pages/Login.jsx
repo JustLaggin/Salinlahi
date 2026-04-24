@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { auth } from "../firebase";
 import {
   browserLocalPersistence,
@@ -232,8 +233,8 @@ function Login() {
         )}
 
       </form>
-      {mustChangePassword && (
-        <div className="modal-overlay modal-overlay--padded">
+      {mustChangePassword && createPortal(
+        <div className="modal-overlay modal-overlay--padded modal-overlay--scroll-follow">
           <form className="base-card modal-panel" onSubmit={handleForcedPasswordChange}>
             <h2 className="auth-title">Change Password Required</h2>
             <p className="settings-text">
@@ -263,7 +264,8 @@ function Login() {
               {passwordChanging ? "Saving..." : "Update Password"}
             </button>
           </form>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

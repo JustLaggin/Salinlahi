@@ -60,6 +60,8 @@ function AdminCurrentAyuda() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [viewMode, setViewMode] = useState("active");
+  const [feedbackModalMessage, setFeedbackModalMessage] = useState("");
+  const [rejectConfirmTarget, setRejectConfirmTarget] = useState(null);
 
   const fetchAyudas = useCallback(async () => {
     const querySnapshot = await getDocs(collection(db, "ayudas"));
@@ -93,7 +95,7 @@ function AdminCurrentAyuda() {
       await batch.commit();
     } catch (err) {
       console.error(err);
-      alert(
+      setFeedbackModalMessage(
         "Could not approve this applicant. Check your connection and Firestore permissions."
       );
       return;
@@ -120,7 +122,7 @@ function AdminCurrentAyuda() {
       await batch.commit();
     } catch (err) {
       console.error(err);
-      alert(
+      setFeedbackModalMessage(
         "Could not reject this applicant. Check your connection and Firestore permissions."
       );
       return;
@@ -209,7 +211,7 @@ function AdminCurrentAyuda() {
       setDeleteModalAyuda(null);
     } catch (err) {
       console.error("Error deleting Ayuda:", err);
-      alert("Failed to delete Ayuda.");
+      setFeedbackModalMessage("Failed to delete Ayuda.");
     } finally {
       setIsDeleting(false);
     }
@@ -465,13 +467,7 @@ function AdminCurrentAyuda() {
                             className="reject-btn"
                             onClick={(e) => {
                               e.stopPropagation();
-                              if (
-                                window.confirm(
-                                  `Reject ${item.displayName}? They will be removed from applicants for this Ayuda.`
-                                )
-                              ) {
-                                void rejectApplicant(item);
-                              }
+                              setRejectConfirmTarget(item);
                             }}
                           >
                             Reject
@@ -721,6 +717,65 @@ function AdminCurrentAyuda() {
                 onClick={() => setSelectedUser(null)}
               >
                 Close
+              </button>
+            </div>
+          </div>,
+          document.body
+        )}
+      {rejectConfirmTarget &&
+        createPortal(
+          <div className="modal-overlay modal-overlay--padded">
+            <div className="base-card modal-panel" style={{ textAlign: "center", padding: "2.25rem", maxWidth: "460px" }}>
+              <h2 className="auth-title" style={{ color: "#ef4444", marginBottom: "1rem" }}>
+                Reject Applicant?
+              </h2>
+              <p className="settings-text" style={{ marginBottom: "1.5rem" }}>
+                Reject <strong>{rejectConfirmTarget.displayName}</strong>? They will be removed from this ayuda's applicants list.
+              </p>
+              <div style={{ display: "flex", gap: "0.75rem", justifyContent: "center" }}>
+                <button
+                  type="button"
+                  className="auth-button"
+                  style={{ background: "var(--input-bg)", color: "var(--text-primary)" }}
+                  onClick={() => setRejectConfirmTarget(null)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="auth-button"
+                  style={{ background: "#ef4444" }}
+                  onClick={() => {
+                    const target = rejectConfirmTarget;
+                    setRejectConfirmTarget(null);
+                    if (target) {
+                      void rejectApplicant(target);
+                    }
+                  }}
+                >
+                  Confirm Reject
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
+      {feedbackModalMessage &&
+        createPortal(
+          <div className="modal-overlay modal-overlay--padded modal-overlay--scroll-follow">
+            <div className="base-card modal-panel" style={{ textAlign: "center", padding: "2.25rem", maxWidth: "460px" }}>
+              <h2 className="auth-title" style={{ marginBottom: "1rem" }}>
+                Action Failed
+              </h2>
+              <p className="settings-text" style={{ marginBottom: "1.5rem" }}>
+                {feedbackModalMessage}
+              </p>
+              <button
+                type="button"
+                className="auth-button"
+                onClick={() => setFeedbackModalMessage("")}
+              >
+                OK
               </button>
             </div>
           </div>,

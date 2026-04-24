@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   addDoc,
   collection,
@@ -540,7 +541,7 @@ function AdminManageCitizens() {
         </div>
       </div>
 
-      {editingCitizen && (
+      {editingCitizen && createPortal(
         <div className="modal-overlay modal-overlay--padded modal-overlay--scroll-follow">
           <div className="base-card modal-panel" style={{ padding: "2.5rem" }}>
             <h2 className="auth-title" style={{ textAlign: "left", marginBottom: "1rem" }}>
@@ -666,10 +667,11 @@ function AdminManageCitizens() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
-      {citizenToDelete && (
+      {citizenToDelete && createPortal(
         <div className="modal-overlay modal-overlay--padded modal-overlay--scroll-follow">
           <div className="base-card modal-panel" style={{ textAlign: "center", padding: "2.5rem" }}>
             <h2 className="auth-title" style={{ color: "#ef4444", marginBottom: "1rem" }}>
@@ -698,7 +700,8 @@ function AdminManageCitizens() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

@@ -1716,6 +1716,23 @@ html[data-theme="dark"] .claim-success-card {
   flex-direction: column;
 }
 
+/* Prevent chart focus outlines/boxes on click while preserving pointer hover behavior */
+.ayuda-chart-card .recharts-wrapper:focus,
+.ayuda-chart-card .recharts-surface:focus,
+.dashboard-chart-card .recharts-wrapper:focus,
+.dashboard-chart-card .recharts-surface:focus {
+  outline: none;
+}
+
+.ayuda-chart-card .recharts-sector:focus,
+.ayuda-chart-card .recharts-pie-sector:focus,
+.dashboard-chart-card .recharts-sector:focus,
+.dashboard-chart-card .recharts-pie-sector:focus,
+.ayuda-chart-card .recharts-layer:focus,
+.dashboard-chart-card .recharts-layer:focus {
+  outline: none !important;
+}
+
 .ayuda-info-header {
   display: flex;
   align-items: flex-start;
