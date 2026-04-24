@@ -146,9 +146,10 @@ function AdminScan() {
       setScanning(true);
       setScanResult("Starting camera…");
       scannerRef.current = new Html5Qrcode("reader", { verbose: false });
-      await navigator.mediaDevices.getUserMedia({
+      const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: "environment" },
       });
+      stream.getTracks().forEach(track => track.stop());
       await scannerRef.current.start(
         { facingMode: "environment" },
         { fps: 5, qrbox: { width: 250, height: 250 } },

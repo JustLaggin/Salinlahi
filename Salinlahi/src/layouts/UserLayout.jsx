@@ -1,5 +1,5 @@
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
-import { Home, QrCode, LogOut } from "lucide-react";
+import { Home, QrCode, LogOut, History } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 
 function UserLayout() {
@@ -29,15 +29,15 @@ function UserLayout() {
           to="/user"
           className={`nav-item ${path === "/user" ? "active" : ""}`}
         >
-          <Home size={24} />
-          <span>Home</span>
+          <QrCode size={24} />
+          <span>QR ID</span>
         </Link>
         <Link
-          to="/user/currentayuda"
-          className={`nav-item ${path === "/user/currentayuda" ? "active" : ""}`}
+          to="/user/history"
+          className={`nav-item ${path === "/user/history" ? "active" : ""}`}
         >
-          <QrCode size={24} />
-          <span>QR</span>
+          <History size={24} />
+          <span>History</span>
         </Link>
         <button
           type="button"

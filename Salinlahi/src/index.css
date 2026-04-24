@@ -367,7 +367,7 @@ body {
   width: calc(100% - 3rem);
   max-width: 440px;
   height: 72px;
-  background: rgba(var(--bg-elevated), 0.85);
+  background: var(--bg-elevated);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--border-subtle);
@@ -431,7 +431,7 @@ button.nav-item.nav-item--button {
 }
 
 .page-content {
-  padding-bottom: 100px;
+  padding-bottom: 120px;
 }
 
 /* QR needs a white quiet zone for scanners */
