@@ -486,11 +486,11 @@ function AdminScan() {
   const submitManual = async () => {
     const norm = normalizeCitizenCodeInput(manualInput);
     if (norm.length < 4) {
-      alert("Enter the manual code (at least 4 characters).");
+      setClaimError("Enter the manual code (at least 4 characters).");
       return;
     }
     if (!manualReason) {
-      alert("Please select a reason for manual entry to maintain the audit trail.");
+      setClaimError("Please select a reason for manual entry to maintain the audit trail.");
       return;
     }
     setManualOpen(false);
@@ -502,7 +502,7 @@ function AdminScan() {
   const handlePickAyuda = () => {
     const a = ongoingAyudas.find((x) => x.id === pickerValue);
     if (!a) {
-      alert("Select an Ayuda event.");
+      setClaimError("Select an Ayuda event.");
       return;
     }
     setActiveAyuda(a.id, a.title || "");

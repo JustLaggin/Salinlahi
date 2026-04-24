@@ -31,7 +31,11 @@
 }
 
 .modal-overlay--scroll-follow {
-  /* Removed absolute positioning to enforce strict fixed viewport behavior */
+  align-items: flex-start;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-top: 3rem;
+  padding-bottom: 3rem;
 }
 
 .base-card.modal-panel--scan {

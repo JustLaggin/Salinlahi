@@ -54,6 +54,12 @@ export default function AdminAyudaDetail() {
   const [beneficiaries, setBeneficiaries] = useState([]);
   const [claimsMap, setClaimsMap] = useState({});
   const [loading, setLoading] = useState(true);
+  const [actionError, setActionError] = useState("");
+
+  // Modal states
+  const [rejectTarget, setRejectTarget] = useState(null);
+  const [revertTarget, setRevertTarget] = useState(null);
+  const [cloneModalOpen, setCloneModalOpen] = useState(false);
 
   const refresh = useCallback(async () => {
     if (!ayudaId) return;
@@ -137,7 +143,7 @@ export default function AdminAyudaDetail() {
 
   const rejectApplicant = async (uid) => {
     if (!isStaffOrAdmin) return;
-    if (!window.confirm("Reject this applicant?")) return;
+    setRejectTarget(null);
     try {
       const batch = writeBatch(db);
       const ayudaRef = doc(db, "ayudas", ayudaId);
@@ -149,13 +155,13 @@ export default function AdminAyudaDetail() {
       await refresh();
     } catch(err) {
       console.error(err);
-      alert("Error rejecting applicant.");
+      setActionError("Error rejecting applicant.");
     }
   };
 
   const removeBeneficiary = async (uid) => {
     if (!isAdmin) return;
-    if (!window.confirm("Move this user back to applicants? This will revoke their approval.")) return;
+    setRevertTarget(null);
     try {
       const batch = writeBatch(db);
       const ayudaRef = doc(db, "ayudas", ayudaId);
@@ -171,7 +177,7 @@ export default function AdminAyudaDetail() {
       await refresh();
     } catch(err) {
       console.error(err);
-      alert("Error moving beneficiary back.");
+      setActionError("Error moving beneficiary back.");
     }
   };
 
@@ -190,7 +196,7 @@ export default function AdminAyudaDetail() {
       await refresh();
     } catch (err) {
       console.error("Archive failed:", err);
-      alert("Error archiving event. Check console.");
+      setActionError("Error archiving event.");
     } finally {
       setIsArchiving(false);
     }
@@ -205,7 +211,7 @@ export default function AdminAyudaDetail() {
       await refresh();
     } catch (err) {
       console.error("Reopen failed:", err);
-      alert("Error reopening event. Check console.");
+      setActionError("Error reopening event.");
     } finally {
       setIsArchiving(false);
     }
@@ -213,7 +219,7 @@ export default function AdminAyudaDetail() {
 
   const handleCloneEvent = async () => {
     if (!isAdmin || !ayuda) return;
-    if (!window.confirm("This will create a new Ayuda event and copy all currently APPROVED beneficiaries over. Claims will be reset to 0. Proceed?")) return;
+    setCloneModalOpen(false);
     
     setIsCloning(true);
     try {
@@ -266,11 +272,11 @@ export default function AdminAyudaDetail() {
       // Archive the current (old) event
       await updateDoc(doc(db, "ayudas", ayudaId), { status: "COMPLETED" });
 
-      alert("Event successfully cloned and the previous iteration has been archived! Redirecting to the new event...");
+      setActionError("");
       navigate(`/admin/ayuda/${newId}`);
     } catch (err) {
       console.error("Clone failed:", err);
-      alert("Error cloning event. Check console.");
+      setActionError("Error cloning event. Check console.");
     } finally {
       setIsCloning(false);
     }
@@ -336,7 +342,7 @@ export default function AdminAyudaDetail() {
                 type="button" 
                 className="action-btn" 
                 style={{ background: "var(--accent-gradient)", color: "white", border: "none" }}
-                onClick={handleCloneEvent}
+                onClick={() => setCloneModalOpen(true)}
                 disabled={isCloning}
               >
                 {isCloning ? "Cloning..." : "Start Next Iteration"}
@@ -437,7 +443,7 @@ export default function AdminAyudaDetail() {
                       <Cell key={i} fill={entry.fill} />
                     ))}
                   </Pie>
-                  <Tooltip content={<RatioTooltip />} />
+                  <Tooltip content={<RatioTooltip />} wrapperStyle={{ pointerEvents: "none", zIndex: 10 }} isAnimationActive={false} />
                   <Legend content={<RatioLegend />} />
                 </PieChart>
               </ResponsiveContainer>
@@ -477,7 +483,7 @@ export default function AdminAyudaDetail() {
                         <button className="action-btn" style={{ borderColor: COLORS.CLAIMED, color: COLORS.CLAIMED }} onClick={() => approveApplicant(a.uid)} title="Approve">
                           <Check size={16} /> Accept
                         </button>
-                        <button className="action-btn" style={{ borderColor: "#ef4444", color: "#ef4444" }} onClick={() => rejectApplicant(a.uid)} title="Reject">
+                        <button className="action-btn" style={{ borderColor: "#ef4444", color: "#ef4444" }} onClick={() => setRejectTarget(a)} title="Reject">
                           <X size={16} /> Reject
                         </button>
                       </div>
@@ -549,7 +555,7 @@ export default function AdminAyudaDetail() {
                     {isAdmin && !isCompleted && (
                       <td>
                         <div className="table-actions">
-                          <button className="action-btn" onClick={() => removeBeneficiary(b.uid)} title="Move back to applicants">
+                          <button className="action-btn" onClick={() => setRevertTarget(b)} title="Move back to applicants">
                             <Undo2 size={16} /> Revert
                           </button>
                         </div>
@@ -595,6 +601,71 @@ export default function AdminAyudaDetail() {
               </button>
             </div>
           </div>
+        </div>
+      {/* Clone Confirmation Modal */}
+      {cloneModalOpen && (
+        <div className="modal-overlay modal-overlay--padded">
+          <div className="base-card modal-panel" style={{ textAlign: "center", padding: "2.5rem", maxWidth: "480px" }}>
+            <div style={{ marginBottom: "1rem", color: "var(--accent-blue)" }}>
+              <RotateCcw size={36} />
+            </div>
+            <h2 className="auth-title" style={{ marginBottom: "1rem" }}>Start Next Iteration?</h2>
+            <p className="settings-text" style={{ marginBottom: "1.5rem", fontSize: "1rem", lineHeight: 1.5 }}>
+              This will create a <strong>new Ayuda event</strong> and copy all currently approved beneficiaries over. Claims will be reset to 0. The current event will be <strong>archived automatically</strong>.
+            </p>
+            <div style={{ display: "flex", gap: "0.75rem", justifyContent: "center" }}>
+              <button type="button" className="auth-button" style={{ background: "var(--input-bg)", color: "var(--text-primary)" }} onClick={() => setCloneModalOpen(false)} disabled={isCloning}>Cancel</button>
+              <button type="button" className="auth-button" onClick={handleCloneEvent} disabled={isCloning}>
+                {isCloning ? "Cloning..." : "Confirm & Clone"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reject Applicant Confirmation Modal */}
+      {rejectTarget && (
+        <div className="modal-overlay modal-overlay--padded">
+          <div className="base-card modal-panel" style={{ textAlign: "center", padding: "2.5rem", maxWidth: "440px" }}>
+            <h2 className="auth-title" style={{ color: "#ef4444", marginBottom: "1rem" }}>Reject Applicant?</h2>
+            <p className="settings-text" style={{ marginBottom: "1.5rem", fontSize: "1rem", lineHeight: 1.5 }}>
+              <strong>{rejectTarget.displayName}</strong> will be removed from the applicants list for this Ayuda event.
+            </p>
+            <div style={{ display: "flex", gap: "0.75rem", justifyContent: "center" }}>
+              <button type="button" className="auth-button" style={{ background: "var(--input-bg)", color: "var(--text-primary)" }} onClick={() => setRejectTarget(null)}>Cancel</button>
+              <button type="button" className="auth-button" style={{ background: "#ef4444" }} onClick={() => rejectApplicant(rejectTarget.uid)}>Confirm Reject</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Revert Beneficiary Confirmation Modal */}
+      {revertTarget && (
+        <div className="modal-overlay modal-overlay--padded">
+          <div className="base-card modal-panel" style={{ textAlign: "center", padding: "2.5rem", maxWidth: "440px" }}>
+            <h2 className="auth-title" style={{ color: "#d97706", marginBottom: "1rem" }}>Revert to Applicant?</h2>
+            <p className="settings-text" style={{ marginBottom: "1.5rem", fontSize: "1rem", lineHeight: 1.5 }}>
+              Move <strong>{revertTarget.displayName}</strong> back to applicants? This will revoke their beneficiary approval.
+            </p>
+            <div style={{ display: "flex", gap: "0.75rem", justifyContent: "center" }}>
+              <button type="button" className="auth-button" style={{ background: "var(--input-bg)", color: "var(--text-primary)" }} onClick={() => setRevertTarget(null)}>Cancel</button>
+              <button type="button" className="auth-button" style={{ background: "#d97706" }} onClick={() => removeBeneficiary(revertTarget.uid)}>Confirm Revert</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Error Toast */}
+      {actionError && (
+        <div style={{
+          position: "fixed", bottom: "2rem", right: "2rem",
+          background: "linear-gradient(135deg, #ef4444, #dc2626)",
+          color: "#fff", padding: "1rem 1.75rem", borderRadius: "12px",
+          boxShadow: "0 8px 24px rgba(0,0,0,0.3)", zIndex: 9999,
+          display: "flex", alignItems: "center", gap: "0.75rem",
+          fontWeight: 600, fontSize: "0.95rem", cursor: "pointer"
+        }} onClick={() => setActionError("")}>
+          ⚠️ {actionError}
         </div>
       )}
     </div>

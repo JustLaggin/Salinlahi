@@ -384,7 +384,7 @@ function AdminManageStaff() {
         </table>
       </div>
       {generatedStaffPassword && (
-        <div className="modal-overlay modal-overlay--padded">
+        <div className="modal-overlay modal-overlay--padded modal-overlay--scroll-follow">
           <div className="base-card modal-panel" style={{ textAlign: "center", padding: "2.5rem" }}>
             <h2 className="auth-title" style={{ color: "var(--color-primary-green)", marginBottom: "1rem" }}>
               ✅ Staff Account Created Successfully
@@ -430,7 +430,7 @@ function AdminManageStaff() {
       )}
 
       {userToDelete && (
-        <div className="modal-overlay modal-overlay--padded">
+        <div className="modal-overlay modal-overlay--padded modal-overlay--scroll-follow">
           <div className="base-card modal-panel" style={{ textAlign: "center", padding: "2.5rem" }}>
             <h2 className="auth-title" style={{ color: "#ef4444", marginBottom: "1rem" }}>
               Delete Account

@@ -541,7 +541,7 @@ function AdminManageCitizens() {
       </div>
 
       {editingCitizen && (
-        <div className="modal-overlay modal-overlay--padded">
+        <div className="modal-overlay modal-overlay--padded modal-overlay--scroll-follow">
           <div className="base-card modal-panel" style={{ padding: "2.5rem" }}>
             <h2 className="auth-title" style={{ textAlign: "left", marginBottom: "1rem" }}>
               Edit Citizen
@@ -670,7 +670,7 @@ function AdminManageCitizens() {
       )}
 
       {citizenToDelete && (
-        <div className="modal-overlay modal-overlay--padded">
+        <div className="modal-overlay modal-overlay--padded modal-overlay--scroll-follow">
           <div className="base-card modal-panel" style={{ textAlign: "center", padding: "2.5rem" }}>
             <h2 className="auth-title" style={{ color: "#ef4444", marginBottom: "1rem" }}>
               Delete Citizen Record
