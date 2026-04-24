@@ -14,13 +14,19 @@ function LoadingScreen() {
 
 /** @param {{ children: React.ReactNode, allowedRoles: string[] }} props */
 export function ProtectedRoute({ children, allowedRoles }) {
-  const { firebaseUser, role, loading } = useAuth();
+  const { firebaseUser, profile, role, loading } = useAuth();
   const location = useLocation();
 
   if (loading) return <LoadingScreen />;
   if (!firebaseUser) {
     return <Navigate to="/login" state={{ from: location.pathname }} replace />;
   }
+
+  // Intercept users who must change their password before accessing any protected page
+  if (profile?.requiresPasswordChange && (role === "admin" || role === "staff")) {
+    return <Navigate to="/login" replace />;
+  }
+
   if (!role || !allowedRoles.includes(role)) {
     if (role === "citizen") return <Navigate to="/user" replace />;
     if (role === "staff") return <Navigate to="/staff/StaffHome" replace />;

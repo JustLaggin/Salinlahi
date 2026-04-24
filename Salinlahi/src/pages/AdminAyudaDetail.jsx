@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { doc, getDoc, updateDoc, arrayUnion, arrayRemove, collection, getDocs, addDoc, writeBatch } from "firebase/firestore";
+import { doc, getDoc, arrayUnion, arrayRemove, collection, getDocs, addDoc, writeBatch } from "firebase/firestore";
 import { db } from "../firebase";
 import { useAuth } from "../context/AuthContext";
 import {
@@ -117,15 +117,17 @@ export default function AdminAyudaDetail() {
   const approveApplicant = async (uid) => {
     if (!isStaffOrAdmin) return;
     try {
+      const batch = writeBatch(db);
       const ayudaRef = doc(db, "ayudas", ayudaId);
-      await updateDoc(ayudaRef, {
+      batch.update(ayudaRef, {
         applicants: arrayRemove(uid),
         beneficiaries: arrayUnion(uid)
       });
-      await updateDoc(doc(db, "users", uid), {
+      batch.update(doc(db, "users", uid), {
         ayudas_applied: arrayRemove(ayudaId),
         ayudas_beneficiary: arrayUnion(ayudaId)
       });
+      await batch.commit();
       await refresh();
     } catch(err) {
       console.error(err);
@@ -137,11 +139,13 @@ export default function AdminAyudaDetail() {
     if (!isStaffOrAdmin) return;
     if (!window.confirm("Reject this applicant?")) return;
     try {
+      const batch = writeBatch(db);
       const ayudaRef = doc(db, "ayudas", ayudaId);
-      await updateDoc(ayudaRef, { applicants: arrayRemove(uid) });
-      await updateDoc(doc(db, "users", uid), {
+      batch.update(ayudaRef, { applicants: arrayRemove(uid) });
+      batch.update(doc(db, "users", uid), {
         ayudas_applied: arrayRemove(ayudaId)
       });
+      await batch.commit();
       await refresh();
     } catch(err) {
       console.error(err);
@@ -153,15 +157,17 @@ export default function AdminAyudaDetail() {
     if (!isAdmin) return;
     if (!window.confirm("Move this user back to applicants? This will revoke their approval.")) return;
     try {
+      const batch = writeBatch(db);
       const ayudaRef = doc(db, "ayudas", ayudaId);
-      await updateDoc(ayudaRef, {
+      batch.update(ayudaRef, {
         beneficiaries: arrayRemove(uid),
         applicants: arrayUnion(uid)
       });
-      await updateDoc(doc(db, "users", uid), {
+      batch.update(doc(db, "users", uid), {
         ayudas_beneficiary: arrayRemove(ayudaId),
         ayudas_applied: arrayUnion(ayudaId)
       });
+      await batch.commit();
       await refresh();
     } catch(err) {
       console.error(err);
@@ -201,7 +207,7 @@ export default function AdminAyudaDetail() {
       const newId = newAyudaRef.id;
 
       // 2. Batch update users to add the new Ayuda ID to their ayudas_beneficiary array
-      const batch = writeBatch(db);
+      let batch = writeBatch(db);
       let batchCount = 0;
 
       for (const b of beneficiaries) {
@@ -214,6 +220,7 @@ export default function AdminAyudaDetail() {
         // Firestore batch has a limit of 500 operations
         if (batchCount === 450) {
           await batch.commit();
+          batch = writeBatch(db);
           batchCount = 0;
         }
       }

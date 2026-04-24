@@ -11,6 +11,7 @@ import {
   deleteDoc,
   arrayUnion,
   arrayRemove,
+  writeBatch,
 } from "firebase/firestore";
 import { db } from "../firebase";
 import { useAuth } from "../context/AuthContext";
@@ -75,29 +76,26 @@ function AdminCurrentAyuda() {
   const approveApplicant = async (applicantObj) => {
     if (!selectedAyuda || !applicantObj.uuid) return;
     const applicantId = applicantObj.uuid;
-    const ayudaRef = doc(db, "ayudas", selectedAyuda.id);
 
     try {
-      await updateDoc(ayudaRef, {
+      const batch = writeBatch(db);
+      const ayudaRef = doc(db, "ayudas", selectedAyuda.id);
+      batch.update(ayudaRef, {
         applicants: arrayRemove(applicantId),
         beneficiaries: arrayUnion(applicantId),
       });
+      const userRef = doc(db, "users", applicantId);
+      batch.update(userRef, {
+        ayudas_applied: arrayRemove(selectedAyuda.id),
+        ayudas_beneficiary: arrayUnion(selectedAyuda.id),
+      });
+      await batch.commit();
     } catch (err) {
       console.error(err);
       alert(
         "Could not approve this applicant. Check your connection and Firestore permissions."
       );
       return;
-    }
-
-    try {
-      const userRef = doc(db, "users", applicantId);
-      await updateDoc(userRef, {
-        ayudas_applied: arrayRemove(selectedAyuda.id),
-        ayudas_beneficiary: arrayUnion(selectedAyuda.id),
-      });
-    } catch (err) {
-      console.error(err);
     }
 
     setModalList((prev) => prev.filter((a) => a.uuid !== applicantId));
@@ -107,27 +105,24 @@ function AdminCurrentAyuda() {
   const rejectApplicant = async (applicantObj) => {
     if (!selectedAyuda || !applicantObj.uuid) return;
     const applicantId = applicantObj.uuid;
-    const ayudaRef = doc(db, "ayudas", selectedAyuda.id);
 
     try {
-      await updateDoc(ayudaRef, {
+      const batch = writeBatch(db);
+      const ayudaRef = doc(db, "ayudas", selectedAyuda.id);
+      batch.update(ayudaRef, {
         applicants: arrayRemove(applicantId),
       });
+      const userRef = doc(db, "users", applicantId);
+      batch.update(userRef, {
+        ayudas_applied: arrayRemove(selectedAyuda.id),
+      });
+      await batch.commit();
     } catch (err) {
       console.error(err);
       alert(
         "Could not reject this applicant. Check your connection and Firestore permissions."
       );
       return;
-    }
-
-    try {
-      const userRef = doc(db, "users", applicantId);
-      await updateDoc(userRef, {
-        ayudas_applied: arrayRemove(selectedAyuda.id),
-      });
-    } catch (err) {
-      console.error(err);
     }
 
     setModalList((prev) => prev.filter((a) => a.uuid !== applicantId));
@@ -286,23 +281,23 @@ function AdminCurrentAyuda() {
               {filtered.map((ayuda) => (
                 <tr key={ayuda.id}>
                   <td>
-                      <div className="data-table__title-block">
-                        <div className="data-table__title">{ayuda.title}</div>
-                        <div className="data-table__sub">
-                          {ayuda.schedule || "TBA"}
-                          {ayuda.timeStart && ayuda.timeEnd
-                            ? ` · ${formatTime(ayuda.timeStart)} → ${formatTime(
-                                ayuda.timeEnd
-                              )}`
-                            : ""}
-                          {" · ₱"}
-                          {ayuda.amount?.toLocaleString?.() ?? ayuda.amount}
-                          {" · "}
-                          {(ayuda.programType || "ONE_TIME") === "SERVICE"
-                            ? "SERVICE"
-                            : "ONE_TIME"}
-                        </div>
+                    <div className="data-table__title-block">
+                      <div className="data-table__title">{ayuda.title}</div>
+                      <div className="data-table__sub">
+                        {ayuda.schedule || "TBA"}
+                        {ayuda.timeStart && ayuda.timeEnd
+                          ? ` · ${formatTime(ayuda.timeStart)} → ${formatTime(
+                            ayuda.timeEnd
+                          )}`
+                          : ""}
+                        {" · ₱"}
+                        {ayuda.amount?.toLocaleString?.() ?? ayuda.amount}
+                        {" · "}
+                        {(ayuda.programType || "ONE_TIME") === "SERVICE"
+                          ? "SERVICE"
+                          : "ONE_TIME"}
                       </div>
+                    </div>
                   </td>
                   <td>
                     <div className="data-table__loc-main">
@@ -410,46 +405,45 @@ function AdminCurrentAyuda() {
                   const showApplicantActions =
                     modalTitle === "Applicants" && isStaffOrAdmin;
                   return (
-                  <div
-                    key={index}
-                    className={`modal-list-row${
-                      !showApplicantActions ? " modal-list-row--interactive" : ""
-                    }`}
-                    onClick={() => setSelectedUser(item)}
-                  >
-                    <span>{item.displayName}</span>
+                    <div
+                      key={index}
+                      className={`modal-list-row${!showApplicantActions ? " modal-list-row--interactive" : ""
+                        }`}
+                      onClick={() => setSelectedUser(item)}
+                    >
+                      <span>{item.displayName}</span>
 
-                    {showApplicantActions && (
-                      <div className="row-buttons">
-                        <button
-                          type="button"
-                          className="approve-btn"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            void approveApplicant(item);
-                          }}
-                        >
-                          Approve
-                        </button>
-                        <button
-                          type="button"
-                          className="reject-btn"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (
-                              window.confirm(
-                                `Reject ${item.displayName}? They will be removed from applicants for this Ayuda.`
-                              )
-                            ) {
-                              void rejectApplicant(item);
-                            }
-                          }}
-                        >
-                          Reject
-                        </button>
-                      </div>
-                    )}
-                  </div>
+                      {showApplicantActions && (
+                        <div className="row-buttons">
+                          <button
+                            type="button"
+                            className="approve-btn"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              void approveApplicant(item);
+                            }}
+                          >
+                            Approve
+                          </button>
+                          <button
+                            type="button"
+                            className="reject-btn"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (
+                                window.confirm(
+                                  `Reject ${item.displayName}? They will be removed from applicants for this Ayuda.`
+                                )
+                              ) {
+                                void rejectApplicant(item);
+                              }
+                            }}
+                          >
+                            Reject
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   );
                 })
               )}
@@ -645,7 +639,7 @@ function AdminCurrentAyuda() {
                 Delete Ayuda
               </h2>
               <p className="settings-text" style={{ marginBottom: "1.5rem", fontSize: "1.1rem" }}>
-                Are you sure you want to permanently delete <strong>{deleteModalAyuda.title}</strong>?<br/>
+                Are you sure you want to permanently delete <strong>{deleteModalAyuda.title}</strong>?<br />
                 All applicant and beneficiary data for this event will be lost. This action cannot be undone.
               </p>
               <div style={{ display: "flex", gap: "1rem", justifyContent: "center" }}>

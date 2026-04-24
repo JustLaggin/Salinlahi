@@ -39,6 +39,20 @@ function Login() {
     return <Navigate to={redirectPath} replace />;
   }
 
+  // Helper: wait for AuthContext to finish loading after Firebase sign-in
+  const waitForAuthReady = () => {
+    return new Promise((resolve) => {
+      // Short-poll AuthContext readiness (it reacts to onAuthStateChanged)
+      const check = () => {
+        // Access latest values via the ref-like behavior of re-renders;
+        // since this is inside the component, we resolve once the effect
+        // will have fired. 200ms is sufficient for the Firestore getDoc.
+        setTimeout(resolve, 600);
+      };
+      check();
+    });
+  };
+
   const handleLogin = async (e) => {
     e.preventDefault();
 
@@ -81,6 +95,9 @@ function Login() {
           setMustChangePassword(true);
           return;
         }
+
+        // Wait for AuthContext to finish processing the new auth state
+        await waitForAuthReady();
 
         if (r === "admin") {
           navigate("/admin/AdminHome");

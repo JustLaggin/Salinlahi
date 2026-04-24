@@ -86,6 +86,7 @@ function AdminCreateAyuda() {
 
       if (!user) {
         alert("Admin not logged in.");
+        setSubmitting(false);
         return;
       }
 
