@@ -64,6 +64,8 @@ function AdminScan() {
   /** Role of this citizen for the active Ayuda (set when scan confirm opens). */
   const [scanAyudaStatus, setScanAyudaStatus] = useState(null);
   const [activeAyudaMeta, setActiveAyudaMeta] = useState(null);
+  /** The citizen's existing claim doc for the active Ayuda, if any. */
+  const [claimDoc, setClaimDoc] = useState(null);
 
   const [successOverlay, setSuccessOverlay] = useState(null);
 
@@ -196,15 +198,31 @@ function AdminScan() {
           const d = ayudaSnap.data();
           const applicants = d.applicants || [];
           const beneficiaries = d.beneficiaries || [];
+          const isBeneficiary = beneficiaries.includes(uid);
           setScanAyudaStatus({
             isApplicant: applicants.includes(uid),
-            isBeneficiary: beneficiaries.includes(uid),
+            isBeneficiary,
           });
+          // Fetch existing claim doc so the UI can show real-time claimed/attendance state
+          if (isBeneficiary) {
+            try {
+              const existingClaim = await getDoc(
+                doc(db, "ayudas", activeAyudaId, "claims", uid)
+              );
+              setClaimDoc(existingClaim.exists() ? existingClaim.data() : null);
+            } catch {
+              setClaimDoc(null);
+            }
+          } else {
+            setClaimDoc(null);
+          }
         } else {
           setScanAyudaStatus({ isApplicant: false, isBeneficiary: false });
+          setClaimDoc(null);
         }
       } else {
         setScanAyudaStatus(null);
+        setClaimDoc(null);
       }
 
       setConfirmOpen(true);
@@ -221,6 +239,7 @@ function AdminScan() {
     setUserData(null);
     setClaimError("");
     setScanAyudaStatus(null);
+    setClaimDoc(null);
     setIdVerified(false);
     if (scannerRef.current && isRunningRef.current && scannerRef.current.getState() === 2) {
       try {
@@ -300,7 +319,21 @@ function AdminScan() {
     } catch (e) {
       console.error(e);
       if (e.message === "ALREADY_BENEFICIARY") {
-        setClaimError("This citizen is already an approved beneficiary. Use “Record claim” to log pickup.");
+        // Auto-recover: flip the modal to the beneficiary view instead of a dead-end error
+        setScanAyudaStatus({ isApplicant: false, isBeneficiary: true });
+        setClaimError("");
+        // Fetch their claim doc so the UI shows correct claimed/attendance state
+        if (activeAyudaId && userUid) {
+          try {
+            const existingClaim = await getDoc(
+              doc(db, "ayudas", activeAyudaId, "claims", userUid)
+            );
+            setClaimDoc(existingClaim.exists() ? existingClaim.data() : null);
+          } catch {
+            setClaimDoc(null);
+          }
+        }
+        setIdVerified(false);
       } else if (e.message === "ALREADY_APPLICANT") {
         await stopScanner();
         setConfirmOpen(false);
@@ -663,132 +696,198 @@ function AdminScan() {
         </div>
       )}
 
-      {confirmOpen && userData && (
-        <div className="modal-overlay modal-overlay--padded">
-          <div className="base-card modal-panel modal-panel--scan">
-            <h3 className="auth-title">
-              {scanAyudaStatus?.isBeneficiary
-                ? isServiceProgram
-                  ? "Record attendance"
-                  : "Record pickup"
-                : scanAyudaStatus?.isApplicant
-                  ? "Already an applicant"
-                  : "Add to applicants"}
-            </h3>
-            <p className="settings-text" style={{ marginBottom: "1rem" }}>
-              Ayuda:{" "}
-              <strong>{activeAyudaTitle || activeAyudaId}</strong>
-            </p>
-            
-            <div className="modal-inset-panel" style={{ marginBottom: "1rem", backgroundColor: "#f0fdf4", border: "1px solid #bbf7d0" }}>
-              <p style={{ fontWeight: 800, fontSize: "1.2rem", color: "#166534" }}>
-                {userData.first_name} {userData.last_name}
+      {confirmOpen && userData && (() => {
+        // ── Derived state for this citizen's claim ──────────────────────────
+        const alreadyClaimed = !isServiceProgram && claimDoc !== null;
+        const attendedDays   = isServiceProgram ? (claimDoc?.attendance?.length ?? 0) : 0;
+        const todayKey       = new Date().toDateString();
+        const alreadyToday   = isServiceProgram &&
+          (claimDoc?.attendance ?? []).some((a) => new Date(a.checkedAt?.toDate?.() ?? a.checkedAt).toDateString() === todayKey);
+        const quotaHit       = isServiceProgram && attendedDays >= requiredDays;
+
+        // ── Modal title ─────────────────────────────────────────────────────
+        let modalTitle = "Add to applicants";
+        if (scanAyudaStatus?.isApplicant)  modalTitle = "Already an applicant";
+        else if (scanAyudaStatus?.isBeneficiary) {
+          if (isServiceProgram)             modalTitle = "Record Today's Attendance";
+          else if (alreadyClaimed)          modalTitle = "Aid Already Disbursed";
+          else                              modalTitle = "Confirm & Disburse Aid";
+        }
+
+        return (
+          <div className="modal-overlay modal-overlay--padded">
+            <div className="base-card modal-panel modal-panel--scan">
+              <h3 className="auth-title">{modalTitle}</h3>
+              <p className="settings-text" style={{ marginBottom: "1rem" }}>
+                Ayuda: <strong>{activeAyudaTitle || activeAyudaId}</strong>
               </p>
-              {userData.citizenCode && (
-                <p className="settings-text" style={{ color: "#15803d" }}>Code: {userData.citizenCode}</p>
+
+              {/* ── Citizen Profile Card ─────────────────────────── */}
+              <div className="modal-inset-panel" style={{ marginBottom: "1rem", backgroundColor: "#f0fdf4", border: "1px solid #bbf7d0" }}>
+                <p style={{ fontWeight: 800, fontSize: "1.2rem", color: "#166534" }}>
+                  {userData.first_name} {userData.last_name}
+                </p>
+                {userData.citizenCode && (
+                  <p className="settings-text" style={{ color: "#15803d" }}>Code: {userData.citizenCode}</p>
+                )}
+                <div className="settings-text" style={{ color: "#166534", marginTop: "0.75rem", textAlign: "left" }}>
+                  <p><strong>Email:</strong> {userData.email || "N/A"}</p>
+                  <p><strong>Phone:</strong> {userData.phone || userData.contact_number || "N/A"}</p>
+                  <p><strong>Birthday:</strong> {userData.birth_date || "N/A"}</p>
+                  <p><strong>Address:</strong> {userData.address || "N/A"}</p>
+                  <p><strong>Barangay:</strong> {userData.barangay || "N/A"}</p>
+                  <p><strong>City:</strong> {userData.city || "N/A"}</p>
+                </div>
+
+                {/* SERVICE quota progress badge */}
+                {scanAyudaStatus?.isBeneficiary && isServiceProgram && (
+                  <div style={{
+                    marginTop: "0.75rem",
+                    padding: "0.5rem 0.75rem",
+                    background: quotaHit ? "rgba(52,211,153,0.15)" : "rgba(56,189,248,0.12)",
+                    borderRadius: "8px",
+                    fontWeight: 700,
+                    color: quotaHit ? "var(--accent-green)" : "var(--accent-blue)",
+                    fontSize: "0.95rem",
+                  }}>
+                    Attendance: {attendedDays} / {requiredDays} Days
+                    {quotaHit && " ✅ Quota Complete"}
+                  </div>
+                )}
+              </div>
+
+              {/* ── ONE_TIME: Already Claimed Banner ─────────────── */}
+              {scanAyudaStatus?.isBeneficiary && !isServiceProgram && alreadyClaimed && (
+                <div style={{
+                  marginBottom: "1.25rem",
+                  padding: "1rem 1.25rem",
+                  background: "rgba(52,211,153,0.12)",
+                  border: "1px solid #34d399",
+                  borderRadius: "10px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.75rem",
+                  fontSize: "1rem",
+                  fontWeight: 700,
+                  color: "var(--accent-green)",
+                }}>
+                  <span style={{ fontSize: "1.4rem" }}>✅</span>
+                  Aid Already Claimed for this Iteration
+                </div>
               )}
-              <div className="settings-text" style={{ color: "#166534", marginTop: "0.75rem", textAlign: "left" }}>
-                <p><strong>Email:</strong> {userData.email || "N/A"}</p>
-                <p><strong>Phone:</strong> {userData.phone || userData.contact_number || "N/A"}</p>
-                <p><strong>Birthday:</strong> {userData.birth_date || "N/A"}</p>
-                <p><strong>Address:</strong> {userData.address || "N/A"}</p>
-                <p><strong>Barangay:</strong> {userData.barangay || "N/A"}</p>
-                <p><strong>City:</strong> {userData.city || "N/A"}</p>
-              </div>
-            </div>
 
-            {/* Mitigation 2: Mandatory Physical ID Verification */}
-            {!scanAyudaStatus?.isApplicant && (
-              <div style={{ 
-                marginBottom: "1.25rem", 
-                padding: "1rem", 
-                backgroundColor: "var(--bg-muted)", 
-                borderRadius: "8px",
-                borderLeft: "4px solid #f59e0b"
-              }}>
-                <label style={{ display: "flex", alignItems: "flex-start", gap: "0.75rem", cursor: "pointer" }}>
-                  <input 
-                    type="checkbox" 
-                    checked={idVerified}
-                    onChange={(e) => setIdVerified(e.target.checked)}
-                    style={{ width: "20px", height: "20px", marginTop: "0.1rem" }}
-                  />
-                  <span style={{ fontSize: "0.95rem", lineHeight: "1.4" }}>
-                    <strong>Physical ID Verified</strong><br/>
-                    <span className="settings-text">I have checked a physical ID card and confirmed the face matches the registered name above.</span>
-                  </span>
-                </label>
-              </div>
-            )}
+              {/* ── Applicant-only info text ──────────────────────── */}
+              {scanAyudaStatus?.isApplicant && (
+                <p className="settings-text" style={{ marginBottom: "1rem" }}>
+                  They are already on the <strong>applicant</strong> list for this
+                  event. An admin or staff member can <strong>Accept</strong> or{" "}
+                  <strong>Reject</strong> them under Active Ayuda → Applicants.
+                </p>
+              )}
 
-            {scanAyudaStatus?.isBeneficiary ? (
-              <p className="settings-text" style={{ marginBottom: "1rem" }}>
-                This citizen is already an <strong>approved beneficiary</strong>. Use
-                the button below to{" "}
-                {isServiceProgram
-                  ? "record today's attendance."
-                  : "record that aid was physically handed out."}{" "}
-                Approvals stay in <strong>Active Ayuda</strong> (applicants list).
-              </p>
-            ) : scanAyudaStatus?.isApplicant ? (
-              <p className="settings-text" style={{ marginBottom: "1rem" }}>
-                They are already on the <strong>applicant</strong> list for this
-                event. An admin or staff member can <strong>Accept</strong> or{" "}
-                <strong>Reject</strong> them under Active Ayuda → Applicants.
-              </p>
-            ) : (
-              <p className="settings-text" style={{ marginBottom: "1rem" }}>
-                Register them as an <strong>applicant</strong> for this Ayuda. They
-                are <strong>not</strong> a beneficiary until someone accepts them in
-                Active Ayuda.
-              </p>
-            )}
+              {/* ── New citizen info text ─────────────────────────── */}
+              {!scanAyudaStatus?.isBeneficiary && !scanAyudaStatus?.isApplicant && (
+                <p className="settings-text" style={{ marginBottom: "1rem" }}>
+                  Register them as an <strong>applicant</strong> for this Ayuda. They
+                  are <strong>not</strong> a beneficiary until someone accepts them in
+                  Active Ayuda.
+                </p>
+              )}
 
-            {claimError && (
-              <p style={{ color: "#ef4444", fontWeight: 500, marginBottom: "1rem", padding: "0.5rem", backgroundColor: "#fee2e2", borderRadius: "6px" }}>
-                {claimError}
-              </p>
-            )}
-            
-            <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", width: "100%" }}>
-              {scanAyudaStatus?.isBeneficiary ? (
+              {/* ── Physical ID Verification (shown for all actionable paths) ── */}
+              {!scanAyudaStatus?.isApplicant && !(scanAyudaStatus?.isBeneficiary && !isServiceProgram && alreadyClaimed) && (
+                <div style={{
+                  marginBottom: "1.25rem",
+                  padding: "1rem",
+                  backgroundColor: "var(--bg-muted)",
+                  borderRadius: "8px",
+                  borderLeft: "4px solid #f59e0b",
+                }}>
+                  <label style={{ display: "flex", alignItems: "flex-start", gap: "0.75rem", cursor: "pointer" }}>
+                    <input
+                      type="checkbox"
+                      checked={idVerified}
+                      onChange={(e) => setIdVerified(e.target.checked)}
+                      style={{ width: "20px", height: "20px", marginTop: "0.1rem" }}
+                    />
+                    <span style={{ fontSize: "0.95rem", lineHeight: "1.4" }}>
+                      <strong>Physical ID Verified</strong><br />
+                      <span className="settings-text">I have checked a physical ID card and confirmed the face matches the registered name above.</span>
+                    </span>
+                  </label>
+                </div>
+              )}
+
+              {/* ── Error message ─────────────────────────────────── */}
+              {claimError && (
+                <p style={{ color: "#ef4444", fontWeight: 500, marginBottom: "1rem", padding: "0.5rem", backgroundColor: "#fee2e2", borderRadius: "6px" }}>
+                  {claimError}
+                </p>
+              )}
+
+              {/* ── Action Buttons ────────────────────────────────── */}
+              <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", width: "100%" }}>
+
+                {/* BENEFICIARY — ONE_TIME unclaimed → Disburse */}
+                {scanAyudaStatus?.isBeneficiary && !isServiceProgram && !alreadyClaimed && (
+                  <button
+                    type="button"
+                    className="auth-button approve-btn"
+                    disabled={claiming || !idVerified}
+                    onClick={() => void recordClaim()}
+                    style={{ opacity: (!idVerified || claiming) ? 0.6 : 1, flex: 1, minWidth: "160px" }}
+                  >
+                    {claiming ? "Saving…" : "Confirm & Disburse Aid"}
+                  </button>
+                )}
+
+                {/* BENEFICIARY — SERVICE → Record Attendance */}
+                {scanAyudaStatus?.isBeneficiary && isServiceProgram && (
+                  <button
+                    type="button"
+                    className="auth-button approve-btn"
+                    disabled={claiming || !idVerified || alreadyToday || quotaHit}
+                    onClick={() => void recordClaim()}
+                    style={{ opacity: (claiming || !idVerified || alreadyToday || quotaHit) ? 0.6 : 1, flex: 1, minWidth: "160px" }}
+                  >
+                    {claiming
+                      ? "Saving…"
+                      : alreadyToday
+                        ? "Already Recorded Today"
+                        : quotaHit
+                          ? "Quota Complete"
+                          : "Record Today's Attendance"}
+                  </button>
+                )}
+
+                {/* NEW CITIZEN → Add to applicants */}
+                {!scanAyudaStatus?.isBeneficiary && !scanAyudaStatus?.isApplicant && (
+                  <button
+                    type="button"
+                    className="auth-button approve-btn"
+                    disabled={claiming || !idVerified}
+                    onClick={() => void registerAsApplicant()}
+                    style={{ opacity: (!idVerified || claiming) ? 0.6 : 1, flex: 1, minWidth: "160px" }}
+                  >
+                    {claiming ? "Saving…" : "Add to applicants"}
+                  </button>
+                )}
+
+                {/* Always-visible Close / Cancel */}
                 <button
                   type="button"
-                  className="auth-button approve-btn"
-                  disabled={claiming || !idVerified}
-                  onClick={() => void recordClaim()}
-                  style={{ opacity: (!idVerified || claiming) ? 0.6 : 1, flex: 1, minWidth: "160px" }}
+                  className="auth-button btn-neutral-gradient"
+                  disabled={claiming}
+                  onClick={() => void closeConfirm()}
+                  style={{ flex: 1, minWidth: "160px" }}
                 >
-                  {claiming
-                    ? "Saving…"
-                    : isServiceProgram
-                      ? "Record attendance"
-                      : "Record claim"}
+                  {scanAyudaStatus?.isApplicant || (scanAyudaStatus?.isBeneficiary && !isServiceProgram && alreadyClaimed) ? "Close" : "Cancel"}
                 </button>
-              ) : scanAyudaStatus?.isApplicant ? null : (
-                <button
-                  type="button"
-                  className="auth-button approve-btn"
-                  disabled={claiming || !idVerified}
-                  onClick={() => void registerAsApplicant()}
-                  style={{ opacity: (!idVerified || claiming) ? 0.6 : 1, flex: 1, minWidth: "160px" }}
-                >
-                  {claiming ? "Saving…" : "Add to applicants"}
-                </button>
-              )}
-              <button
-                type="button"
-                className="auth-button btn-neutral-gradient"
-                disabled={claiming}
-                onClick={() => void closeConfirm()}
-                style={{ flex: 1, minWidth: "160px" }}
-              >
-                {scanAyudaStatus?.isApplicant ? "Close" : "Cancel"}
-              </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {successOverlay && (
         <button

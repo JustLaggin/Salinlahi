@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { db } from "../firebase";
 import { doc, getDoc } from "firebase/firestore";
-import { Package, Users, CheckCircle, RefreshCw, MapPin } from "lucide-react";
+import { Package, Users, CheckCircle, RefreshCw, MapPin, Calendar, PhilippinePeso } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 
 function mightBeAyudaId(s) {
@@ -194,6 +194,73 @@ function UserCurrentAyuda() {
     setSelectedAyuda({ ...ayuda, serviceProgress });
   };
 
+  /** Mobile-first Ayuda card */
+  const AyudaCard = ({ ayuda, tone, statusLabel }) => {
+    const isService = (ayuda.programType || "ONE_TIME") === "SERVICE";
+    const progress = ayuda.serviceProgress;
+    const progressPct = progress ? Math.min(100, Math.round((progress.attended / progress.required) * 100)) : 0;
+
+    return (
+      <div className="ayuda-list-card">
+        {/* Top row: Title + Badge */}
+        <div className="ayuda-list-card__top">
+          <h3 className="ayuda-list-card__title">{ayuda.title || "Untitled Ayuda"}</h3>
+          <span className={`pill-badge user-ayuda-badge--${tone}`}>{statusLabel}</span>
+        </div>
+
+        {/* SERVICE progress bar */}
+        {isService && progress && (
+          <div className="ayuda-list-card__progress-wrap">
+            <div className="ayuda-list-card__progress-bar">
+              <div
+                className="ayuda-list-card__progress-fill"
+                style={{ width: `${progressPct}%` }}
+              />
+            </div>
+            <span className="ayuda-list-card__progress-label">
+              {progress.attended} / {progress.required} Days
+              {progressPct >= 100 && " ✅"}
+            </span>
+          </div>
+        )}
+
+        {/* Middle details */}
+        <div className="ayuda-list-card__details">
+          {ayuda.amount != null && (
+            <div className="ayuda-list-card__detail-row">
+              <PhilippinePeso size={14} className="ayuda-list-card__detail-icon" />
+              <span>₱{Number(ayuda.amount).toLocaleString()}</span>
+            </div>
+          )}
+          <div className="ayuda-list-card__detail-row">
+            <Calendar size={14} className="ayuda-list-card__detail-icon" />
+            <span>{ayuda.schedule || "Schedule TBA"}</span>
+          </div>
+          <div className="ayuda-list-card__detail-row">
+            <MapPin size={14} className="ayuda-list-card__detail-icon" />
+            <span>
+              {[ayuda.barangay, ayuda.city].filter(Boolean).join(", ") || "Location TBA"}
+            </span>
+          </div>
+          {isService && (
+            <div className="ayuda-list-card__detail-row">
+              <span className="pill-badge" style={{ fontSize: "0.7rem", marginRight: 0 }}>SERVICE</span>
+            </div>
+          )}
+        </div>
+
+        {/* Bottom action */}
+        <button
+          type="button"
+          className="ayuda-list-card__action-btn"
+          onClick={() => void openAyudaDetails(ayuda)}
+        >
+          View Full Details
+        </button>
+      </div>
+    );
+  };
+
   const Section = ({ title, items, tone }) => (
     <section className="base-card user-ayuda-section">
       <div className="user-ayuda-section__header">
@@ -208,74 +275,17 @@ function UserCurrentAyuda() {
           No {title.toLowerCase()} yet
         </p>
       ) : (
-        <div className="data-table-container">
-          <table className="data-table user-ayuda-table">
-            <thead>
-              <tr>
-                <th>Ayuda</th>
-                <th>Details</th>
-                <th>Schedule</th>
-                <th>Location</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((ayuda) => (
-                <tr key={ayuda.id}>
-                  <td>
-                    <div className="data-table__title-block">
-                      <div className="data-table__title">
-                        {ayuda.title || "Untitled Ayuda"}
-                      </div>
-                      <span className={`pill-badge user-ayuda-badge--${tone}`}>
-                        {title}
-                      </span>
-                    </div>
-                  </td>
-                  <td>
-                    <div className="user-ayuda-description">
-                      {ayuda.description || "No description available"}
-                    </div>
-                    <div className="data-table__sub" style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap", marginTop: "0.25rem" }}>
-                      <span>{ayuda.amount ? `₱${ayuda.amount}` : "Amount TBD"}</span>
-                      {ayuda.serviceProgress && (
-                        <span style={{ fontSize: "0.75rem", padding: "2px 6px", background: "var(--bg-muted)", borderRadius: "4px", color: "var(--text-primary)", fontWeight: 600 }}>
-                          {ayuda.serviceProgress.attended} / {ayuda.serviceProgress.required} Days Served
-                        </span>
-                      )}
-                    </div>
-                  </td>
-                  <td>
-                    <div className="data-table__loc-main">
-                      {ayuda.schedule || "TBA"}
-                    </div>
-                  </td>
-                  <td>
-                    <div className="user-ayuda-location">
-                      <MapPin size={14} />
-                      <span>{ayuda.barangay || "Barangay TBA"}</span>
-                    </div>
-                  </td>
-                  <td>
-                    <button
-                      type="button"
-                      className="action-btn"
-                      onClick={() => void openAyudaDetails(ayuda)}
-                    >
-                      Details
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="ayuda-list-card-grid">
+          {items.map((ayuda) => (
+            <AyudaCard key={ayuda.id} ayuda={ayuda} tone={tone} statusLabel={title} />
+          ))}
         </div>
       )}
     </section>
   );
 
   return (
-    <div className="app-container user-ayuda-page">
+    <div className="app-container user-ayuda-page" style={{ paddingBottom: "120px" }}>
       <div className="base-card user-ayuda-hero">
         <h1 className="auth-title">My Ayuda History</h1>
         <p className="settings-text">
