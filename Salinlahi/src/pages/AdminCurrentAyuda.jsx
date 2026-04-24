@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link, useNavigate } from "react-router-dom";
-import { Users2, UserCheck2 } from "lucide-react";
+import { Users2, UserCheck2, Archive } from "lucide-react";
 import {
   collection,
   getDocs,
@@ -59,6 +59,7 @@ function AdminCurrentAyuda() {
   const [deleteModalAyuda, setDeleteModalAyuda] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
+  const [viewMode, setViewMode] = useState("active");
 
   const fetchAyudas = useCallback(async () => {
     const querySnapshot = await getDocs(collection(db, "ayudas"));
@@ -219,7 +220,12 @@ function AdminCurrentAyuda() {
     navigate(isAdmin ? "/admin/scan" : "/staff/scan");
   };
 
-  const filtered = ayudas.filter((ayuda) =>
+  const statusFiltered = ayudas.filter((ayuda) => {
+    if (viewMode === "completed") return ayuda.status === "COMPLETED";
+    return ayuda.status === "ONGOING" || !ayuda.status;
+  });
+
+  const filtered = statusFiltered.filter((ayuda) =>
     String(ayuda.title || "")
       .toLowerCase()
       .includes(searchTerm)
@@ -236,15 +242,36 @@ function AdminCurrentAyuda() {
             className="auth-title"
             style={{ textAlign: "left", marginBottom: "0.5rem" }}
           >
-            Active Ayuda
+            {viewMode === "completed" ? "Completed Ayuda" : "Active Ayuda"}
           </h1>
           <p className="settings-text" style={{ textAlign: "left" }}>
-            {isAdmin
-              ? "Manage distributions, update details, or accept and reject applicants."
-              : isStaff
-                ? "View ongoing events, accept or reject applicants, and set the active event for scanning."
-                : "View ongoing events, open details, and set the active event for scanning."}
+            {viewMode === "completed"
+              ? "Archived events are read-only. Click Details to review historical data."
+              : isAdmin
+                ? "Manage distributions, update details, or accept and reject applicants."
+                : isStaff
+                  ? "View ongoing events, accept or reject applicants, and set the active event for scanning."
+                  : "View ongoing events, open details, and set the active event for scanning."}
           </p>
+        </div>
+
+        {/* View Mode Toggle */}
+        <div className="ayuda-view-toggle" style={{ marginBottom: "1.5rem" }}>
+          <button
+            type="button"
+            className={`ayuda-view-toggle__btn ${viewMode === "active" ? "ayuda-view-toggle__btn--active" : ""}`}
+            onClick={() => setViewMode("active")}
+          >
+            Active Programs
+          </button>
+          <button
+            type="button"
+            className={`ayuda-view-toggle__btn ${viewMode === "completed" ? "ayuda-view-toggle__btn--active" : ""}`}
+            onClick={() => setViewMode("completed")}
+          >
+            <Archive size={14} />
+            Completed Programs
+          </button>
         </div>
 
         <div
@@ -278,11 +305,16 @@ function AdminCurrentAyuda() {
                   </td>
                 </tr>
               )}
-              {filtered.map((ayuda) => (
-                <tr key={ayuda.id}>
+              {filtered.map((ayuda) => {
+                const isArchived = ayuda.status === "COMPLETED";
+                return (
+                <tr key={ayuda.id} style={isArchived ? { opacity: 0.6 } : undefined}>
                   <td>
                     <div className="data-table__title-block">
-                      <div className="data-table__title">{ayuda.title}</div>
+                      <div className="data-table__title">
+                        {ayuda.title}
+                        {isArchived && <span className="pill-badge archived-badge" style={{ marginLeft: "0.5rem", fontSize: "0.65rem" }}>ARCHIVED</span>}
+                      </div>
                       <div className="data-table__sub">
                         {ayuda.schedule || "TBA"}
                         {ayuda.timeStart && ayuda.timeEnd
@@ -351,7 +383,7 @@ function AdminCurrentAyuda() {
                       >
                         Details
                       </Link>
-                      {isAdmin && (
+                      {!isArchived && isAdmin && (
                         <button
                           type="button"
                           className="action-btn btn-update"
@@ -360,14 +392,16 @@ function AdminCurrentAyuda() {
                           Update
                         </button>
                       )}
-                      <button
-                        type="button"
-                        className="action-btn"
-                        onClick={() => goClaiming(ayuda)}
-                      >
-                        Scan / claim
-                      </button>
-                      {isAdmin && (
+                      {!isArchived && (
+                        <button
+                          type="button"
+                          className="action-btn"
+                          onClick={() => goClaiming(ayuda)}
+                        >
+                          Scan / claim
+                        </button>
+                      )}
+                      {!isArchived && isAdmin && (
                         <button
                           type="button"
                           className="action-btn action-btn--danger"
@@ -379,7 +413,8 @@ function AdminCurrentAyuda() {
                     </div>
                   </td>
                 </tr>
-              ))}
+                );
+              })}
               {ayudas.length === 0 && (
                 <tr>
                   <td colSpan="4" style={{ textAlign: "center", padding: "2rem" }}>

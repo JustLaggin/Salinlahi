@@ -1075,6 +1075,65 @@ html[data-theme="light"] .ayuda-list-card__progress-bar {
   color: #fff !important;
 }
 
+/* ── Ayuda View Mode Toggle ─────────────────────────────────── */
+.ayuda-view-toggle {
+  display: inline-flex;
+  border-radius: 10px;
+  border: 1px solid var(--border-subtle);
+  overflow: hidden;
+  background: var(--bg-muted);
+}
+
+.ayuda-view-toggle__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.55rem 1.1rem;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.ayuda-view-toggle__btn--active {
+  background: var(--accent-gradient);
+  color: white;
+}
+
+.ayuda-view-toggle__btn:not(.ayuda-view-toggle__btn--active):hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+html[data-theme="light"] .ayuda-view-toggle__btn:not(.ayuda-view-toggle__btn--active):hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+/* ── Archived Badge ──────────────────────────────────────────── */
+.archived-badge {
+  background: rgba(148, 163, 184, 0.2) !important;
+  color: #94a3b8 !important;
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+}
+
+/* ── Archived Event Banner ───────────────────────────────────── */
+.archived-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.25rem;
+  border-radius: 10px;
+  background: rgba(148, 163, 184, 0.1);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  color: #94a3b8;
+  font-size: 0.95rem;
+}
+
 .ayuda-detail-card {
   text-align: left;
   align-items: stretch;

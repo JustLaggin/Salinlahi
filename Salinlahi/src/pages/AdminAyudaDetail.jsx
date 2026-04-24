@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { doc, getDoc, arrayUnion, arrayRemove, collection, getDocs, addDoc, writeBatch } from "firebase/firestore";
+import { doc, getDoc, updateDoc, arrayUnion, arrayRemove, collection, getDocs, addDoc, writeBatch } from "firebase/firestore";
 import { db } from "../firebase";
 import { useAuth } from "../context/AuthContext";
 import {
@@ -11,7 +11,7 @@ import {
   ResponsiveContainer,
   Legend,
 } from "recharts";
-import { ArrowLeft, Check, X, Undo2, MapPin, Calendar, PhilippinePeso } from "lucide-react";
+import { ArrowLeft, Check, X, Undo2, MapPin, Calendar, PhilippinePeso, Archive, Lock } from "lucide-react";
 
 const COLORS = {
   CLAIMED: "#34d399", // accent-green
@@ -176,6 +176,24 @@ export default function AdminAyudaDetail() {
   };
 
   const [isCloning, setIsCloning] = useState(false);
+  const [isArchiving, setIsArchiving] = useState(false);
+
+  const isCompleted = ayuda?.status === "COMPLETED";
+
+  const handleArchiveEvent = async () => {
+    if (!isAdmin || !ayuda) return;
+    if (!window.confirm("Mark this Ayuda as Completed? It will be moved to the archive and become read-only.")) return;
+    setIsArchiving(true);
+    try {
+      await updateDoc(doc(db, "ayudas", ayudaId), { status: "COMPLETED" });
+      await refresh();
+    } catch (err) {
+      console.error("Archive failed:", err);
+      alert("Error archiving event. Check console.");
+    } finally {
+      setIsArchiving(false);
+    }
+  };
 
   const handleCloneEvent = async () => {
     if (!isAdmin || !ayuda) return;
@@ -229,7 +247,10 @@ export default function AdminAyudaDetail() {
         await batch.commit();
       }
 
-      alert("Event successfully cloned! Redirecting to the new event...");
+      // Archive the current (old) event
+      await updateDoc(doc(db, "ayudas", ayudaId), { status: "COMPLETED" });
+
+      alert("Event successfully cloned and the previous iteration has been archived! Redirecting to the new event...");
       navigate(`/admin/ayuda/${newId}`);
     } catch (err) {
       console.error("Clone failed:", err);
@@ -293,18 +314,41 @@ export default function AdminAyudaDetail() {
             <ArrowLeft size={16} /> Back to List
           </Link>
           
-          {isAdmin && (
-            <button 
-              type="button" 
-              className="action-btn" 
-              style={{ background: "var(--accent-gradient)", color: "white", border: "none" }}
-              onClick={handleCloneEvent}
-              disabled={isCloning}
-            >
-              {isCloning ? "Cloning..." : "Start Next Iteration"}
-            </button>
+          {isAdmin && !isCompleted && (
+            <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+              <button 
+                type="button" 
+                className="action-btn" 
+                style={{ background: "var(--accent-gradient)", color: "white", border: "none" }}
+                onClick={handleCloneEvent}
+                disabled={isCloning}
+              >
+                {isCloning ? "Cloning..." : "Start Next Iteration"}
+              </button>
+              <button
+                type="button"
+                className="action-btn"
+                style={{ borderColor: "#94a3b8", color: "#94a3b8" }}
+                onClick={handleArchiveEvent}
+                disabled={isArchiving}
+              >
+                <Archive size={14} />
+                {isArchiving ? "Archiving..." : "Archive Event"}
+              </button>
+            </div>
           )}
         </div>
+
+        {isCompleted && (
+          <div className="archived-banner">
+            <Lock size={18} />
+            <div>
+              <strong>Archived Event — Read Only</strong>
+              <p style={{ margin: 0, fontSize: "0.85rem", opacity: 0.85 }}>This Ayuda has been completed and archived. No further modifications are permitted.</p>
+            </div>
+          </div>
+        )}
+
         <h1 className="auth-title" style={{ textAlign: "left", marginBottom: "0.25rem", marginTop: 0 }}>Command Center</h1>
         <p className="settings-text">Manage operations and monitor analytics for {ayuda.title}.</p>
       </div>
@@ -314,7 +358,10 @@ export default function AdminAyudaDetail() {
         <div className="base-card ayuda-info-card">
           <div className="ayuda-info-header">
             <h2>{ayuda.title}</h2>
-            <span className={`pill-badge ${isService ? "" : "green"}`}>{programType}</span>
+            <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+              <span className={`pill-badge ${isService ? "" : "green"}`}>{programType}</span>
+              {isCompleted && <span className="pill-badge archived-badge">ARCHIVED</span>}
+            </div>
           </div>
           <p className="settings-text" style={{ marginBottom: "1.5rem" }}>{ayuda.description}</p>
           
@@ -393,7 +440,7 @@ export default function AdminAyudaDetail() {
                   <td style={{ fontWeight: 500 }}>{a.displayName}</td>
                   <td><span className="pill-badge" style={{ background: "rgba(71,85,105,0.2)", color: "var(--text-secondary)" }}>PENDING</span></td>
                   <td>
-                    {isStaffOrAdmin && (
+                    {isStaffOrAdmin && !isCompleted && (
                       <div className="table-actions">
                         <button className="action-btn" style={{ borderColor: COLORS.CLAIMED, color: COLORS.CLAIMED }} onClick={() => approveApplicant(a.uid)} title="Approve">
                           <Check size={16} /> Accept
@@ -467,11 +514,13 @@ export default function AdminAyudaDetail() {
                     <td>{quotaText}</td>
                     {isAdmin && (
                       <td>
-                        <div className="table-actions">
-                          <button className="action-btn" onClick={() => removeBeneficiary(b.uid)} title="Move back to applicants">
-                            <Undo2 size={16} /> Revert
-                          </button>
-                        </div>
+                        {!isCompleted && (
+                          <div className="table-actions">
+                            <button className="action-btn" onClick={() => removeBeneficiary(b.uid)} title="Move back to applicants">
+                              <Undo2 size={16} /> Revert
+                            </button>
+                          </div>
+                        )}
                       </td>
                     )}
                   </tr>
