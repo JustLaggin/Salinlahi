@@ -11,7 +11,7 @@ import {
   ResponsiveContainer,
   Legend,
 } from "recharts";
-import { ArrowLeft, Check, X, Undo2, MapPin, Calendar, PhilippinePeso, Archive, Lock } from "lucide-react";
+import { ArrowLeft, Check, X, Undo2, MapPin, Calendar, PhilippinePeso, Archive, Lock, RotateCcw } from "lucide-react";
 
 const COLORS = {
   CLAIMED: "#34d399", // accent-green
@@ -177,19 +177,35 @@ export default function AdminAyudaDetail() {
 
   const [isCloning, setIsCloning] = useState(false);
   const [isArchiving, setIsArchiving] = useState(false);
+  const [archiveModalOpen, setArchiveModalOpen] = useState(false);
 
   const isCompleted = ayuda?.status === "COMPLETED";
 
-  const handleArchiveEvent = async () => {
+  const confirmArchiveEvent = async () => {
     if (!isAdmin || !ayuda) return;
-    if (!window.confirm("Mark this Ayuda as Completed? It will be moved to the archive and become read-only.")) return;
     setIsArchiving(true);
     try {
       await updateDoc(doc(db, "ayudas", ayudaId), { status: "COMPLETED" });
+      setArchiveModalOpen(false);
       await refresh();
     } catch (err) {
       console.error("Archive failed:", err);
       alert("Error archiving event. Check console.");
+    } finally {
+      setIsArchiving(false);
+    }
+  };
+
+  const handleReopenEvent = async () => {
+    if (!isAdmin || !ayuda) return;
+    if (!window.confirm("Reopen this archived event? It will become active again and appear on the Active Programs dashboard.")) return;
+    setIsArchiving(true);
+    try {
+      await updateDoc(doc(db, "ayudas", ayudaId), { status: "ONGOING" });
+      await refresh();
+    } catch (err) {
+      console.error("Reopen failed:", err);
+      alert("Error reopening event. Check console.");
     } finally {
       setIsArchiving(false);
     }
@@ -314,7 +330,7 @@ export default function AdminAyudaDetail() {
             <ArrowLeft size={16} /> Back to List
           </Link>
           
-          {isAdmin && !isCompleted && (
+          {isAdmin && (
             <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
               <button 
                 type="button" 
@@ -325,16 +341,30 @@ export default function AdminAyudaDetail() {
               >
                 {isCloning ? "Cloning..." : "Start Next Iteration"}
               </button>
-              <button
-                type="button"
-                className="action-btn"
-                style={{ borderColor: "#94a3b8", color: "#94a3b8" }}
-                onClick={handleArchiveEvent}
-                disabled={isArchiving}
-              >
-                <Archive size={14} />
-                {isArchiving ? "Archiving..." : "Archive Event"}
-              </button>
+              {!isCompleted && (
+                <button
+                  type="button"
+                  className="action-btn"
+                  style={{ borderColor: "#94a3b8", color: "#94a3b8" }}
+                  onClick={() => setArchiveModalOpen(true)}
+                  disabled={isArchiving}
+                >
+                  <Archive size={14} />
+                  {isArchiving ? "Archiving..." : "Archive Event"}
+                </button>
+              )}
+              {isCompleted && (
+                <button
+                  type="button"
+                  className="action-btn"
+                  style={{ borderColor: "#38bdf8", color: "#38bdf8" }}
+                  onClick={handleReopenEvent}
+                  disabled={isArchiving}
+                >
+                  <RotateCcw size={14} />
+                  {isArchiving ? "Reopening..." : "Reopen Event"}
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -415,7 +445,8 @@ export default function AdminAyudaDetail() {
         </div>
       </div>
 
-      {/* Middle Section: Applicants */}
+      {/* Middle Section: Applicants — hidden if archived and empty */}
+      {!(isCompleted && applicants.length === 0) && (
       <div className="data-table-container">
         <div className="table-header-block">
           <h3>Applicants <span>({applicants.length})</span></h3>
@@ -427,20 +458,21 @@ export default function AdminAyudaDetail() {
               <th>ID (Citizen Code)</th>
               <th>Name</th>
               <th>Status</th>
-              <th>Actions</th>
+              {!isCompleted && <th>Actions</th>}
             </tr>
           </thead>
           <tbody>
             {applicants.length === 0 ? (
-              <tr><td colSpan="4" style={{ textAlign: "center", padding: "2rem" }}>No pending applicants.</td></tr>
+              <tr><td colSpan={isCompleted ? 3 : 4} style={{ textAlign: "center", padding: "2rem" }}>No pending applicants.</td></tr>
             ) : (
               applicants.map(a => (
                 <tr key={a.uid}>
                   <td style={{ fontFamily: "monospace" }}>{a.profile?.citizenCode || a.uid.slice(0,8)}</td>
                   <td style={{ fontWeight: 500 }}>{a.displayName}</td>
                   <td><span className="pill-badge" style={{ background: "rgba(71,85,105,0.2)", color: "var(--text-secondary)" }}>PENDING</span></td>
+                  {!isCompleted && (
                   <td>
-                    {isStaffOrAdmin && !isCompleted && (
+                    {isStaffOrAdmin && (
                       <div className="table-actions">
                         <button className="action-btn" style={{ borderColor: COLORS.CLAIMED, color: COLORS.CLAIMED }} onClick={() => approveApplicant(a.uid)} title="Approve">
                           <Check size={16} /> Accept
@@ -451,12 +483,14 @@ export default function AdminAyudaDetail() {
                       </div>
                     )}
                   </td>
+                  )}
                 </tr>
               ))
             )}
           </tbody>
         </table>
       </div>
+      )}
 
       {/* Bottom Section: Beneficiaries */}
       <div className="data-table-container">
@@ -471,12 +505,12 @@ export default function AdminAyudaDetail() {
               <th>Name</th>
               <th>Status</th>
               <th>{isService ? "Quota" : "Claimed Date"}</th>
-              {isAdmin && <th>Actions</th>}
+              {isAdmin && !isCompleted && <th>Actions</th>}
             </tr>
           </thead>
           <tbody>
             {beneficiaries.length === 0 ? (
-              <tr><td colSpan={isAdmin ? 5 : 4} style={{ textAlign: "center", padding: "2rem" }}>No approved beneficiaries yet.</td></tr>
+              <tr><td colSpan={(isAdmin && !isCompleted) ? 5 : 4} style={{ textAlign: "center", padding: "2rem" }}>No approved beneficiaries yet.</td></tr>
             ) : (
               beneficiaries.map(b => {
                 const claim = claimsMap[b.uid];
@@ -491,13 +525,13 @@ export default function AdminAyudaDetail() {
                 } else {
                   if (claim) {
                     statusText = "CLAIMED";
-                    // Try to format claimed date if exists, else just "Yes"
+                    // Try to format claimed date if exists, else just "Claimed"
                     if (claim.timestamp?.toDate) {
                        quotaText = claim.timestamp.toDate().toLocaleDateString();
                     } else if (claim.timestamp) {
                        quotaText = new Date(claim.timestamp).toLocaleDateString();
                     } else {
-                       quotaText = "Yes";
+                       quotaText = "Claimed";
                     }
                   }
                 }
@@ -512,15 +546,13 @@ export default function AdminAyudaDetail() {
                       </span>
                     </td>
                     <td>{quotaText}</td>
-                    {isAdmin && (
+                    {isAdmin && !isCompleted && (
                       <td>
-                        {!isCompleted && (
-                          <div className="table-actions">
-                            <button className="action-btn" onClick={() => removeBeneficiary(b.uid)} title="Move back to applicants">
-                              <Undo2 size={16} /> Revert
-                            </button>
-                          </div>
-                        )}
+                        <div className="table-actions">
+                          <button className="action-btn" onClick={() => removeBeneficiary(b.uid)} title="Move back to applicants">
+                            <Undo2 size={16} /> Revert
+                          </button>
+                        </div>
                       </td>
                     )}
                   </tr>
@@ -530,6 +562,41 @@ export default function AdminAyudaDetail() {
           </tbody>
         </table>
       </div>
+
+      {/* Archive Confirmation Modal */}
+      {archiveModalOpen && (
+        <div className="modal-overlay modal-overlay--padded">
+          <div className="base-card modal-panel" style={{ textAlign: "center", padding: "2.5rem", maxWidth: "440px" }}>
+            <div style={{ marginBottom: "1rem", color: "#94a3b8" }}>
+              <Archive size={36} />
+            </div>
+            <h2 className="auth-title" style={{ marginBottom: "1rem" }}>Archive This Event?</h2>
+            <p className="settings-text" style={{ marginBottom: "1.5rem", fontSize: "1rem", lineHeight: 1.5 }}>
+              Are you sure you want to archive this event? This will <strong>lock the event as read-only</strong> and move it to the Completed tab.
+            </p>
+            <div style={{ display: "flex", gap: "0.75rem", justifyContent: "center" }}>
+              <button
+                type="button"
+                className="auth-button"
+                style={{ background: "var(--input-bg)", color: "var(--text-primary)" }}
+                onClick={() => setArchiveModalOpen(false)}
+                disabled={isArchiving}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="auth-button"
+                style={{ background: "#94a3b8" }}
+                onClick={confirmArchiveEvent}
+                disabled={isArchiving}
+              >
+                {isArchiving ? "Archiving..." : "Confirm Archive"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
