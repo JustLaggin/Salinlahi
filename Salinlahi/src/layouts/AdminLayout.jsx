@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   PlusSquare,
@@ -58,58 +58,67 @@ function AdminLayout() {
         <div className="admin-sidebar-header">
           <h2>Salinlahi Admin</h2>
         </div>
-        <nav className="admin-nav">
-          <Link
-            to="/admin/AdminHome"
-            className={`admin-nav-item ${path === "/admin/AdminHome" ? "active" : ""}`}
-          >
-            <LayoutDashboard size={20} />
-            <span>Dashboard</span>
-          </Link>
-          {isAdmin && (
-            <Link
-              to="/admin/CreateAyuda"
-              className={`admin-nav-item ${path === "/admin/CreateAyuda" ? "active" : ""}`}
+        <nav className="admin-nav" aria-label="Sidebar Navigation">
+          <div className="admin-nav-group">
+            <span className="admin-nav-group-title">Main</span>
+            <NavLink
+              to="/admin/dashboard"
+              className={({ isActive }) => `admin-nav-item ${isActive ? "active" : ""}`}
+              end
             >
-              <PlusSquare size={20} />
-              <span>Create</span>
-            </Link>
-          )}
-          <Link
-            to="/admin/scan"
-            className={`admin-nav-item ${path === "/admin/scan" ? "active" : ""}`}
-          >
-            <ScanLine size={20} />
-            <span>Scan QR</span>
-          </Link>
-          <Link
-            to="/admin/CurrentAyuda"
-            className={`admin-nav-item ${path === "/admin/CurrentAyuda" ? "active" : ""}`}
-          >
-            <List size={20} />
-            <span>Active Ayuda</span>
-          </Link>
-          {isAdmin && (
-            <Link
-              to="/admin/StaffManagement"
-              className={`admin-nav-item ${path === "/admin/StaffManagement" ? "active" : ""}`}
+              <LayoutDashboard size={20} />
+              <span>Dashboard</span>
+            </NavLink>
+            {isAdmin && (
+              <NavLink
+                to="/admin/create-event"
+                className={({ isActive }) => `admin-nav-item ${isActive ? "active" : ""}`}
+              >
+                <PlusSquare size={20} />
+                <span>New Event</span>
+              </NavLink>
+            )}
+            <NavLink
+              to="/admin/scan"
+              className={({ isActive }) => `admin-nav-item ${isActive ? "active" : ""}`}
             >
-              <UsersRound size={20} />
-              <span>Manage Staff</span>
-            </Link>
-          )}
-          {isAdmin && (
-            <Link
-              to="/admin/ManageCitizens"
-              className={`admin-nav-item ${path === "/admin/ManageCitizens" ? "active" : ""}`}
+              <ScanLine size={20} />
+              <span>Scan QR</span>
+            </NavLink>
+            <NavLink
+              to="/admin/events"
+              className={({ isActive }) => `admin-nav-item ${isActive ? "active" : ""}`}
             >
-              <UserRoundPlus size={20} />
-              <span>Manage Citizens</span>
-            </Link>
+              <List size={20} />
+              <span>Events</span>
+            </NavLink>
+          </div>
+
+          {isAdmin && (
+            <div className="admin-nav-group">
+              <span className="admin-nav-group-title">Management</span>
+              <NavLink
+                to="/admin/manage-staff"
+                className={({ isActive }) => `admin-nav-item ${isActive ? "active" : ""}`}
+              >
+                <UsersRound size={20} />
+                <span>Manage Staff</span>
+              </NavLink>
+              <NavLink
+                to="/admin/manage-citizens"
+                className={({ isActive }) => `admin-nav-item ${isActive ? "active" : ""}`}
+              >
+                <UserRoundPlus size={20} />
+                <span>Manage Citizens</span>
+              </NavLink>
+            </div>
           )}
+
+          <div className="admin-nav-spacer"></div>
+
           <button
             type="button"
-            className="admin-nav-item admin-nav-item--button"
+            className="admin-nav-item admin-nav-item--button logout-button"
             onClick={handleLogout}
             aria-label="Log out"
           >
@@ -120,6 +129,9 @@ function AdminLayout() {
       </aside>
 
       <main className="dashboard-content page-transition" key={path}>
+        <div className="breadcrumb" aria-label="Breadcrumb">
+          {path.split("/").filter(Boolean).map(s => s.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())).join(" / ")}
+        </div>
         <Outlet />
       </main>
       

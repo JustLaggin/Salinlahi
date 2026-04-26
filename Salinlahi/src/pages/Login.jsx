@@ -34,8 +34,8 @@ function Login() {
 
   if (!authLoading && firebaseUser && role) {
     let redirectPath = "/user";
-    if (role === "admin") redirectPath = "/admin/AdminHome";
-    if (role === "staff") redirectPath = "/staff/StaffHome";
+    if (role === "admin") redirectPath = "/admin/dashboard";
+    if (role === "staff") redirectPath = "/staff/dashboard";
     return <Navigate to={redirectPath} replace />;
   }
 
@@ -100,9 +100,9 @@ function Login() {
         await waitForAuthReady();
 
         if (r === "admin") {
-          navigate("/admin/AdminHome");
+          navigate("/admin/dashboard");
         } else if (r === "staff") {
-          navigate("/staff/StaffHome");
+          navigate("/staff/dashboard");
         } else {
           alert("This account is not staff/admin.");
         }
@@ -136,7 +136,7 @@ function Login() {
       setMustChangePassword(false);
       setNewPassword("");
       setConfirmNewPassword("");
-      navigate(updatedRole === "admin" ? "/admin/AdminHome" : "/staff/StaffHome");
+      navigate(updatedRole === "admin" ? "/admin/dashboard" : "/staff/dashboard");
     } catch (error) {
       alert(error.message || "Failed to update password.");
     } finally {

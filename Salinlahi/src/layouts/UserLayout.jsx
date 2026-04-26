@@ -1,11 +1,9 @@
-import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { Home, QrCode, LogOut, History } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 
 function UserLayout() {
-  const location = useLocation();
   const navigate = useNavigate();
-  const path = location.pathname;
 
   const { logout: authLogout } = useAuth();
 
@@ -24,21 +22,22 @@ function UserLayout() {
         <Outlet />
       </main>
 
-      <nav className="bottom-nav">
-        <Link
+      <nav className="bottom-nav" aria-label="Bottom Navigation">
+        <NavLink
           to="/user"
-          className={`nav-item ${path === "/user" ? "active" : ""}`}
+          className={({ isActive }) => `nav-item ${isActive ? "active" : ""}`}
+          end
         >
           <QrCode size={24} />
-          <span>QR ID</span>
-        </Link>
-        <Link
+          <span>My QR</span>
+        </NavLink>
+        <NavLink
           to="/user/history"
-          className={`nav-item ${path === "/user/history" ? "active" : ""}`}
+          className={({ isActive }) => `nav-item ${isActive ? "active" : ""}`}
         >
           <History size={24} />
           <span>History</span>
-        </Link>
+        </NavLink>
         <button
           type="button"
           className="nav-item nav-item--button"

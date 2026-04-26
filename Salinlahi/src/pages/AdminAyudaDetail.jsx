@@ -48,7 +48,7 @@ export default function AdminAyudaDetail() {
   const { ayudaId } = useParams();
   const navigate = useNavigate();
   const { isStaffOrAdmin, isAdmin } = useAuth();
-  
+
   const [ayuda, setAyuda] = useState(null);
   const [applicants, setApplicants] = useState([]);
   const [beneficiaries, setBeneficiaries] = useState([]);
@@ -73,23 +73,23 @@ export default function AdminAyudaDetail() {
       }
       const data = { id: snap.id, ...snap.data() };
       setAyuda(data);
-      
+
       const appList = data.applicants || [];
       const benList = data.beneficiaries || [];
-      
+
       const fetchUsers = async (uids) => {
         return Promise.all(uids.map(async (uid) => {
           try {
-             const u = await getDoc(doc(db, "users", uid));
-             let displayName = uid;
-             if (u.exists()) {
-               const ud = u.data();
-               displayName = `${ud.first_name || ""} ${ud.last_name || ""}`.trim() || uid;
-               return { uid, displayName, profile: ud };
-             }
-             return { uid, displayName, profile: null };
-          } catch(e) {
-             return { uid, displayName: uid, profile: null };
+            const u = await getDoc(doc(db, "users", uid));
+            let displayName = uid;
+            if (u.exists()) {
+              const ud = u.data();
+              displayName = `${ud.first_name || ""} ${ud.last_name || ""}`.trim() || uid;
+              return { uid, displayName, profile: ud };
+            }
+            return { uid, displayName, profile: null };
+          } catch (e) {
+            return { uid, displayName: uid, profile: null };
           }
         }));
       };
@@ -98,14 +98,14 @@ export default function AdminAyudaDetail() {
         fetchUsers(appList),
         fetchUsers(benList)
       ]);
-      
+
       setApplicants(applicantsData);
       setBeneficiaries(beneficiariesData);
 
       const claimsSnap = await getDocs(collection(db, "ayudas", ayudaId, "claims"));
       const cMap = {};
       claimsSnap.docs.forEach((d) => {
-         cMap[d.id] = d.data();
+        cMap[d.id] = d.data();
       });
       setClaimsMap(cMap);
 
@@ -135,7 +135,7 @@ export default function AdminAyudaDetail() {
       });
       await batch.commit();
       await refresh();
-    } catch(err) {
+    } catch (err) {
       console.error(err);
       alert("Error approving applicant.");
     }
@@ -153,7 +153,7 @@ export default function AdminAyudaDetail() {
       });
       await batch.commit();
       await refresh();
-    } catch(err) {
+    } catch (err) {
       console.error(err);
       setActionError("Error rejecting applicant.");
     }
@@ -175,7 +175,7 @@ export default function AdminAyudaDetail() {
       });
       await batch.commit();
       await refresh();
-    } catch(err) {
+    } catch (err) {
       console.error(err);
       setActionError("Error moving beneficiary back.");
     }
@@ -220,7 +220,7 @@ export default function AdminAyudaDetail() {
   const handleCloneEvent = async () => {
     if (!isAdmin || !ayuda) return;
     setCloneModalOpen(false);
-    
+
     setIsCloning(true);
     try {
       // 1. Create the new Ayuda document
@@ -256,7 +256,7 @@ export default function AdminAyudaDetail() {
           ayudas_beneficiary: arrayUnion(newId)
         });
         batchCount++;
-        
+
         // Firestore batch has a limit of 500 operations
         if (batchCount === 450) {
           await batch.commit();
@@ -264,7 +264,7 @@ export default function AdminAyudaDetail() {
           batchCount = 0;
         }
       }
-      
+
       if (batchCount > 0) {
         await batch.commit();
       }
@@ -304,25 +304,25 @@ export default function AdminAyudaDetail() {
     let completedCount = 0;
     let inProgressCount = 0;
     beneficiaries.forEach(b => {
-       const claim = claimsMap[b.uid];
-       if (claim?.completed || (claim?.attendance?.length >= requiredDays)) completedCount++;
-       else inProgressCount++;
+      const claim = claimsMap[b.uid];
+      if (claim?.completed || (claim?.attendance?.length >= requiredDays)) completedCount++;
+      else inProgressCount++;
     });
     chartData = [
-       { name: "Hit Quota", value: completedCount, fill: COLORS.CLAIMED },
-       { name: "In Progress", value: inProgressCount, fill: COLORS.ACTIVE }
+      { name: "Hit Quota", value: completedCount, fill: COLORS.CLAIMED },
+      { name: "In Progress", value: inProgressCount, fill: COLORS.ACTIVE }
     ];
   } else {
     let claimedCount = 0;
     let unclaimedCount = 0;
     beneficiaries.forEach(b => {
-       const claim = claimsMap[b.uid];
-       if (claim) claimedCount++;
-       else unclaimedCount++;
+      const claim = claimsMap[b.uid];
+      if (claim) claimedCount++;
+      else unclaimedCount++;
     });
     chartData = [
-       { name: "Claimed", value: claimedCount, fill: COLORS.CLAIMED },
-       { name: "Pending", value: unclaimedCount, fill: COLORS.PENDING }
+      { name: "Claimed", value: claimedCount, fill: COLORS.CLAIMED },
+      { name: "Pending", value: unclaimedCount, fill: COLORS.PENDING }
     ];
   }
 
@@ -335,12 +335,12 @@ export default function AdminAyudaDetail() {
           <Link to={isAdmin ? "/admin/CurrentAyuda" : "/staff/CurrentAyuda"} className="action-btn">
             <ArrowLeft size={16} /> Back to List
           </Link>
-          
+
           {isAdmin && (
             <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-              <button 
-                type="button" 
-                className="action-btn" 
+              <button
+                type="button"
+                className="action-btn"
                 style={{ background: "var(--accent-gradient)", color: "white", border: "none" }}
                 onClick={() => setCloneModalOpen(true)}
                 disabled={isCloning}
@@ -400,7 +400,7 @@ export default function AdminAyudaDetail() {
             </div>
           </div>
           <p className="settings-text" style={{ marginBottom: "1.5rem" }}>{ayuda.description}</p>
-          
+
           <div className="ayuda-info-metrics">
             <div className="metric-row">
               <PhilippinePeso size={18} className="metric-icon" />
@@ -422,80 +422,80 @@ export default function AdminAyudaDetail() {
         <div className="base-card ayuda-chart-card">
           <h3 style={{ marginBottom: "1rem", fontSize: "1.1rem" }}>Analytics Overview</h3>
           {!hasChartData ? (
-             <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
-               <p className="settings-text">No data to display yet.</p>
-             </div>
+            <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <p className="settings-text">No data to display yet.</p>
+            </div>
           ) : (
-             <ResponsiveContainer width="100%" height={240}>
-                <PieChart>
-                  <Pie
-                    data={chartData}
-                    dataKey="value"
-                    nameKey="name"
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={95}
-                    paddingAngle={4}
-                    stroke="none"
-                  >
-                    {chartData.map((entry, i) => (
-                      <Cell key={i} fill={entry.fill} />
-                    ))}
-                  </Pie>
-                  <Tooltip content={<RatioTooltip />} wrapperStyle={{ pointerEvents: "none", zIndex: 10 }} isAnimationActive={false} />
-                  <Legend content={<RatioLegend />} />
-                </PieChart>
-              </ResponsiveContainer>
+            <ResponsiveContainer width="100%" height={240}>
+              <PieChart>
+                <Pie
+                  data={chartData}
+                  dataKey="value"
+                  nameKey="name"
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={95}
+                  paddingAngle={4}
+                  stroke="none"
+                >
+                  {chartData.map((entry, i) => (
+                    <Cell key={i} fill={entry.fill} />
+                  ))}
+                </Pie>
+                <Tooltip content={<RatioTooltip />} wrapperStyle={{ pointerEvents: "none", zIndex: 10 }} isAnimationActive={false} />
+                <Legend content={<RatioLegend />} />
+              </PieChart>
+            </ResponsiveContainer>
           )}
         </div>
       </div>
 
       {/* Middle Section: Applicants — hidden if archived and empty */}
       {!(isCompleted && applicants.length === 0) && (
-      <div className="data-table-container">
-        <div className="table-header-block">
-          <h3>Applicants <span>({applicants.length})</span></h3>
-          <p>Pending citizens awaiting approval.</p>
-        </div>
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>ID (Citizen Code)</th>
-              <th>Name</th>
-              <th>Status</th>
-              {!isCompleted && <th>Actions</th>}
-            </tr>
-          </thead>
-          <tbody>
-            {applicants.length === 0 ? (
-              <tr><td colSpan={isCompleted ? 3 : 4} style={{ textAlign: "center", padding: "2rem" }}>No pending applicants.</td></tr>
-            ) : (
-              applicants.map(a => (
-                <tr key={a.uid}>
-                  <td style={{ fontFamily: "monospace" }}>{a.profile?.citizenCode || a.uid.slice(0,8)}</td>
-                  <td style={{ fontWeight: 500 }}>{a.displayName}</td>
-                  <td><span className="pill-badge" style={{ background: "rgba(71,85,105,0.2)", color: "var(--text-secondary)" }}>PENDING</span></td>
-                  {!isCompleted && (
-                  <td>
-                    {isStaffOrAdmin && (
-                      <div className="table-actions">
-                        <button className="action-btn" style={{ borderColor: COLORS.CLAIMED, color: COLORS.CLAIMED }} onClick={() => approveApplicant(a.uid)} title="Approve">
-                          <Check size={16} /> Accept
-                        </button>
-                        <button className="action-btn" style={{ borderColor: "#ef4444", color: "#ef4444" }} onClick={() => setRejectTarget(a)} title="Reject">
-                          <X size={16} /> Reject
-                        </button>
-                      </div>
+        <div className="data-table-container">
+          <div className="table-header-block">
+            <h3>Applicants <span>({applicants.length})</span></h3>
+            <p>Pending citizens awaiting approval.</p>
+          </div>
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>ID (Citizen Code)</th>
+                <th>Name</th>
+                <th>Status</th>
+                {!isCompleted && <th>Actions</th>}
+              </tr>
+            </thead>
+            <tbody>
+              {applicants.length === 0 ? (
+                <tr><td colSpan={isCompleted ? 3 : 4} style={{ textAlign: "center", padding: "2rem" }}>No pending applicants.</td></tr>
+              ) : (
+                applicants.map(a => (
+                  <tr key={a.uid}>
+                    <td style={{ fontFamily: "monospace" }}>{a.profile?.citizenCode || a.uid.slice(0, 8)}</td>
+                    <td style={{ fontWeight: 500 }}>{a.displayName}</td>
+                    <td><span className="pill-badge" style={{ background: "rgba(71,85,105,0.2)", color: "var(--text-secondary)" }}>PENDING</span></td>
+                    {!isCompleted && (
+                      <td>
+                        {isStaffOrAdmin && (
+                          <div className="table-actions">
+                            <button className="action-btn" style={{ borderColor: COLORS.CLAIMED, color: COLORS.CLAIMED }} onClick={() => approveApplicant(a.uid)} title="Approve">
+                              <Check size={16} /> Accept
+                            </button>
+                            <button className="action-btn" style={{ borderColor: "#ef4444", color: "#ef4444" }} onClick={() => setRejectTarget(a)} title="Reject">
+                              <X size={16} /> Reject
+                            </button>
+                          </div>
+                        )}
+                      </td>
                     )}
-                  </td>
-                  )}
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       )}
 
       {/* Bottom Section: Beneficiaries */}
@@ -522,7 +522,7 @@ export default function AdminAyudaDetail() {
                 const claim = claimsMap[b.uid];
                 let statusText = "APPROVED";
                 let quotaText = "Unclaimed";
-                
+
                 if (isService) {
                   const attendedDays = claim?.attendance?.length || 0;
                   const finished = claim?.completed || (attendedDays >= requiredDays);
@@ -533,18 +533,18 @@ export default function AdminAyudaDetail() {
                     statusText = "CLAIMED";
                     // Try to format claimed date if exists, else just "Claimed"
                     if (claim.timestamp?.toDate) {
-                       quotaText = claim.timestamp.toDate().toLocaleDateString();
+                      quotaText = claim.timestamp.toDate().toLocaleDateString();
                     } else if (claim.timestamp) {
-                       quotaText = new Date(claim.timestamp).toLocaleDateString();
+                      quotaText = new Date(claim.timestamp).toLocaleDateString();
                     } else {
-                       quotaText = "Claimed";
+                      quotaText = "Claimed";
                     }
                   }
                 }
 
                 return (
                   <tr key={b.uid}>
-                    <td style={{ fontFamily: "monospace" }}>{b.profile?.citizenCode || b.uid.slice(0,8)}</td>
+                    <td style={{ fontFamily: "monospace" }}>{b.profile?.citizenCode || b.uid.slice(0, 8)}</td>
                     <td style={{ fontWeight: 500 }}>{b.displayName}</td>
                     <td>
                       <span className={`pill-badge ${statusText === "FINISHED" || statusText === "CLAIMED" ? "green" : ""}`}>
@@ -602,6 +602,7 @@ export default function AdminAyudaDetail() {
             </div>
           </div>
         </div>
+      )}
       {/* Clone Confirmation Modal */}
       {cloneModalOpen && (
         <div className="modal-overlay modal-overlay--padded">

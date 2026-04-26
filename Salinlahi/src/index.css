@@ -1843,3 +1843,68 @@ html[data-theme="dark"] .claim-success-card {
   }
 }
 
+/* -------------------- Navigation & Mobile Sidebar UX -------------------- */
+.admin-nav {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.admin-nav-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.admin-nav-group-title {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  padding: 0 1.25rem 0.5rem;
+}
+
+.admin-nav-spacer {
+  flex-grow: 1;
+}
+
+.breadcrumb {
+  font-size: 0.85rem;
+  color: var(--text-tertiary);
+  margin-bottom: 1.5rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+@media (max-width: 768px) {
+  .admin-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    width: 280px;
+    max-width: 80vw;
+    z-index: 2000;
+    transform: translateX(-100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .admin-sidebar.open {
+    transform: translateX(0);
+  }
+  
+  .admin-mobile-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1999;
+    backdrop-filter: blur(2px);
+    transition: opacity 0.3s ease;
+  }
+}
+

@@ -57,10 +57,10 @@ function App() {
               </ProtectedRoute>
             }
           >
-            <Route index element={<Navigate to="AdminHome" replace />} />
-            <Route path="AdminHome" element={<AdminHome />} />
+            <Route index element={<Navigate to="dashboard" replace />} />
+            <Route path="dashboard" element={<AdminHome />} />
             <Route
-              path="CreateAyuda"
+              path="create-event"
               element={
                 <RequireAdmin>
                   <AdminCreateAyuda />
@@ -68,10 +68,10 @@ function App() {
               }
             />
             <Route path="scan" element={<AdminScanner />} />
-            <Route path="CurrentAyuda" element={<AdminCurrentAyuda />} />
+            <Route path="events" element={<AdminCurrentAyuda />} />
             <Route path="ayuda/:ayudaId" element={<AdminAyudaDetail />} />
             <Route
-              path="StaffManagement"
+              path="manage-staff"
               element={
                 <RequireAdmin>
                   <AdminManageStaff />
@@ -79,7 +79,7 @@ function App() {
               }
             />
             <Route
-              path="ManageCitizens"
+              path="manage-citizens"
               element={
                 <RequireAdmin>
                   <AdminManageCitizens />
@@ -96,12 +96,12 @@ function App() {
               </ProtectedRoute>
             }
           >
-            <Route index element={<Navigate to="StaffHome" replace />} />
-            <Route path="StaffHome" element={<AdminHome />} />
+            <Route index element={<Navigate to="dashboard" replace />} />
+            <Route path="dashboard" element={<AdminHome />} />
             <Route path="scan" element={<AdminScanner />} />
-            <Route path="CurrentAyuda" element={<AdminCurrentAyuda />} />
+            <Route path="events" element={<AdminCurrentAyuda />} />
             <Route path="ayuda/:ayudaId" element={<AdminAyudaDetail />} />
-            <Route path="ManageCitizens" element={<AdminManageCitizens />} />
+            <Route path="manage-citizens" element={<AdminManageCitizens />} />
           </Route>
 
           <Route path="*" element={<Navigate to="/login" replace />} />

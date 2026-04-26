@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   ScanLine,
@@ -57,38 +57,49 @@ function StaffLayout() {
         <div className="admin-sidebar-header">
           <h2>Salinlahi Staff</h2>
         </div>
-        <nav className="admin-nav">
-          <Link
-            to="/staff/StaffHome"
-            className={`admin-nav-item ${path === "/staff/StaffHome" ? "active" : ""}`}
-          >
-            <LayoutDashboard size={20} />
-            <span>Dashboard</span>
-          </Link>
-          <Link
-            to="/staff/scan"
-            className={`admin-nav-item ${path === "/staff/scan" ? "active" : ""}`}
-          >
-            <ScanLine size={20} />
-            <span>Scan QR</span>
-          </Link>
-          <Link
-            to="/staff/CurrentAyuda"
-            className={`admin-nav-item ${path === "/staff/CurrentAyuda" ? "active" : ""}`}
-          >
-            <List size={20} />
-            <span>Active Ayuda</span>
-          </Link>
-          <Link
-            to="/staff/ManageCitizens"
-            className={`admin-nav-item ${path === "/staff/ManageCitizens" ? "active" : ""}`}
-          >
-            <UserRoundPlus size={20} />
-            <span>Manage Citizens</span>
-          </Link>
+        <nav className="admin-nav" aria-label="Sidebar Navigation">
+          <div className="admin-nav-group">
+            <span className="admin-nav-group-title">Main</span>
+            <NavLink
+              to="/staff/dashboard"
+              className={({ isActive }) => `admin-nav-item ${isActive ? "active" : ""}`}
+              end
+            >
+              <LayoutDashboard size={20} />
+              <span>Dashboard</span>
+            </NavLink>
+            <NavLink
+              to="/staff/scan"
+              className={({ isActive }) => `admin-nav-item ${isActive ? "active" : ""}`}
+            >
+              <ScanLine size={20} />
+              <span>Scan QR</span>
+            </NavLink>
+            <NavLink
+              to="/staff/events"
+              className={({ isActive }) => `admin-nav-item ${isActive ? "active" : ""}`}
+            >
+              <List size={20} />
+              <span>Events</span>
+            </NavLink>
+          </div>
+
+          <div className="admin-nav-group">
+            <span className="admin-nav-group-title">Management</span>
+            <NavLink
+              to="/staff/manage-citizens"
+              className={({ isActive }) => `admin-nav-item ${isActive ? "active" : ""}`}
+            >
+              <UserRoundPlus size={20} />
+              <span>Manage Citizens</span>
+            </NavLink>
+          </div>
+
+          <div className="admin-nav-spacer"></div>
+
           <button
             type="button"
-            className="admin-nav-item admin-nav-item--button"
+            className="admin-nav-item admin-nav-item--button logout-button"
             onClick={handleLogout}
             aria-label="Log out"
           >
@@ -99,6 +110,9 @@ function StaffLayout() {
       </aside>
 
       <main className="dashboard-content page-transition" key={path}>
+        <div className="breadcrumb" aria-label="Breadcrumb">
+          {path.split("/").filter(Boolean).map(s => s.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())).join(" / ")}
+        </div>
         <Outlet />
       </main>
 
