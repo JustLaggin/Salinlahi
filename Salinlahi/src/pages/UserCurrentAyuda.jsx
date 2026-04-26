@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { db } from "../firebase";
 import { doc, getDoc } from "firebase/firestore";
 import { Package, Users, CheckCircle, RefreshCw, MapPin, Calendar, PhilippinePeso } from "lucide-react";
@@ -334,8 +335,8 @@ function UserCurrentAyuda() {
         items={userAyudas.received}
         tone="blue"
       />
-      {selectedAyuda && (
-        <div className="modal-overlay modal-overlay--padded">
+      {selectedAyuda && createPortal(
+        <div className="modal-overlay modal-overlay--padded modal-overlay--scroll-follow">
           <div className="base-card modal-panel">
             <h2 className="auth-title">{selectedAyuda.title || "Ayuda Details"}</h2>
             <div className="modal-inset-panel" style={{ textAlign: "left" }}>
@@ -364,7 +365,8 @@ function UserCurrentAyuda() {
               Close
             </button>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

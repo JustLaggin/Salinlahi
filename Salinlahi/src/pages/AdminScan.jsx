@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { Html5Qrcode } from "html5-qrcode";
 import {
   arrayUnion,
@@ -58,6 +59,7 @@ function AdminScan() {
   
   const [claiming, setClaiming] = useState(false);
   const [claimError, setClaimError] = useState("");
+  const [infoModalMessage, setInfoModalMessage] = useState("");
   
   const [idVerified, setIdVerified] = useState(false); // <-- Mitigation 2: Physical ID Verify
 
@@ -181,7 +183,7 @@ function AdminScan() {
     try {
       const userDoc = await findUserDocByScanPayload(payload);
       if (!userDoc) {
-        alert("Citizen not found for this code.");
+        setInfoModalMessage("Citizen not found for this code.");
         setLoadingUser(false);
         if (scannerRef.current?.getState() === 2) {
           await scannerRef.current.resume();
@@ -228,7 +230,7 @@ function AdminScan() {
       setConfirmOpen(true);
     } catch (e) {
       console.error(e);
-      alert("Lookup failed.");
+      setInfoModalMessage("Lookup failed.");
     }
     setLoadingUser(false);
   };
@@ -490,7 +492,7 @@ function AdminScan() {
       return;
     }
     if (!manualReason) {
-      setClaimError("Please select a reason for manual entry to maintain the audit trail.");
+      setInfoModalMessage("Please select a reason for manual entry to maintain the audit trail.");
       return;
     }
     setManualOpen(false);
@@ -645,8 +647,8 @@ function AdminScan() {
         </div>
       </div>
 
-      {manualOpen && (
-        <div className="modal-overlay modal-overlay--padded">
+      {manualOpen && createPortal(
+        <div className="modal-overlay modal-overlay--padded modal-overlay--scroll-follow">
           <div className="base-card modal-panel modal-panel--scan">
             <h3 className="auth-title">Manual citizen code</h3>
             <p className="settings-text" style={{ marginBottom: "1rem" }}>
@@ -693,10 +695,11 @@ function AdminScan() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
-      {confirmOpen && userData && (() => {
+      {confirmOpen && userData && createPortal((() => {
         // ── Derived state for this citizen's claim ──────────────────────────
         const alreadyClaimed = !isServiceProgram && claimDoc !== null;
         const attendedDays   = isServiceProgram ? (claimDoc?.attendance?.length ?? 0) : 0;
@@ -715,7 +718,7 @@ function AdminScan() {
         }
 
         return (
-          <div className="modal-overlay modal-overlay--padded">
+          <div className="modal-overlay modal-overlay--padded modal-overlay--scroll-follow">
             <div className="base-card modal-panel modal-panel--scan">
               <h3 className="auth-title">{modalTitle}</h3>
               <p className="settings-text" style={{ marginBottom: "1rem" }}>
@@ -887,7 +890,7 @@ function AdminScan() {
             </div>
           </div>
         );
-      })()}
+      })(), document.body)}
 
       {successOverlay && (
         <button
@@ -924,6 +927,24 @@ function AdminScan() {
             <p className="claim-success-tap">Tap to continue</p>
           </div>
         </button>
+      )}
+      {infoModalMessage && createPortal(
+        <div className="modal-overlay modal-overlay--padded modal-overlay--scroll-follow">
+          <div className="base-card modal-panel" style={{ textAlign: "center", maxWidth: "460px", padding: "2.25rem" }}>
+            <h3 className="auth-title" style={{ marginBottom: "1rem" }}>Notice</h3>
+            <p className="settings-text" style={{ marginBottom: "1.5rem" }}>
+              {infoModalMessage}
+            </p>
+            <button
+              type="button"
+              className="auth-button"
+              onClick={() => setInfoModalMessage("")}
+            >
+              OK
+            </button>
+          </div>
+        </div>,
+        document.body
       )}
     </div>
   );

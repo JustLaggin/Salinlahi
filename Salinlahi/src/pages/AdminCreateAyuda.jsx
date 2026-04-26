@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { auth, db } from "../firebase";
 import { collection, addDoc } from "firebase/firestore";
 
@@ -23,6 +24,7 @@ function AdminCreateAyuda() {
   const [toast, setToast] = useState(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [errorModalMessage, setErrorModalMessage] = useState("");
 
   useEffect(() => {
     if (!toast) return;
@@ -85,7 +87,7 @@ function AdminCreateAyuda() {
       const user = auth.currentUser;
 
       if (!user) {
-        alert("Admin not logged in.");
+        setErrorModalMessage("Admin not logged in.");
         setSubmitting(false);
         return;
       }
@@ -136,7 +138,7 @@ function AdminCreateAyuda() {
 
     } catch (error) {
       console.error("Error creating Ayuda:", error);
-      alert("Failed to create Ayuda. Please try again.");
+      setErrorModalMessage("Failed to create Ayuda. Please try again.");
     } finally {
       setSubmitting(false);
     }
@@ -371,7 +373,7 @@ function AdminCreateAyuda() {
         </div>
       )}
 
-      {confirmOpen && (
+      {confirmOpen && createPortal(
         <div className="modal-overlay modal-overlay--scroll-follow modal-overlay--padded">
           <div className="base-card modal-panel">
             <h2 className="auth-title" style={{ marginBottom: "1rem" }}>
@@ -408,7 +410,28 @@ function AdminCreateAyuda() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
+      )}
+      {errorModalMessage && createPortal(
+        <div className="modal-overlay modal-overlay--scroll-follow modal-overlay--padded">
+          <div className="base-card modal-panel" style={{ textAlign: "center", maxWidth: "460px", padding: "2.25rem" }}>
+            <h2 className="auth-title" style={{ marginBottom: "1rem" }}>
+              Unable to Create Ayuda
+            </h2>
+            <p className="settings-text" style={{ marginBottom: "1.5rem" }}>
+              {errorModalMessage}
+            </p>
+            <button
+              type="button"
+              className="auth-button"
+              onClick={() => setErrorModalMessage("")}
+            >
+              OK
+            </button>
+          </div>
+        </div>,
+        document.body
       )}
     </div>
   );

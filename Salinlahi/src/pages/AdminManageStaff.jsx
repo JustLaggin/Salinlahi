@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { collection, doc, getDocs, setDoc, deleteDoc } from "firebase/firestore";
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth, createUserWithEmailAndPassword, signOut } from "firebase/auth";
@@ -383,7 +384,7 @@ function AdminManageStaff() {
           </tbody>
         </table>
       </div>
-      {generatedStaffPassword && (
+      {generatedStaffPassword && createPortal(
         <div className="modal-overlay modal-overlay--padded modal-overlay--scroll-follow">
           <div className="base-card modal-panel" style={{ textAlign: "center", padding: "2.5rem" }}>
             <h2 className="auth-title" style={{ color: "var(--color-primary-green)", marginBottom: "1rem" }}>
@@ -426,10 +427,11 @@ function AdminManageStaff() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
-      {userToDelete && (
+      {userToDelete && createPortal(
         <div className="modal-overlay modal-overlay--padded modal-overlay--scroll-follow">
           <div className="base-card modal-panel" style={{ textAlign: "center", padding: "2.5rem" }}>
             <h2 className="auth-title" style={{ color: "#ef4444", marginBottom: "1rem" }}>
@@ -458,7 +460,8 @@ function AdminManageStaff() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

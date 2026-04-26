@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { doc, getDoc, updateDoc, arrayUnion, arrayRemove, collection, getDocs, addDoc, writeBatch } from "firebase/firestore";
 import { db } from "../firebase";
@@ -23,7 +24,10 @@ function RatioTooltip({ active, payload }) {
   if (!active || !payload?.length) return null;
   const { name, value } = payload[0];
   return (
-    <div className="dashboard-chart-tooltip">
+    <div
+      className="dashboard-chart-tooltip"
+      style={{ transform: "translate(-50%, calc(-100% - 12px))", pointerEvents: "none" }}
+    >
       <span style={{ color: payload[0].payload.fill, fontWeight: 700 }}>{name}</span>
       <span style={{ marginLeft: "0.5rem" }}>{value}</span>
     </div>
@@ -137,7 +141,7 @@ export default function AdminAyudaDetail() {
       await refresh();
     } catch (err) {
       console.error(err);
-      alert("Error approving applicant.");
+      setActionError("Error approving applicant.");
     }
   };
 
@@ -184,6 +188,8 @@ export default function AdminAyudaDetail() {
   const [isCloning, setIsCloning] = useState(false);
   const [isArchiving, setIsArchiving] = useState(false);
   const [archiveModalOpen, setArchiveModalOpen] = useState(false);
+  const [reopenModalOpen, setReopenModalOpen] = useState(false);
+  const [tooltipPosition, setTooltipPosition] = useState(null);
 
   const isCompleted = ayuda?.status === "COMPLETED";
 
@@ -204,7 +210,7 @@ export default function AdminAyudaDetail() {
 
   const handleReopenEvent = async () => {
     if (!isAdmin || !ayuda) return;
-    if (!window.confirm("Reopen this archived event? It will become active again and appear on the Active Programs dashboard.")) return;
+    setReopenModalOpen(false);
     setIsArchiving(true);
     try {
       await updateDoc(doc(db, "ayudas", ayudaId), { status: "ONGOING" });
@@ -364,7 +370,7 @@ export default function AdminAyudaDetail() {
                   type="button"
                   className="action-btn"
                   style={{ borderColor: "#38bdf8", color: "#38bdf8" }}
-                  onClick={handleReopenEvent}
+                  onClick={() => setReopenModalOpen(true)}
                   disabled={isArchiving}
                 >
                   <RotateCcw size={14} />
@@ -427,7 +433,17 @@ export default function AdminAyudaDetail() {
             </div>
           ) : (
             <ResponsiveContainer width="100%" height={240}>
-              <PieChart>
+              <PieChart
+                onMouseMove={(state) => {
+                  if (
+                    typeof state?.chartX === "number" &&
+                    typeof state?.chartY === "number"
+                  ) {
+                    setTooltipPosition({ x: state.chartX, y: state.chartY });
+                  }
+                }}
+                onMouseLeave={() => setTooltipPosition(null)}
+              >
                 <Pie
                   data={chartData}
                   dataKey="value"
@@ -443,7 +459,15 @@ export default function AdminAyudaDetail() {
                     <Cell key={i} fill={entry.fill} />
                   ))}
                 </Pie>
-                <Tooltip content={<RatioTooltip />} wrapperStyle={{ pointerEvents: "none", zIndex: 10 }} isAnimationActive={false} />
+                <Tooltip
+                  content={<RatioTooltip />}
+                  wrapperStyle={{ pointerEvents: "none", zIndex: 10000 }}
+                  isAnimationActive={false}
+                  cursor={false}
+                  position={tooltipPosition || undefined}
+                  offset={12}
+                  allowEscapeViewBox={{ x: true, y: true }}
+                />
                 <Legend content={<RatioLegend />} />
               </PieChart>
             </ResponsiveContainer>
@@ -570,8 +594,8 @@ export default function AdminAyudaDetail() {
       </div>
 
       {/* Archive Confirmation Modal */}
-      {archiveModalOpen && (
-        <div className="modal-overlay modal-overlay--padded">
+      {archiveModalOpen && createPortal(
+        <div className="modal-overlay modal-overlay--padded modal-overlay--scroll-follow">
           <div className="base-card modal-panel" style={{ textAlign: "center", padding: "2.5rem", maxWidth: "440px" }}>
             <div style={{ marginBottom: "1rem", color: "#94a3b8" }}>
               <Archive size={36} />
@@ -601,11 +625,12 @@ export default function AdminAyudaDetail() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
       {/* Clone Confirmation Modal */}
-      {cloneModalOpen && (
-        <div className="modal-overlay modal-overlay--padded">
+      {cloneModalOpen && createPortal(
+        <div className="modal-overlay modal-overlay--padded modal-overlay--scroll-follow">
           <div className="base-card modal-panel" style={{ textAlign: "center", padding: "2.5rem", maxWidth: "480px" }}>
             <div style={{ marginBottom: "1rem", color: "var(--accent-blue)" }}>
               <RotateCcw size={36} />
@@ -621,12 +646,30 @@ export default function AdminAyudaDetail() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
+      )}
+      {reopenModalOpen && createPortal(
+        <div className="modal-overlay modal-overlay--padded modal-overlay--scroll-follow">
+          <div className="base-card modal-panel" style={{ textAlign: "center", padding: "2.5rem", maxWidth: "460px" }}>
+            <h2 className="auth-title" style={{ marginBottom: "1rem" }}>Reopen Event?</h2>
+            <p className="settings-text" style={{ marginBottom: "1.5rem", fontSize: "1rem", lineHeight: 1.5 }}>
+              This archived event will become active again and reappear in the Active Programs dashboard.
+            </p>
+            <div style={{ display: "flex", gap: "0.75rem", justifyContent: "center" }}>
+              <button type="button" className="auth-button" style={{ background: "var(--input-bg)", color: "var(--text-primary)" }} onClick={() => setReopenModalOpen(false)} disabled={isArchiving}>Cancel</button>
+              <button type="button" className="auth-button" onClick={handleReopenEvent} disabled={isArchiving}>
+                {isArchiving ? "Reopening..." : "Confirm Reopen"}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
       )}
 
       {/* Reject Applicant Confirmation Modal */}
-      {rejectTarget && (
-        <div className="modal-overlay modal-overlay--padded">
+      {rejectTarget && createPortal(
+        <div className="modal-overlay modal-overlay--padded modal-overlay--scroll-follow">
           <div className="base-card modal-panel" style={{ textAlign: "center", padding: "2.5rem", maxWidth: "440px" }}>
             <h2 className="auth-title" style={{ color: "#ef4444", marginBottom: "1rem" }}>Reject Applicant?</h2>
             <p className="settings-text" style={{ marginBottom: "1.5rem", fontSize: "1rem", lineHeight: 1.5 }}>
@@ -637,12 +680,13 @@ export default function AdminAyudaDetail() {
               <button type="button" className="auth-button" style={{ background: "#ef4444" }} onClick={() => rejectApplicant(rejectTarget.uid)}>Confirm Reject</button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Revert Beneficiary Confirmation Modal */}
-      {revertTarget && (
-        <div className="modal-overlay modal-overlay--padded">
+      {revertTarget && createPortal(
+        <div className="modal-overlay modal-overlay--padded modal-overlay--scroll-follow">
           <div className="base-card modal-panel" style={{ textAlign: "center", padding: "2.5rem", maxWidth: "440px" }}>
             <h2 className="auth-title" style={{ color: "#d97706", marginBottom: "1rem" }}>Revert to Applicant?</h2>
             <p className="settings-text" style={{ marginBottom: "1.5rem", fontSize: "1rem", lineHeight: 1.5 }}>
@@ -653,7 +697,8 @@ export default function AdminAyudaDetail() {
               <button type="button" className="auth-button" style={{ background: "#d97706" }} onClick={() => removeBeneficiary(revertTarget.uid)}>Confirm Revert</button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Error Toast */}

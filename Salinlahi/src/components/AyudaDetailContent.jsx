@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { doc, getDoc, updateDoc, arrayUnion, arrayRemove, collection, getDocs } from "firebase/firestore";
 import { db } from "../firebase";
 import { Link } from "react-router-dom";
@@ -20,7 +21,10 @@ function RatioTooltip({ active, payload }) {
   if (!active || !payload?.length) return null;
   const { name, value } = payload[0];
   return (
-    <div className="dashboard-chart-tooltip">
+    <div
+      className="dashboard-chart-tooltip"
+      style={{ transform: "translate(-50%, calc(-100% - 12px))", pointerEvents: "none" }}
+    >
       <span style={{ color: payload[0].payload.fill, fontWeight: 700 }}>{name}</span>
       <span style={{ marginLeft: "0.5rem" }}>{value}</span>
     </div>
@@ -66,6 +70,7 @@ export default function AyudaDetailContent({
   const [claimRatio, setClaimRatio] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [tooltipPosition, setTooltipPosition] = useState(null);
   const { isAdmin } = useAuth();
   const backLink = isAdmin ? "/admin/CurrentAyuda" : "/staff/CurrentAyuda";
 
@@ -346,7 +351,17 @@ export default function AyudaDetailContent({
           ) : (
             <div className="dashboard-chart-card" style={{ marginBottom: "0.5rem" }}>
               <ResponsiveContainer width="100%" height={260}>
-                <PieChart>
+                <PieChart
+                  onMouseMove={(state) => {
+                    if (
+                      typeof state?.chartX === "number" &&
+                      typeof state?.chartY === "number"
+                    ) {
+                      setTooltipPosition({ x: state.chartX, y: state.chartY });
+                    }
+                  }}
+                  onMouseLeave={() => setTooltipPosition(null)}
+                >
                   <Pie
                     data={claimRatio}
                     dataKey="value"
@@ -362,7 +377,15 @@ export default function AyudaDetailContent({
                       <Cell key={i} fill={entry.fill} />
                     ))}
                   </Pie>
-                  <Tooltip content={<RatioTooltip />} />
+                  <Tooltip
+                    content={<RatioTooltip />}
+                    cursor={false}
+                    position={tooltipPosition || undefined}
+                    offset={12}
+                    allowEscapeViewBox={{ x: true, y: true }}
+                    wrapperStyle={{ pointerEvents: "none", zIndex: 10000 }}
+                    isAnimationActive={false}
+                  />
                   <Legend content={<RatioLegend />} />
                 </PieChart>
               </ResponsiveContainer>
@@ -409,8 +432,8 @@ export default function AyudaDetailContent({
           )}
         </>
       )}
-      {selectedUser && (
-        <div className="modal-overlay modal-overlay--padded">
+      {selectedUser && createPortal(
+        <div className="modal-overlay modal-overlay--padded modal-overlay--scroll-follow">
           <div className="base-card modal-panel">
             <h2 className="auth-title">User Information</h2>
             <div className="modal-inset-panel" style={{ textAlign: "left" }}>
@@ -432,7 +455,8 @@ export default function AyudaDetailContent({
               Close
             </button>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
