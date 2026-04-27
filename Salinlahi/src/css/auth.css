@@ -1,5 +1,5 @@
 /* ============================================
-   SUPABASE-STYLE LOGIN PAGE
+   LOGIN PAGE — Unified Light/Blue Palette
    ============================================ */
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
@@ -10,7 +10,7 @@
   grid-template-columns: minmax(400px, 480px) 1fr;
   min-height: 100vh;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  background: #1c1c1c;
+  background: #F8FAFB;
   position: fixed;
   inset: 0;
   z-index: 9999;
@@ -19,12 +19,12 @@
 
 /* ---- LEFT PANEL ---- */
 .sb-login-left {
-  background: #1c1c1c;
+  background: #FFFFFF;
   display: flex;
   flex-direction: column;
   padding: 32px 48px;
   position: relative;
-  border-right: 1px solid rgba(255,255,255,0.06);
+  border-right: 1px solid #E2E8F0;
 }
 
 .sb-login-logo {
@@ -54,7 +54,7 @@
 .sb-login-heading h1 {
   font-size: 1.625rem;
   font-weight: 600;
-  color: #ededed;
+  color: #1E293B;
   margin: 0 0 8px 0;
   letter-spacing: -0.3px;
   line-height: 1.3;
@@ -62,7 +62,7 @@
 
 .sb-login-heading p {
   font-size: 0.875rem;
-  color: #666;
+  color: #64748B;
   margin: 0;
   font-weight: 400;
   line-height: 1.5;
@@ -79,7 +79,7 @@
 .sb-login-divider-line {
   flex: 1;
   height: 1px;
-  background: rgba(255,255,255,0.08);
+  background: #E2E8F0;
 }
 
 /* Error alert */
@@ -89,9 +89,9 @@
   gap: 10px;
   padding: 12px 14px;
   border-radius: 6px;
-  background: rgba(239, 68, 68, 0.1);
-  border: 1px solid rgba(239, 68, 68, 0.2);
-  color: #f87171;
+  background: var(--color-error-bg, #FEF2F2);
+  border: 1px solid var(--color-error-light, #FCA5A5);
+  color: var(--color-error, #DC2626);
   font-size: 0.8125rem;
   margin-bottom: 20px;
   line-height: 1.5;
@@ -100,7 +100,7 @@
 .sb-login-alert svg {
   flex-shrink: 0;
   margin-top: 1px;
-  color: #f87171;
+  color: var(--color-error, #DC2626);
 }
 
 /* Form */
@@ -124,22 +124,22 @@
 
 .sb-form-label {
   font-size: 0.8125rem;
-  font-weight: 400;
-  color: #ededed;
+  font-weight: 500;
+  color: #1E293B;
   letter-spacing: 0;
   text-transform: none;
 }
 
 .sb-forgot-link {
   font-size: 0.8125rem;
-  color: #666;
+  color: #1E40AF;
   text-decoration: none;
   font-weight: 400;
   transition: color 0.15s ease;
 }
 
 .sb-forgot-link:hover {
-  color: #ededed;
+  color: #3B82F6;
   text-decoration: underline;
 }
 
@@ -147,10 +147,10 @@
 .sb-form-input {
   width: 100%;
   padding: 10px 14px;
-  background: #1c1c1c;
-  border: 1px solid rgba(255,255,255,0.12);
+  background: #FFFFFF;
+  border: 1px solid #cfd9e6;
   border-radius: 6px;
-  color: #ededed;
+  color: #1E293B;
   font-size: 0.875rem;
   font-family: inherit;
   outline: none;
@@ -159,21 +159,22 @@
 }
 
 .sb-form-input::placeholder {
-  color: #555;
+  color: #94A3B8;
 }
 
 .sb-form-input:hover {
-  border-color: rgba(255,255,255,0.2);
+  border-color: #9db4d8;
 }
 
 .sb-form-input:focus {
-  border-color: #3ecf8e;
-  box-shadow: 0 0 0 2px rgba(62, 207, 142, 0.15);
+  border-color: #1E40AF;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
 }
 
 .sb-form-input:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+  background-color: #F1F5F9;
 }
 
 /* Password wrapper */
@@ -192,7 +193,7 @@
   transform: translateY(-50%);
   background: none;
   border: none;
-  color: #555;
+  color: #94A3B8;
   cursor: pointer;
   padding: 4px 6px;
   display: flex;
@@ -203,40 +204,46 @@
 }
 
 .sb-password-toggle:hover {
-  color: #ededed;
+  color: #1E40AF;
 }
 
-/* Sign In button - Supabase green */
+/* Sign In button - Government Blue */
 .sb-sign-in-btn {
   width: 100%;
   padding: 10px 16px;
-  background: #3ecf8e;
-  color: #000;
+  background: linear-gradient(135deg, #1f49b6 0%, #1d3d99 100%);
+  color: #FFFFFF;
   border: none;
   border-radius: 6px;
   font-size: 0.875rem;
-  font-weight: 500;
+  font-weight: 600;
   font-family: inherit;
   cursor: pointer;
-  transition: background 0.15s ease, opacity 0.15s ease;
+  transition: all 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
   line-height: 1.5;
   margin-top: 4px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .sb-sign-in-btn:hover:not(:disabled) {
-  background: #34b87a;
+  background: linear-gradient(135deg, #234fbf 0%, #1b3a92 100%);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  transform: translateY(-1px);
 }
 
 .sb-sign-in-btn:active:not(:disabled) {
-  background: #2da36d;
+  transform: translateY(0);
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
 }
 
 .sb-sign-in-btn:disabled {
-  opacity: 0.6;
+  opacity: 0.5;
   cursor: not-allowed;
 }
 
@@ -245,9 +252,9 @@
   display: inline-block;
   width: 14px;
   height: 14px;
-  border: 2px solid rgba(0,0,0,0.2);
+  border: 2px solid rgba(255,255,255,0.3);
   border-radius: 50%;
-  border-top-color: #000;
+  border-top-color: #FFFFFF;
   animation: sb-spin 0.6s linear infinite;
 }
 
@@ -263,19 +270,19 @@
 
 .sb-signup-link p {
   font-size: 0.8125rem;
-  color: #666;
+  color: #64748B;
   margin: 0;
 }
 
 .sb-signup-link a {
-  color: #ededed;
+  color: #1E40AF;
   text-decoration: underline;
-  font-weight: 400;
+  font-weight: 500;
   transition: color 0.15s ease;
 }
 
 .sb-signup-link a:hover {
-  color: #fff;
+  color: #3B82F6;
 }
 
 /* Footer */
@@ -286,24 +293,24 @@
 
 .sb-login-footer p {
   font-size: 0.75rem;
-  color: #444;
+  color: #94A3B8;
   margin: 0;
   line-height: 1.6;
 }
 
 .sb-login-footer a {
-  color: #666;
+  color: #64748B;
   text-decoration: underline;
   transition: color 0.15s ease;
 }
 
 .sb-login-footer a:hover {
-  color: #ededed;
+  color: #1E40AF;
 }
 
 /* ---- RIGHT PANEL ---- */
 .sb-login-right {
-  background: #171717;
+  background: linear-gradient(160deg, #eef3f8 0%, #e9f1ff 45%, #f0f9ff 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -318,8 +325,8 @@
   position: absolute;
   inset: 0;
   background-image: 
-    linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
+    linear-gradient(rgba(30,64,175,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(30,64,175,0.03) 1px, transparent 1px);
   background-size: 48px 48px;
   pointer-events: none;
 }
@@ -332,7 +339,7 @@
   left: 50%;
   width: 600px;
   height: 600px;
-  background: radial-gradient(circle, rgba(62,207,142,0.04) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(59,130,246,0.08) 0%, transparent 70%);
   transform: translate(-50%, -50%);
   pointer-events: none;
 }
@@ -346,7 +353,7 @@
 .sb-quote-mark {
   font-size: 7rem;
   font-weight: 700;
-  color: rgba(255,255,255,0.06);
+  color: rgba(30,64,175,0.08);
   line-height: 0.6;
   margin-bottom: 16px;
   font-family: Georgia, 'Times New Roman', serif;
@@ -356,7 +363,7 @@
 .sb-quote-text {
   font-size: 1.375rem;
   font-weight: 500;
-  color: #ededed;
+  color: #1E293B;
   line-height: 1.55;
   margin: 0 0 32px 0;
   padding: 0;
@@ -374,11 +381,11 @@
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #3ecf8e 0%, #1a9f68 100%);
+  background: linear-gradient(135deg, #1f49b6 0%, #1d3d99 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #000;
+  color: #FFFFFF;
   font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.3px;
@@ -386,7 +393,7 @@
 
 .sb-author-name {
   font-size: 0.875rem;
-  color: #666;
+  color: #64748B;
   font-weight: 400;
 }
 
@@ -410,6 +417,131 @@
   }
   .sb-login-heading h1 {
     font-size: 1.375rem;
+  }
+}
+
+/* ============================================
+   REGISTER / FORGOT PASSWORD VARIANT
+   ============================================ */
+
+/* Wider left panel for register */
+.sb-login-page.sb-register-variant {
+  grid-template-columns: minmax(480px, 600px) 1fr;
+}
+
+.sb-login-page.sb-register-variant .sb-login-left {
+  overflow-y: auto;
+}
+
+.sb-login-page.sb-register-variant .sb-login-form-area {
+  max-width: 520px;
+}
+
+/* Form sections */
+.sb-form-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.sb-form-section-title {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  color: #94A3B8;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #E2E8F0;
+}
+
+/* Form grid rows */
+.sb-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.sb-form-row-3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+}
+
+/* Form hint text */
+.sb-form-hint {
+  font-size: 0.75rem;
+  color: #94A3B8;
+  margin-top: 2px;
+}
+
+/* Checkbox for register */
+.sb-form-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.sb-form-check-input {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  accent-color: #1E40AF;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.sb-form-check-label {
+  font-size: 0.8125rem;
+  color: #64748B;
+  line-height: 1.5;
+  cursor: pointer;
+}
+
+.sb-form-check-label .sb-check-hint {
+  display: block;
+  font-size: 0.75rem;
+  color: #94A3B8;
+  margin-top: 2px;
+}
+
+/* Alerts for register/forgot */
+.sb-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  margin-bottom: 4px;
+  line-height: 1.5;
+}
+
+.sb-alert svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.sb-alert-error {
+  background: #FEF2F2;
+  border: 1px solid #FCA5A5;
+  color: #DC2626;
+}
+
+.sb-alert-success {
+  background: #F0FDF4;
+  border: 1px solid #86EFAC;
+  color: #16A34A;
+}
+
+/* Register responsive */
+@media (max-width: 900px) {
+  .sb-login-page.sb-register-variant {
+    grid-template-columns: 1fr;
+  }
+
+  .sb-form-row,
+  .sb-form-row-3 {
+    grid-template-columns: 1fr;
   }
 }
 

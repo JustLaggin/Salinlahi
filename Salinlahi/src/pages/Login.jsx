@@ -5,7 +5,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { Eye, EyeOff, AlertCircle } from 'lucide-react';
-import logo from '../assets/Logo_White.png';
+import logo from '../assets/Logo_Black.png';
 import '../css/auth.css';
 
 function Login() {

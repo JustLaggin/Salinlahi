@@ -31,93 +31,108 @@ function ForgotPassword() {
   };
 
   return (
-    <div className="auth-container">
-      <div className="auth-wrapper">
-        {/* Header */}
-        <div className="auth-header">
-          <div className="auth-logo">
-            <img src={logo} alt="Salinlahi" />
-          </div>
-          <h1 className="auth-title">Reset Password</h1>
-          <p className="auth-subtitle">Enter your email to receive a password reset link</p>
+    <div className="sb-login-page">
+      {/* Left Panel - Form */}
+      <div className="sb-login-left">
+        <div className="sb-login-logo">
+          <img src={logo} alt="Salinlahi" />
         </div>
 
-        {/* Reset Form */}
-        <div className="auth-card">
+        <div className="sb-login-form-area">
+          <div className="sb-login-heading">
+            <h1>Reset password</h1>
+            <p>Enter your email to receive a password reset link</p>
+          </div>
+
+          <div className="sb-login-divider">
+            <span className="sb-login-divider-line"></span>
+            <span className="sb-login-divider-line"></span>
+          </div>
+
           {status === 'success' ? (
-            <div className="forgot-password-section">
-              <div className="alert alert-success">
-                <CheckCircle size={24} />
-                <div>
-                  <div className="alert-title">Email Sent Successfully</div>
-                  <div className="alert-message">{message}</div>
-                </div>
+            <div>
+              <div className="sb-alert sb-alert-success">
+                <CheckCircle size={16} />
+                <span>{message}</span>
               </div>
-              <p className="text-secondary" style={{ marginTop: 'var(--space-6)', textAlign: 'center' }}>
-                You will be redirected to login in a few seconds...
+              <p style={{ fontSize: '0.8125rem', color: '#94A3B8', textAlign: 'center', marginTop: '20px' }}>
+                Redirecting to login in a few seconds...
               </p>
             </div>
           ) : (
-            <form onSubmit={handleReset} className="auth-form">
+            <form onSubmit={handleReset} className="sb-login-form">
               {status === 'error' && (
-                <div className="alert alert-error">
-                  <AlertCircle size={20} />
-                  <div>
-                    <div className="alert-title">Error</div>
-                    <div className="alert-message">{message}</div>
-                  </div>
+                <div className="sb-alert sb-alert-error">
+                  <AlertCircle size={16} />
+                  <span>{message}</span>
                 </div>
               )}
 
-              <div className="form-group">
-                <label className="form-label required">Email Address</label>
-                <div style={{ position: 'relative' }}>
-                  <input
-                    type="email"
-                    className="input-field"
-                    placeholder="Enter your registered email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    disabled={status === 'loading'}
-                  />
-                  <Mail size={20} style={{
-                    position: 'absolute',
-                    right: 'var(--space-4)',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    color: 'var(--color-text-tertiary)',
-                    pointerEvents: 'none'
-                  }} />
-                </div>
-                <div className="form-label-hint">
+              <div className="sb-form-group">
+                <label className="sb-form-label">Email</label>
+                <input
+                  type="email"
+                  className="sb-form-input"
+                  placeholder="you@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  disabled={status === 'loading'}
+                  id="forgot-email"
+                />
+                <div className="sb-form-hint">
                   We'll send you an email with instructions to reset your password
                 </div>
               </div>
 
               <button
                 type="submit"
-                className="btn btn-primary btn-full btn-lg"
+                className="sb-sign-in-btn"
                 disabled={status === 'loading'}
+                id="forgot-submit"
               >
-                {status === 'loading' ? 'Sending...' : 'Send Reset Link'}
+                {status === 'loading' ? (
+                  <>
+                    <span className="sb-spinner"></span>
+                    Sending...
+                  </>
+                ) : (
+                  'Send Reset Link'
+                )}
               </button>
-
-              <div className="auth-footer">
-                <Link to="/login" className="auth-link" style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-                  <ArrowLeft size={18} />
-                  Back to Login
-                </Link>
-              </div>
             </form>
           )}
+
+          <div className="sb-signup-link">
+            <p>
+              <Link to="/login" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                <ArrowLeft size={16} />
+                Back to login
+              </Link>
+            </p>
+          </div>
         </div>
 
-        {/* Help Text */}
-        <div className="auth-card-footer">
-          <p className="text-tertiary" style={{ fontSize: '0.875rem', textAlign: 'center' }}>
+        <div className="sb-login-footer">
+          <p>
             Check your email (including spam folder) for the reset link. The link expires in 24 hours.
           </p>
+        </div>
+      </div>
+
+      {/* Right Panel - Testimonial */}
+      <div className="sb-login-right">
+        <div className="sb-testimonial">
+          <div className="sb-quote-mark">"</div>
+          <blockquote className="sb-quote-text">
+            The support team helped me recover my account within minutes. The process was simple and secure.
+          </blockquote>
+          <div className="sb-quote-author">
+            <div className="sb-author-avatar">
+              <span>AL</span>
+            </div>
+            <span className="sb-author-name">@verified_user</span>
+          </div>
         </div>
       </div>
     </div>
@@ -125,4 +140,3 @@ function ForgotPassword() {
 }
 
 export default ForgotPassword;
-

@@ -113,79 +113,64 @@ function Register() {
   };
 
   return (
-    <div className="auth-container">
-      <div className="auth-wrapper">
-        {/* Header */}
-        <div className="auth-header">
-          <div className="auth-logo">
-            <img src={logo} alt="Salinlahi" />
-          </div>
-          <h1 className="auth-title">Create Account</h1>
-          <p className="auth-subtitle">Join our assistance distribution program</p>
+    <div className="sb-login-page sb-register-variant">
+      {/* Left Panel - Form */}
+      <div className="sb-login-left">
+        <div className="sb-login-logo">
+          <img src={logo} alt="Salinlahi" />
         </div>
 
-        {/* Registration Form */}
-        <div className="auth-card">
+        <div className="sb-login-form-area">
+          <div className="sb-login-heading">
+            <h1>Create an account</h1>
+            <p>Join our assistance distribution program</p>
+          </div>
+
+          <div className="sb-login-divider">
+            <span className="sb-login-divider-line"></span>
+            <span className="sb-login-divider-line"></span>
+          </div>
+
           {error && (
-            <div className="alert alert-error">
-              <AlertCircle size={20} />
-              <div>
-                <div className="alert-title">Registration Error</div>
-                <div className="alert-message">{error}</div>
-              </div>
+            <div className="sb-alert sb-alert-error">
+              <AlertCircle size={16} />
+              <span>{error}</span>
             </div>
           )}
 
           {success && (
-            <div className="alert alert-success">
-              <CheckCircle size={20} />
-              <div>
-                <div className="alert-title">Success</div>
-                <div className="alert-message">{success}</div>
-              </div>
+            <div className="sb-alert sb-alert-success">
+              <CheckCircle size={16} />
+              <span>{success}</span>
             </div>
           )}
 
-          <form onSubmit={handleRegister} className="auth-form">
-            {/* Personal Information Section */}
-            <div className="form-section">
-              <div className="form-section-title">Personal Information</div>
+          <form onSubmit={handleRegister} className="sb-login-form">
+            {/* Section 1: Personal Details */}
+            <div className="sb-form-section">
+              <div className="sb-form-section-title">Personal Details</div>
 
-              <div className="form-row">
-                <div className="form-group form-row-full">
-                  <label className="form-label required">First Name</label>
+              <div className="sb-form-row">
+                <div className="sb-form-group">
+                  <label className="sb-form-label">First Name *</label>
                   <input
                     type="text"
                     name="first_name"
-                    className="input-field"
-                    placeholder="Enter your first name"
+                    className="sb-form-input"
+                    placeholder="Juan"
                     value={form.first_name}
                     onChange={handleChange}
                     required
                     disabled={loading}
                   />
                 </div>
-
-                <div className="form-group">
-                  <label className="form-label">Middle Name</label>
-                  <input
-                    type="text"
-                    name="middle_name"
-                    className="input-field"
-                    placeholder="Optional"
-                    value={form.middle_name}
-                    onChange={handleChange}
-                    disabled={loading}
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label required">Last Name</label>
+                <div className="sb-form-group">
+                  <label className="sb-form-label">Last Name *</label>
                   <input
                     type="text"
                     name="last_name"
-                    className="input-field"
-                    placeholder="Enter your last name"
+                    className="sb-form-input"
+                    placeholder="Dela Cruz"
                     value={form.last_name}
                     onChange={handleChange}
                     required
@@ -194,47 +179,59 @@ function Register() {
                 </div>
               </div>
 
-              <div className="form-row">
-                <div className="form-group">
-                  <label className="form-label required">Birth Date</label>
+              <div className="sb-form-row">
+                <div className="sb-form-group">
+                  <label className="sb-form-label">Middle Name</label>
+                  <input
+                    type="text"
+                    name="middle_name"
+                    className="sb-form-input"
+                    placeholder="Optional"
+                    value={form.middle_name}
+                    onChange={handleChange}
+                    disabled={loading}
+                  />
+                </div>
+                <div className="sb-form-group">
+                  <label className="sb-form-label">Birth Date *</label>
                   <input
                     type="date"
                     name="birth_date"
-                    className="input-field"
+                    className="sb-form-input"
                     value={form.birth_date}
                     onChange={handleChange}
                     required
                     disabled={loading}
                   />
                 </div>
+              </div>
 
-                <div className="form-group">
-                  <label className="form-label required">Contact Number</label>
-                  <input
-                    type="tel"
-                    name="contact_number"
-                    className="input-field"
-                    placeholder="09XX XXX XXXX"
-                    value={form.contact_number}
-                    onChange={handleChange}
-                    required
-                    disabled={loading}
-                  />
-                </div>
+              <div className="sb-form-group">
+                <label className="sb-form-label">Contact Number *</label>
+                <input
+                  type="tel"
+                  name="contact_number"
+                  className="sb-form-input"
+                  placeholder="09XX XXX XXXX"
+                  value={form.contact_number}
+                  onChange={handleChange}
+                  required
+                  disabled={loading}
+                />
               </div>
             </div>
 
-            {/* Contact & Address Section */}
-            <div className="form-section">
-              <div className="form-section-title">Contact & Address</div>
+            {/* Section 2: Contact & Address */}
+            <div className="sb-form-section">
+              <div className="sb-form-section-title">Contact & Address</div>
 
-              <div className="form-group form-row-full">
-                <label className="form-label required">Email Address</label>
+              <div className="sb-form-group">
+                <label className="sb-form-label">Email Address *</label>
                 <input
                   type="email"
                   name="email"
-                  className="input-field"
-                  placeholder="Enter your email address"
+                  className="sb-form-input"
+                  placeholder="you@example.com"
                   value={form.email}
                   onChange={handleChange}
                   required
@@ -242,13 +239,13 @@ function Register() {
                 />
               </div>
 
-              <div className="form-group form-row-full">
-                <label className="form-label required">Street Address</label>
+              <div className="sb-form-group">
+                <label className="sb-form-label">Street Address *</label>
                 <input
                   type="text"
                   name="address_line"
-                  className="input-field"
-                  placeholder="Enter street address"
+                  className="sb-form-input"
+                  placeholder="123 Rizal Street"
                   value={form.address_line}
                   onChange={handleChange}
                   required
@@ -256,42 +253,40 @@ function Register() {
                 />
               </div>
 
-              <div className="form-row">
-                <div className="form-group">
-                  <label className="form-label required">Barangay</label>
+              <div className="sb-form-row-3">
+                <div className="sb-form-group">
+                  <label className="sb-form-label">Barangay *</label>
                   <input
                     type="text"
                     name="barangay"
-                    className="input-field"
-                    placeholder="Enter barangay"
+                    className="sb-form-input"
+                    placeholder="Barangay"
                     value={form.barangay}
                     onChange={handleChange}
                     required
                     disabled={loading}
                   />
                 </div>
-
-                <div className="form-group">
-                  <label className="form-label required">City</label>
+                <div className="sb-form-group">
+                  <label className="sb-form-label">City *</label>
                   <input
                     type="text"
                     name="city"
-                    className="input-field"
-                    placeholder="Enter city"
+                    className="sb-form-input"
+                    placeholder="City"
                     value={form.city}
                     onChange={handleChange}
                     required
                     disabled={loading}
                   />
                 </div>
-
-                <div className="form-group">
-                  <label className="form-label required">Province</label>
+                <div className="sb-form-group">
+                  <label className="sb-form-label">Province *</label>
                   <input
                     type="text"
                     name="province"
-                    className="input-field"
-                    placeholder="Enter province"
+                    className="sb-form-input"
+                    placeholder="Province"
                     value={form.province}
                     onChange={handleChange}
                     required
@@ -301,95 +296,128 @@ function Register() {
               </div>
             </div>
 
-            {/* Security Section */}
-            <div className="form-section">
-              <div className="form-section-title">Security</div>
+            {/* Section 3: Security */}
+            <div className="sb-form-section">
+              <div className="sb-form-section-title">Security</div>
 
-              <div className="form-group">
-                <label className="form-label required">Password</label>
-                <div className="password-input-wrapper">
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    name="password"
-                    className="input-field"
-                    placeholder="Minimum 8 characters"
-                    value={form.password}
-                    onChange={handleChange}
-                    required
-                    disabled={loading}
-                  />
-                  <button
-                    type="button"
-                    className="password-toggle-btn"
-                    onClick={() => setShowPassword(!showPassword)}
-                    tabIndex="-1"
-                  >
-                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                  </button>
+              <div className="sb-form-row">
+                <div className="sb-form-group">
+                  <label className="sb-form-label">Password *</label>
+                  <div className="sb-password-wrapper">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      name="password"
+                      className="sb-form-input"
+                      placeholder="••••••••"
+                      value={form.password}
+                      onChange={handleChange}
+                      required
+                      disabled={loading}
+                    />
+                    <button
+                      type="button"
+                      className="sb-password-toggle"
+                      onClick={() => setShowPassword(!showPassword)}
+                      tabIndex="-1"
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    >
+                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
+                  <div className="sb-form-hint">Minimum 8 characters</div>
                 </div>
-                <div className="form-label-hint">Use at least 8 characters, including letters, numbers, and symbols</div>
+                <div className="sb-form-group">
+                  <label className="sb-form-label">Confirm Password *</label>
+                  <div className="sb-password-wrapper">
+                    <input
+                      type={showConfirm ? 'text' : 'password'}
+                      name="confirm_password"
+                      className="sb-form-input"
+                      placeholder="••••••••"
+                      value={form.confirm_password}
+                      onChange={handleChange}
+                      required
+                      disabled={loading}
+                    />
+                    <button
+                      type="button"
+                      className="sb-password-toggle"
+                      onClick={() => setShowConfirm(!showConfirm)}
+                      tabIndex="-1"
+                      aria-label={showConfirm ? 'Hide password' : 'Show password'}
+                    >
+                      {showConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
+                </div>
               </div>
 
-              <div className="form-group">
-                <label className="form-label required">Confirm Password</label>
-                <div className="password-input-wrapper">
-                  <input
-                    type={showConfirm ? 'text' : 'password'}
-                    name="confirm_password"
-                    className="input-field"
-                    placeholder="Re-enter your password"
-                    value={form.confirm_password}
-                    onChange={handleChange}
-                    required
-                    disabled={loading}
-                  />
-                  <button
-                    type="button"
-                    className="password-toggle-btn"
-                    onClick={() => setShowConfirm(!showConfirm)}
-                    tabIndex="-1"
-                  >
-                    {showConfirm ? <EyeOff size={20} /> : <Eye size={20} />}
-                  </button>
-                </div>
+              <div className="sb-form-check">
+                <input
+                  type="checkbox"
+                  name="agree_terms"
+                  id="agree_terms"
+                  className="sb-form-check-input"
+                  checked={form.agree_terms}
+                  onChange={handleChange}
+                  required
+                  disabled={loading}
+                />
+                <label htmlFor="agree_terms" className="sb-form-check-label">
+                  I agree to the Terms and Conditions and Privacy Policy
+                  <span className="sb-check-hint">You must accept these to create an account</span>
+                </label>
               </div>
             </div>
 
-            {/* Terms & Conditions */}
-            <div className="form-check">
-              <input
-                type="checkbox"
-                name="agree_terms"
-                id="agree_terms"
-                className="form-check-input"
-                checked={form.agree_terms}
-                onChange={handleChange}
-                required
-                disabled={loading}
-              />
-              <label htmlFor="agree_terms" className="form-check-label">
-                I agree to the Terms and Conditions and Privacy Policy
-                <span className="text-tertiary">
-                  You must accept these to create an account
-                </span>
-              </label>
-            </div>
-
-            {/* Submit Button */}
+            {/* Submit */}
             <button
               type="submit"
-              className="btn btn-primary btn-full btn-lg"
+              className="sb-sign-in-btn"
               disabled={loading}
-              style={{ marginTop: 'var(--space-4)' }}
+              id="register-submit"
             >
-              {loading ? 'Creating Account...' : 'Create Account'}
+              {loading ? (
+                <>
+                  <span className="sb-spinner"></span>
+                  Creating Account...
+                </>
+              ) : (
+                'Create Account'
+              )}
             </button>
-
-            {/* Login Link */}
-            <div className="auth-footer">
-              <p>Already have an account? <Link to="/login" className="auth-link auth-link-bold">Sign in</Link></p>
-            </div>
           </form>
+
+          <div className="sb-signup-link">
+            <p>
+              Already have an account?{' '}
+              <Link to="/login">Sign in</Link>
+            </p>
+          </div>
+        </div>
+
+        <div className="sb-login-footer">
+          <p>
+            By continuing, you agree to Salinlahi's{' '}
+            <a href="#">Terms of Service</a> and{' '}
+            <a href="#">Privacy Policy</a>.
+          </p>
+        </div>
+      </div>
+
+      {/* Right Panel - Testimonial */}
+      <div className="sb-login-right">
+        <div className="sb-testimonial">
+          <div className="sb-quote-mark">"</div>
+          <blockquote className="sb-quote-text">
+            Registration was quick and straightforward. Within minutes, I was part of the aid distribution system in our barangay.
+          </blockquote>
+          <div className="sb-quote-author">
+            <div className="sb-author-avatar">
+              <span>MR</span>
+            </div>
+            <span className="sb-author-name">@new_resident</span>
+          </div>
         </div>
       </div>
     </div>
