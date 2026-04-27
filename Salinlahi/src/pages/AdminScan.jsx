@@ -1061,8 +1061,6 @@ function AdminScan() {
                 <div className="settings-text" style={{ color: "#166534", marginTop: "0.75rem", textAlign: "left" }}>
                   <p><strong>Email:</strong> {userData.email || "N/A"}</p>
                   <p><strong>Phone:</strong> {userData.phone || userData.contact_number || "N/A"}</p>
-                  <p><strong>Birthday:</strong> {userData.birth_date || "N/A"}</p>
-                  <p><strong>Address:</strong> {userData.address || "N/A"}</p>
                   <p><strong>Barangay:</strong> {userData.barangay || "N/A"}</p>
                   <p><strong>City:</strong> {userData.city || "N/A"}</p>
                 </div>

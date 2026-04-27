@@ -12,7 +12,16 @@ import {
   ResponsiveContainer,
   Legend,
 } from "recharts";
-import { ArrowLeft, Check, X, Undo2, MapPin, Calendar, PhilippinePeso, Archive, Lock, RotateCcw } from "lucide-react";
+import { ArrowLeft, Check, X, Undo2, MapPin, Calendar, Clock, PhilippinePeso, Archive, Lock, RotateCcw } from "lucide-react";
+
+const formatTime = (time24) => {
+  if (!time24) return "";
+  const [hour, min] = time24.split(":");
+  const h = parseInt(hour, 10);
+  const ampm = h >= 12 ? "PM" : "AM";
+  const formattedH = h % 12 || 12;
+  return `${formattedH}:${min} ${ampm}`;
+};
 
 const COLORS = {
   CLAIMED: "#34d399", // accent-green
@@ -338,7 +347,7 @@ export default function AdminAyudaDetail() {
     <div className="ayuda-detail-command-center">
       <div style={{ marginBottom: "1.5rem" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "1rem", marginBottom: "1rem" }}>
-          <Link to={isAdmin ? "/admin/CurrentAyuda" : "/staff/CurrentAyuda"} className="action-btn">
+          <Link to={isAdmin ? "/admin/events" : "/staff/events"} className="action-btn">
             <ArrowLeft size={16} /> Back to List
           </Link>
 
@@ -422,6 +431,16 @@ export default function AdminAyudaDetail() {
               <MapPin size={18} className="metric-icon" />
               <span><strong>Location:</strong> {ayuda.barangay}, {ayuda.city}</span>
             </div>
+            <div className="metric-row">
+              <Calendar size={18} className="metric-icon" />
+              <span><strong>Schedule:</strong> {ayuda.schedule || "TBA"}</span>
+            </div>
+            {(ayuda.timeStart && ayuda.timeEnd) && (
+              <div className="metric-row">
+                <Clock size={18} className="metric-icon" />
+                <span><strong>Time:</strong> {formatTime(ayuda.timeStart)} – {formatTime(ayuda.timeEnd)}</span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -556,10 +575,10 @@ export default function AdminAyudaDetail() {
                   if (claim) {
                     statusText = "CLAIMED";
                     // Try to format claimed date if exists, else just "Claimed"
-                    if (claim.timestamp?.toDate) {
-                      quotaText = claim.timestamp.toDate().toLocaleDateString();
-                    } else if (claim.timestamp) {
-                      quotaText = new Date(claim.timestamp).toLocaleDateString();
+                    if (claim.claimedAt?.toDate) {
+                      quotaText = claim.claimedAt.toDate().toLocaleDateString();
+                    } else if (claim.claimedAt) {
+                      quotaText = new Date(claim.claimedAt).toLocaleDateString();
                     } else {
                       quotaText = "Claimed";
                     }

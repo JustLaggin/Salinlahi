@@ -126,7 +126,7 @@ function AdminHome() {
             </p>
             <button
               className="auth-button"
-              onClick={() => navigate("/admin/CreateAyuda")}
+              onClick={() => navigate("/admin/create-event")}
             >
               Create Distribution
             </button>
@@ -152,7 +152,7 @@ function AdminHome() {
           </p>
           <button
             className="auth-button"
-            onClick={() => navigate(isAdmin ? "/admin/CurrentAyuda" : "/staff/CurrentAyuda")}
+            onClick={() => navigate(isAdmin ? "/admin/events" : "/staff/events")}
           >
             View Ayudas
           </button>
