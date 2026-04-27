@@ -2,113 +2,215 @@
 .auth-form {
   display: flex;
   flex-direction: column;
-  gap: var(--space-5);
+  gap: var(--space-6);
 }
 
-/* Supabase-inspired clean shell layout (keeps existing form controls) */
+/* Modern split-layout with professional split-screen design */
 .login-shell {
-  background: linear-gradient(160deg, #0b0f17 0%, #0f172a 100%);
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0f172a 0%, #1a1f3a 50%, #0d1624 100%);
   position: relative;
   overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
+/* Subtle animated gradient accent */
 .login-shell::before {
   content: '';
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at 80% 40%, rgba(16, 185, 129, 0.08), transparent 35%);
+  background: 
+    radial-gradient(circle at 80% 20%, rgba(16, 185, 129, 0.06), transparent 40%),
+    radial-gradient(circle at 20% 80%, rgba(59, 130, 246, 0.04), transparent 45%);
   pointer-events: none;
 }
 
+/* Split layout: 40/60 form to showcase ratio */
 .login-shell-wrapper {
   position: relative;
   z-index: 1;
-  max-width: 1120px;
   width: 100%;
+  max-width: 1280px;
   display: grid;
-  grid-template-columns: minmax(360px, 520px) 1fr;
-  gap: var(--space-8);
+  grid-template-columns: 450px 1fr;
+  gap: 0;
   align-items: stretch;
+  min-height: 100vh;
 }
 
+/* Left form section with padding and vertical centering */
 .login-form-column {
   display: flex;
   flex-direction: column;
   justify-content: center;
+  align-items: stretch;
+  padding: var(--space-12) var(--space-10);
 }
 
 .login-form-column .auth-header {
+  margin-bottom: var(--space-8);
+}
+
+.login-form-column .auth-logo {
+  display: flex;
+  align-items: center;
   margin-bottom: var(--space-6);
+}
+
+.login-form-column .auth-logo img {
+  height: 48px;
+  width: auto;
 }
 
 .login-form-column .auth-title {
+  font-size: 1.75rem;
+  font-weight: 700;
   color: #f8fafc;
+  margin-bottom: var(--space-3);
+  letter-spacing: -0.5px;
 }
 
 .login-form-column .auth-subtitle {
+  font-size: 0.95rem;
   color: #cbd5e1;
+  font-weight: 400;
+  line-height: 1.6;
 }
 
+/* Card styling with improved depth */
 .login-form-column .auth-card {
-  background: rgba(17, 24, 39, 0.92);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: 0 22px 45px -30px rgba(0, 0, 0, 0.85);
+  background: rgba(20, 28, 43, 0.95);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-lg);
+  padding: var(--space-8);
+  box-shadow: 
+    0 25px 50px -12px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
 .login-form-column .auth-card-footer {
-  background: rgba(15, 23, 42, 0.5);
+  background: rgba(15, 23, 42, 0.6);
   border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-md);
+  padding: var(--space-5) var(--space-6);
+  margin-top: var(--space-6);
 }
 
+.login-form-column .auth-card-footer p {
+  font-size: 0.85rem;
+  color: #94a3b8;
+  margin: 0;
+}
+
+/* Form label styling */
 .login-form-column .form-label {
   color: #e2e8f0;
-  text-transform: none;
+  font-size: 0.9rem;
+  font-weight: 500;
   letter-spacing: 0;
+  text-transform: none;
+  margin-bottom: var(--space-2);
+  display: block;
 }
 
+.login-form-column .form-label.required::after {
+  content: '*';
+  color: #f87171;
+  margin-left: var(--space-1);
+}
+
+/* Link styling with green accent */
 .login-form-column .auth-link {
-  color: #86efac;
+  color: #10b981;
+  text-decoration: none;
+  font-weight: 500;
+  transition: all 0.2s ease;
 }
 
 .login-form-column .auth-link:hover {
-  color: #bbf7d0;
+  color: #6ee7b7;
+  text-decoration: underline;
 }
 
+.login-form-column .auth-link-bold {
+  font-weight: 600;
+}
+
+/* Auth footer text */
+.login-form-column .auth-footer {
+  text-align: center;
+  font-size: 0.9rem;
+  color: #94a3b8;
+  padding-top: var(--space-6);
+  margin-top: var(--space-6);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.login-form-column .auth-footer p {
+  margin: 0;
+}
+
+/* Right showcase panel with gradient and content */
 .login-showcase {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(59, 130, 246, 0.03) 100%);
   border-left: 1px solid rgba(255, 255, 255, 0.08);
-  padding: var(--space-10) var(--space-8);
+  padding: var(--space-12) var(--space-10);
   display: flex;
   flex-direction: column;
   justify-content: center;
+  align-items: flex-start;
   color: #e2e8f0;
+  position: relative;
+}
+
+/* Decorative accent line */
+.login-showcase::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 4px;
+  height: 100px;
+  background: linear-gradient(180deg, transparent, #10b981, transparent);
+  transform: translateY(-50%);
 }
 
 .login-showcase-badge {
-  width: fit-content;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
   border-radius: 999px;
-  padding: var(--space-2) var(--space-3);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  background: rgba(15, 23, 42, 0.55);
+  padding: var(--space-3) var(--space-5);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  background: rgba(16, 185, 129, 0.1);
   font-size: 0.8rem;
-  color: #cbd5e1;
-  margin-bottom: var(--space-6);
+  font-weight: 600;
+  color: #6ee7b7;
+  margin-bottom: var(--space-8);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  width: fit-content;
 }
 
 .login-showcase-quote {
   margin: 0;
   max-width: 420px;
-  font-size: 2rem;
-  line-height: 1.3;
-  font-weight: 600;
+  font-size: 1.875rem;
+  line-height: 1.4;
+  font-weight: 700;
   color: #f8fafc;
+  margin-bottom: var(--space-6);
 }
 
 .login-showcase-meta {
-  margin: var(--space-6) 0 0 0;
+  margin: 0;
   max-width: 420px;
   font-size: 0.95rem;
   line-height: 1.7;
-  color: #94a3b8;
+  color: #cbd5e1;
 }
 
 .password-input-wrapper {
@@ -119,70 +221,177 @@
 
 .password-toggle-btn {
   position: absolute;
-  right: var(--space-4);
+  right: var(--space-3);
   background: none;
   border: none;
   cursor: pointer;
-  color: var(--color-text-secondary);
+  color: #94a3b8;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
-  transition: color 0.2s ease, background-color 0.2s ease;
+  padding: var(--space-2) var(--space-3);
+  transition: all 0.2s ease;
   border-radius: var(--radius-md);
 }
 
 .password-toggle-btn:hover {
-  color: var(--color-primary);
-  background-color: var(--color-primary-soft);
+  color: #10b981;
+  background-color: rgba(16, 185, 129, 0.1);
+}
+
+.password-toggle-btn:active {
+  background-color: rgba(16, 185, 129, 0.15);
 }
 
 .auth-forgot-wrapper {
   text-align: right;
-  margin-bottom: var(--space-2);
+  margin-bottom: var(--space-4);
+  margin-top: var(--space-2);
 }
 
-.auth-link {
-  color: var(--color-primary);
-  text-decoration: none;
-  font-weight: 500;
-  transition: color 0.2s ease;
+/* Alert/Error styling */
+.alert {
+  display: flex;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  border: 1px solid;
+  margin-bottom: var(--space-6);
+  font-size: 0.9rem;
+  align-items: flex-start;
 }
 
-.auth-link:hover {
-  color: #1E3A8A;
-  text-decoration: underline;
+.alert-error {
+  background: rgba(220, 38, 38, 0.1);
+  border-color: rgba(220, 38, 38, 0.3);
+  color: #fca5a5;
 }
 
-.auth-link-bold {
+.alert-error svg {
+  color: #f87171;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.alert-title {
   font-weight: 600;
+  color: #fca5a5;
+  margin-bottom: 2px;
 }
 
-.auth-footer {
-  text-align: center;
-  font-size: 0.95rem;
-  color: var(--color-text-secondary);
-  padding-top: var(--space-4);
-  border-top: 1px solid #dde5f0;
-}
-
-.auth-footer p {
-  margin: 0;
-}
-
-.auth-card-footer {
-  text-align: center;
-  margin-top: var(--space-6);
-  padding: var(--space-4) var(--space-5);
-  background: linear-gradient(180deg, #f8fbff 0%, #f1f5fb 100%);
-  border-radius: var(--radius-lg);
-  border: 1px solid #e0e8f3;
+.alert-message {
+  color: #e5a8a8;
+  font-weight: 400;
 }
 
 /* Keep login/register card rhythm consistent across auth pages */
 .auth-card .form-group {
   margin-bottom: 0;
+}
+
+/* Input Fields - Dark theme modern styling */
+.login-form-column .input-field {
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-md);
+  background: rgba(30, 41, 59, 0.8);
+  color: #f8fafc;
+  font-size: 0.95rem;
+  font-weight: 400;
+  transition: all 0.2s ease;
+}
+
+.login-form-column .input-field::placeholder {
+  color: #94a3b8;
+}
+
+.login-form-column .input-field:hover {
+  border-color: rgba(16, 185, 129, 0.3);
+  background: rgba(30, 41, 59, 0.95);
+}
+
+.login-form-column .input-field:focus {
+  outline: none;
+  border-color: #10b981;
+  background: rgba(30, 41, 59, 1);
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+}
+
+.login-form-column .input-field:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Form group spacing */
+.login-form-column .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
+}
+
+.login-form-column .form-group:last-of-type {
+  margin-bottom: var(--space-6);
+}
+
+/* Button Styling */
+.login-form-column .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-6);
+  font-size: 0.95rem;
+  font-weight: 600;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+  text-decoration: none;
+}
+
+.login-form-column .btn-primary {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
+}
+
+.login-form-column .btn-primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  box-shadow: 0 8px 16px rgba(16, 185, 129, 0.4);
+  transform: translateY(-2px);
+}
+
+.login-form-column .btn-primary:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.25);
+}
+
+.login-form-column .btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.login-form-column .btn-full {
+  width: 100%;
+}
+
+.login-form-column .btn-lg {
+  padding: var(--space-4) var(--space-6);
+  font-size: 1rem;
+}
+
+/* Spinner animation */
+.spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: white;
+  animation: spin 0.8s linear infinite;
 }
 
 .spinner-sm {
@@ -192,12 +401,10 @@
   margin-right: var(--space-2);
 }
 
-/* Register Form Enhancements */
-.form-sections {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-6);
-  margin-bottom: var(--space-4);
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .form-section {
@@ -407,14 +614,36 @@
 
 /* Responsive */
 @media (max-width: 768px) {
+  .login-shell {
+    min-height: auto;
+    padding: var(--space-4) 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
   .login-shell-wrapper {
     grid-template-columns: 1fr;
-    max-width: 520px;
-    gap: var(--space-4);
+    max-width: 100%;
+    width: 100%;
+    gap: 0;
+    min-height: auto;
+  }
+
+  .login-form-column {
+    padding: var(--space-8) var(--space-4);
   }
 
   .login-form-column .auth-header {
-    margin-bottom: var(--space-4);
+    margin-bottom: var(--space-6);
+  }
+
+  .login-form-column .auth-title {
+    font-size: 1.5rem;
+  }
+
+  .login-form-column .auth-card {
+    padding: var(--space-6);
   }
 
   .login-showcase {
@@ -437,15 +666,48 @@
     transform: translateX(-50%);
   }
 
-  .auth-container {
-    padding: var(--space-4);
-  }
-
-  .auth-wrapper {
-    max-width: 100%;
-  }
-
   .photo-upload-box {
     padding: var(--space-6);
+  }
+}
+
+@media (max-width: 480px) {
+  .login-form-column {
+    padding: var(--space-6) var(--space-4);
+  }
+
+  .login-form-column .auth-logo img {
+    height: 40px;
+  }
+
+  .login-form-column .auth-title {
+    font-size: 1.25rem;
+    margin-bottom: var(--space-2);
+  }
+
+  .login-form-column .auth-subtitle {
+    font-size: 0.85rem;
+  }
+
+  .login-form-column .auth-card {
+    padding: var(--space-5);
+  }
+
+  .login-form-column .btn-lg {
+    padding: var(--space-3) var(--space-5);
+    font-size: 0.95rem;
+  }
+
+  .login-form-column .form-group {
+    gap: var(--space-2);
+    margin-bottom: var(--space-4);
+  }
+
+  .login-form-column .form-label {
+    font-size: 0.85rem;
+  }
+
+  .auth-footer {
+    font-size: 0.85rem;
   }
 }
