@@ -1,37 +1,69 @@
-import { useState } from "react";
-import { auth, db } from "../firebase";
-import { createUserWithEmailAndPassword } from "firebase/auth";
-import { doc, setDoc } from "firebase/firestore";
-import { v4 as uuidv4 } from "uuid";
-import { Link } from "react-router-dom";
+import { useState } from 'react';
+import { auth, db } from '../firebase';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
+import { v4 as uuidv4 } from 'uuid';
+import { Link, useNavigate } from 'react-router-dom';
+import { Eye, EyeOff, AlertCircle, CheckCircle } from 'lucide-react';
+import logo from '../assets/Logo_Black.png';
+import '../css/auth.css';
 
 function Register() {
   const [form, setForm] = useState({
-    first_name: "",
-    last_name: "",
-    middle_name: "",
-    birth_date: "",
-    contact_number: "",
-    email: "",
-    password: "",
-    confirm_password: "",
-    address_line: "",
-    barangay: "",
-    city: "",
-    province: ""
+    first_name: '',
+    last_name: '',
+    middle_name: '',
+    birth_date: '',
+    contact_number: '',
+    email: '',
+    password: '',
+    confirm_password: '',
+    address_line: '',
+    barangay: '',
+    city: '',
+    province: '',
+    agree_terms: false
   });
 
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const { name, value, type, checked } = e.target;
+    setForm({
+      ...form,
+      [name]: type === 'checkbox' ? checked : value
+    });
+  };
+
+  const validateForm = () => {
+    if (form.password !== form.confirm_password) {
+      setError('Passwords do not match');
+      return false;
+    }
+    if (form.password.length < 8) {
+      setError('Password must be at least 8 characters long');
+      return false;
+    }
+    if (!form.agree_terms) {
+      setError('You must agree to the terms and conditions');
+      return false;
+    }
+    return true;
   };
 
   const handleRegister = async (e) => {
     e.preventDefault();
+    setError('');
+    setSuccess('');
 
-    if (form.password !== form.confirm_password) {
-      alert("Passwords do not match");
-      return;
-    }
+    if (!validateForm()) return;
+
+    setLoading(true);
 
     try {
       const userCredential = await createUserWithEmailAndPassword(
@@ -43,7 +75,7 @@ function Register() {
       const user = userCredential.user;
       const generatedUUID = uuidv4();
 
-      await setDoc(doc(db, "users", user.uid), {
+      await setDoc(doc(db, 'users', user.uid), {
         uuid: generatedUUID,
         first_name: form.first_name,
         last_name: form.last_name,
@@ -56,176 +88,312 @@ function Register() {
         city: form.city,
         province: form.province,
         created_at: new Date(),
-        role: "user",
+        role: 'user',
+        verified: false,
         ayudas_applied: [],
         ayudas_beneficiary: [],
         ayudas_received: []
-        
       });
 
-      alert("Registration successful!");
+      setSuccess('Registration successful! Redirecting to login...');
 
-      // Reset form
-      setForm({
-        first_name: "",
-        last_name: "",
-        middle_name: "",
-        birth_date: "",
-        contact_number: "",
-        email: "",
-        password: "",
-        confirm_password: "",
-        address_line: "",
-        barangay: "",
-        city: "",
-        province: ""
-      });
+      // Store user info and redirect
+      localStorage.setItem('userId', user.uid);
+      localStorage.setItem('userName', `${form.first_name} ${form.last_name}`);
+
+      setTimeout(() => {
+        navigate('/login');
+      }, 2000);
 
     } catch (error) {
-      alert(error.message);
+      setError(error.message || 'Registration failed. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="app-container">
-      <form onSubmit={handleRegister} className="base-card auth-form">
-  <h2 className="auth-title">Registration</h2>
-
-        <div className="input-row">
-          <input
-            className="input-field"
-            name="first_name"
-            placeholder="First Name"
-            value={form.first_name}
-            onChange={handleChange}
-            required
-          />
-          <input
-            className="input-field"
-            name="middle_name"
-            placeholder="Middle Name (Optional)"
-            value={form.middle_name}
-            onChange={handleChange}
-          />
+    <div className="auth-container">
+      <div className="auth-wrapper">
+        {/* Header */}
+        <div className="auth-header">
+          <div className="auth-logo">
+            <img src={logo} alt="Salinlahi" />
+          </div>
+          <h1 className="auth-title">Create Account</h1>
+          <p className="auth-subtitle">Join our assistance distribution program</p>
         </div>
 
-        <div className="input-row">
-          <input
-            className="input-field"
-            name="last_name"
-            placeholder="Last Name"
-            value={form.last_name}
-            onChange={handleChange}
-            required
-          />
-          <input
-            className="input-field"
-            type="date"
-            name="birth_date"
-            placeholder="Birth Date"
-            value={form.birth_date}
-            onChange={handleChange}
-            required
-          />
+        {/* Registration Form */}
+        <div className="auth-card">
+          {error && (
+            <div className="alert alert-error">
+              <AlertCircle size={20} />
+              <div>
+                <div className="alert-title">Registration Error</div>
+                <div className="alert-message">{error}</div>
+              </div>
+            </div>
+          )}
+
+          {success && (
+            <div className="alert alert-success">
+              <CheckCircle size={20} />
+              <div>
+                <div className="alert-title">Success</div>
+                <div className="alert-message">{success}</div>
+              </div>
+            </div>
+          )}
+
+          <form onSubmit={handleRegister} className="auth-form">
+            {/* Personal Information Section */}
+            <div className="form-section">
+              <div className="form-section-title">Personal Information</div>
+
+              <div className="form-row">
+                <div className="form-group form-row-full">
+                  <label className="form-label required">First Name</label>
+                  <input
+                    type="text"
+                    name="first_name"
+                    className="input-field"
+                    placeholder="Enter your first name"
+                    value={form.first_name}
+                    onChange={handleChange}
+                    required
+                    disabled={loading}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Middle Name</label>
+                  <input
+                    type="text"
+                    name="middle_name"
+                    className="input-field"
+                    placeholder="Optional"
+                    value={form.middle_name}
+                    onChange={handleChange}
+                    disabled={loading}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label required">Last Name</label>
+                  <input
+                    type="text"
+                    name="last_name"
+                    className="input-field"
+                    placeholder="Enter your last name"
+                    value={form.last_name}
+                    onChange={handleChange}
+                    required
+                    disabled={loading}
+                  />
+                </div>
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label required">Birth Date</label>
+                  <input
+                    type="date"
+                    name="birth_date"
+                    className="input-field"
+                    value={form.birth_date}
+                    onChange={handleChange}
+                    required
+                    disabled={loading}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label required">Contact Number</label>
+                  <input
+                    type="tel"
+                    name="contact_number"
+                    className="input-field"
+                    placeholder="09XX XXX XXXX"
+                    value={form.contact_number}
+                    onChange={handleChange}
+                    required
+                    disabled={loading}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Contact & Address Section */}
+            <div className="form-section">
+              <div className="form-section-title">Contact & Address</div>
+
+              <div className="form-group form-row-full">
+                <label className="form-label required">Email Address</label>
+                <input
+                  type="email"
+                  name="email"
+                  className="input-field"
+                  placeholder="Enter your email address"
+                  value={form.email}
+                  onChange={handleChange}
+                  required
+                  disabled={loading}
+                />
+              </div>
+
+              <div className="form-group form-row-full">
+                <label className="form-label required">Street Address</label>
+                <input
+                  type="text"
+                  name="address_line"
+                  className="input-field"
+                  placeholder="Enter street address"
+                  value={form.address_line}
+                  onChange={handleChange}
+                  required
+                  disabled={loading}
+                />
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label required">Barangay</label>
+                  <input
+                    type="text"
+                    name="barangay"
+                    className="input-field"
+                    placeholder="Enter barangay"
+                    value={form.barangay}
+                    onChange={handleChange}
+                    required
+                    disabled={loading}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label required">City</label>
+                  <input
+                    type="text"
+                    name="city"
+                    className="input-field"
+                    placeholder="Enter city"
+                    value={form.city}
+                    onChange={handleChange}
+                    required
+                    disabled={loading}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label required">Province</label>
+                  <input
+                    type="text"
+                    name="province"
+                    className="input-field"
+                    placeholder="Enter province"
+                    value={form.province}
+                    onChange={handleChange}
+                    required
+                    disabled={loading}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Security Section */}
+            <div className="form-section">
+              <div className="form-section-title">Security</div>
+
+              <div className="form-group">
+                <label className="form-label required">Password</label>
+                <div className="password-input-wrapper">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    name="password"
+                    className="input-field"
+                    placeholder="Minimum 8 characters"
+                    value={form.password}
+                    onChange={handleChange}
+                    required
+                    disabled={loading}
+                  />
+                  <button
+                    type="button"
+                    className="password-toggle-btn"
+                    onClick={() => setShowPassword(!showPassword)}
+                    tabIndex="-1"
+                  >
+                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  </button>
+                </div>
+                <div className="form-label-hint">Use at least 8 characters, including letters, numbers, and symbols</div>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label required">Confirm Password</label>
+                <div className="password-input-wrapper">
+                  <input
+                    type={showConfirm ? 'text' : 'password'}
+                    name="confirm_password"
+                    className="input-field"
+                    placeholder="Re-enter your password"
+                    value={form.confirm_password}
+                    onChange={handleChange}
+                    required
+                    disabled={loading}
+                  />
+                  <button
+                    type="button"
+                    className="password-toggle-btn"
+                    onClick={() => setShowConfirm(!showConfirm)}
+                    tabIndex="-1"
+                  >
+                    {showConfirm ? <EyeOff size={20} /> : <Eye size={20} />}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Terms & Conditions */}
+            <div className="form-check">
+              <input
+                type="checkbox"
+                name="agree_terms"
+                id="agree_terms"
+                className="form-check-input"
+                checked={form.agree_terms}
+                onChange={handleChange}
+                required
+                disabled={loading}
+              />
+              <label htmlFor="agree_terms" className="form-check-label">
+                I agree to the Terms and Conditions and Privacy Policy
+                <span className="text-tertiary">
+                  You must accept these to create an account
+                </span>
+              </label>
+            </div>
+
+            {/* Submit Button */}
+            <button
+              type="submit"
+              className="btn btn-primary btn-full btn-lg"
+              disabled={loading}
+              style={{ marginTop: 'var(--space-4)' }}
+            >
+              {loading ? 'Creating Account...' : 'Create Account'}
+            </button>
+
+            {/* Login Link */}
+            <div className="auth-footer">
+              <p>Already have an account? <Link to="/login" className="auth-link auth-link-bold">Sign in</Link></p>
+            </div>
+          </form>
         </div>
-
-        <div className="input-row">
-          <input
-            className="input-field"
-            name="contact_number"
-            placeholder="Contact Number"
-            value={form.contact_number}
-            onChange={handleChange}
-            required
-          />
-
-          <input
-            className="input-field"
-            type="email"
-            name="email"
-            placeholder="Email Address"
-            value={form.email}
-            onChange={handleChange}
-            required
-          />
-        </div>
-
-        <div className="input-row">
-          <input
-            className="input-field"
-            name="address_line"
-            placeholder="Street Address"
-            value={form.address_line}
-            onChange={handleChange}
-            required
-          />
-
-          <input
-            className="input-field"
-            name="barangay"
-            placeholder="Barangay"
-            value={form.barangay}
-            onChange={handleChange}
-            required
-          />
-        </div>
-
-        <div className="input-row">
-          <input
-            className="input-field"
-            name="city"
-            placeholder="City"
-            value={form.city}
-            onChange={handleChange}
-            required
-          />
-
-          <input
-            className="input-field"
-            name="province"
-            placeholder="Province"
-            value={form.province}
-            onChange={handleChange}
-            required
-          />
-        </div>
-        {/* PASSWORD SECTION */}
-        <div className="input-row">
-          <input
-            className="input-field"
-            type="password"
-            name="password"
-            placeholder="Password"
-            value={form.password}
-            onChange={handleChange}
-            required
-          />
-
-          <input
-            className="input-field"
-            type="password"
-            name="confirm_password"
-            placeholder="Confirm Password"
-            value={form.confirm_password}
-            onChange={handleChange}
-            required
-          />
-        </div>
-        <button type="submit" className="auth-button">
-          Register
-        </button>
-
-        <p style={{ textAlign: "center", marginTop: "1rem", color: 'var(--color-text-muted)' }}>
-          Already have an account?{" "}
-          <Link to="/login" className="auth-link">
-            Login here
-          </Link>
-        </p>
-      </form>
+      </div>
     </div>
   );
 }
-
-
 
 export default Register;

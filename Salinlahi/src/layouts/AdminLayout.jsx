@@ -1,39 +1,33 @@
-import { Link, Outlet } from "react-router-dom";
-import { useEffect } from "react";
+import { Outlet } from 'react-router-dom';
+import Sidebar from '../components/Sidebar';
+import Header from '../components/Header';
+import { useEffect, useState } from 'react';
 
 function AdminLayout() {
+  const [adminName, setAdminName] = useState('Administrator');
+
   useEffect(() => {
-    const setActiveNav = () => {
-      document.querySelectorAll('.nav-item').forEach(item => {
-        item.classList.remove('active');
-      });
-      const currentPath = window.location.pathname;
-      document.querySelectorAll('.nav-item').forEach(item => {
-        if (item.getAttribute('href') === currentPath) {
-          item.classList.add('active');
-        }
-      });
-    };
-    setActiveNav();
-    window.addEventListener('popstate', setActiveNav);
-    return () => window.removeEventListener('popstate', setActiveNav);
+    // Get admin name from localStorage or Firebase
+    const name = localStorage.getItem('userName') || 'Administrator';
+    setAdminName(name);
   }, []);
 
   return (
+    <div className="app-container">
+      {/* Sidebar Navigation */}
+      <Sidebar role="admin" />
 
-      <div className="app-container">
-        <main className="page-content">
+      {/* Main Content Area */}
+      <div className="app-content-wrapper">
+        {/* Header */}
+        <Header userName={adminName} userRole="Administrator" />
+
+        {/* Page Content */}
+        <main className="app-main">
           <Outlet />
         </main>
-
-        <nav className="bottom-nav">
-          <Link to="/admin/AdminHome" className="nav-item">🏠 Home</Link>
-          <Link to="/admin/CreateAyuda" className="nav-item">➕ New</Link>
-          <Link to="/admin/scan" className="nav-item">📷 Scan</Link>
-          <Link to="/admin/CurrentAyuda" className="nav-item">📋 List</Link>
-          <Link to="/admin/Settings" className="nav-item">⚙️ Settings</Link>
-        </nav>
       </div>
+    </div>
   );
 }
 

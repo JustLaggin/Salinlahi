@@ -1,0 +1,227 @@
+/* Settings Page Styles */
+.settings-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+.settings-sections {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.settings-card {
+  background-color: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s ease;
+}
+
+.settings-card:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.settings-card-header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-4);
+  padding: var(--space-6);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.settings-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.notification-icon {
+  background-color: #F0F9FF;
+  color: var(--color-info);
+}
+
+.security-icon {
+  background-color: var(--color-primary-lightest);
+  color: var(--color-primary);
+}
+
+.privacy-icon {
+  background-color: #F5F3FF;
+  color: #9333EA;
+}
+
+.help-icon {
+  background-color: #FEF3C7;
+  color: #D97706;
+}
+
+.settings-title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin: 0 0 var(--space-1) 0;
+}
+
+.settings-content {
+  padding: var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* Setting Items (with toggles) */
+.setting-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  background-color: var(--color-bg-tertiary);
+  border-radius: var(--radius-md);
+  transition: all 0.2s ease;
+}
+
+.setting-item:hover {
+  background-color: var(--color-border);
+}
+
+.setting-item-label {
+  flex: 1;
+}
+
+.setting-label {
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.setting-item .text-tertiary {
+  font-size: 0.85rem;
+  margin-top: var(--space-1);
+}
+
+/* Toggle Switch */
+.toggle-switch {
+  position: relative;
+  display: inline-flex;
+  width: 50px;
+  height: 28px;
+  flex-shrink: 0;
+}
+
+.toggle-switch input {
+  display: none;
+}
+
+.toggle-switch label {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--color-border);
+  border-radius: 14px;
+  transition: all 0.3s ease;
+}
+
+.toggle-switch input:checked + label {
+  background-color: var(--color-success);
+}
+
+.toggle-switch label::after {
+  content: '';
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background-color: white;
+  top: 2px;
+  left: 2px;
+  transition: all 0.3s ease;
+  box-shadow: var(--shadow-sm);
+}
+
+.toggle-switch input:checked + label::after {
+  left: 24px;
+}
+
+/* Settings Button */
+.settings-button {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+  width: 100%;
+  color: inherit;
+  font-family: inherit;
+}
+
+.settings-button:hover {
+  background-color: var(--color-bg-tertiary);
+  border-color: var(--color-border);
+}
+
+.settings-button-label {
+  flex: 1;
+}
+
+.settings-button span {
+  color: var(--color-text-secondary);
+  font-size: 1.5rem;
+  transition: all 0.2s ease;
+}
+
+.settings-button:hover span {
+  color: var(--color-primary);
+  transform: translateX(4px);
+}
+
+/* Logout Section */
+.logout-section {
+  background: linear-gradient(135deg, #FEF2F2 0%, #FEE2E2 100%);
+  border-color: #FECACA;
+}
+
+.logout-section .btn {
+  background-color: var(--color-error);
+  color: white;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .settings-card-header {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .setting-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .toggle-switch {
+    align-self: flex-start;
+  }
+
+  .settings-button {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

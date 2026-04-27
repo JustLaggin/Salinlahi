@@ -1,22 +1,32 @@
-import { Link, Outlet } from "react-router-dom";
-import { useEffect, useState } from "react";
-import { auth } from "../firebase";
-import { db } from "../firebase";
-import { doc, getDoc } from "firebase/firestore";
-import QRCode from "react-qr-code";
+import { Outlet } from 'react-router-dom';
+import Sidebar from '../components/Sidebar';
+import Header from '../components/Header';
+import { useEffect, useState } from 'react';
 
 function UserLayout() {
+  const [userName, setUserName] = useState('Resident');
+
+  useEffect(() => {
+    // Get user name from localStorage or Firebase
+    const name = localStorage.getItem('userName') || 'Resident';
+    setUserName(name);
+  }, []);
+
   return (
     <div className="app-container">
-      <main className="page-content">
-        <Outlet />
-      </main>
+      {/* Sidebar Navigation */}
+      <Sidebar role="user" />
 
-      <nav className="bottom-nav">
-        <Link to="/user" className="nav-item">🏠</Link>
-        <Link to="/user/currentayuda" className="nav-item">📋</Link>
-        <Link to="/user/settings" className="nav-item">⚙️</Link>
-      </nav>
+      {/* Main Content Area */}
+      <div className="app-content-wrapper">
+        {/* Header */}
+        <Header userName={userName} userRole="Resident" />
+
+        {/* Page Content */}
+        <main className="app-main">
+          <Outlet />
+        </main>
+      </div>
     </div>
   );
 }

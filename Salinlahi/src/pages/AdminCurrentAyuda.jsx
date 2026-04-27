@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Package, MapPin, Calendar, Info } from "lucide-react";
+import { Package, MapPin, CalendarDays, Info, UserPlus, ScanLine, ClipboardList, Users, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { collection, getDocs, doc, getDoc, updateDoc, arrayUnion, arrayRemove, query, where } from "firebase/firestore";
 import { db } from "../firebase";
@@ -16,6 +16,7 @@ const [modalList, setModalList] = useState([]); // Will store [{displayName, uui
 
   const [formData, setFormData] = useState({});
   const [searchTerm, setSearchTerm] = useState("");
+  const [focusedCardId, setFocusedCardId] = useState(null);
 
   useEffect(() => {
     const fetchAyudas = async () => {
@@ -146,63 +147,92 @@ const [modalList, setModalList] = useState([]); // Will store [{displayName, uui
     setAyudas(data);
   };
 
+  const filteredAyudas = ayudas.filter((ayuda) =>
+    ayuda.title.toLowerCase().includes(searchTerm)
+  );
+  const layoutMode =
+    filteredAyudas.length <= 1 ? "hero" : filteredAyudas.length === 2 ? "duo" : "stack";
+
   return (
     <div className="app-container">
-      <div className="search-container">
-        <input 
-          className="input-field" 
-          type="text" 
-          placeholder="🔍 Search Ayudas by name..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value.toLowerCase())}
-        />
+      <div className="search-command-wrap">
+        <div className="search-command-shell">
+          <Search size={18} />
+          <input
+            className="input-field search-command-input"
+            type="text"
+            placeholder="Search ayudas..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value.toLowerCase())}
+          />
+        </div>
       </div>
-      <div className="admin-grid">
-        {ayudas.filter(ayuda => 
-          ayuda.title.toLowerCase().includes(searchTerm)
-        ).map((ayuda) => (
-        <div key={ayuda.id} className="base-card">
-          <h3 className="auth-title">{ayuda.title}</h3>
+      <div className={`admin-ayuda-stack admin-ayuda-stack-${layoutMode}`}>
+        {filteredAyudas.map((ayuda, index) => (
+        <div
+          key={ayuda.id}
+          className={`base-card admin-ayuda-item ${focusedCardId === ayuda.id ? "is-focused" : ""}`}
+          data-focused={focusedCardId && focusedCardId !== ayuda.id ? "dim" : "normal"}
+          style={{ "--card-index": index }}
+          onMouseEnter={() => setFocusedCardId(ayuda.id)}
+          onMouseLeave={() => setFocusedCardId(null)}
+          onTouchStart={() => setFocusedCardId(ayuda.id)}
+          onTouchEnd={() => setFocusedCardId(null)}
+        >
+          {/* Primary row: title + status for consistent scan pattern */}
+          <div className="admin-ayuda-primary-row">
+            <div className="admin-ayuda-title-wrap">
+              <h3 className="admin-ayuda-title">{ayuda.title || "Untitled Program"}</h3>
+              <p className="admin-ayuda-subtext">{ayuda.description || "No description provided"}</p>
+            </div>
+            <span className="badge badge-info admin-ayuda-badge">Program</span>
+          </div>
 
-          <div className="detail-row">
-            <div className="detail-icon"><Package size={24} /></div>
-            <div className="detail-content">
-              <h4>Amount</h4>
-              <p>₱{ayuda.amount?.toLocaleString()}</p>
+          {/* Secondary row: structured chips for core fields */}
+          <div className="admin-ayuda-secondary-row">
+            <div className="admin-ayuda-meta-chip">
+              <ClipboardList size={14} />
+              <span className="admin-ayuda-meta-label">Program ID</span>
+              <span className="admin-ayuda-meta-value admin-ayuda-meta-mono">{ayuda.id}</span>
+            </div>
+            <div className="admin-ayuda-meta-chip">
+              <Package size={14} />
+              <span className="admin-ayuda-meta-label">Amount</span>
+              <span className="admin-ayuda-meta-value admin-ayuda-meta-mono">₱{ayuda.amount?.toLocaleString() || "0"}</span>
+            </div>
+            <div className="admin-ayuda-meta-chip">
+              <MapPin size={14} />
+              <span className="admin-ayuda-meta-label">Location</span>
+              <span className="admin-ayuda-meta-value">{ayuda.barangay}, {ayuda.city}</span>
             </div>
           </div>
 
-          <div className="detail-row">
-            <div className="detail-icon"><MapPin size={24} /></div>
-            <div className="detail-content">
-              <h4>Location</h4>
-              <p>{ayuda.barangay}, {ayuda.city}</p>
-              <p style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>{ayuda.address || "N/A"}</p>
+          {/* Metadata row: low-emphasis operational attributes */}
+          <div className="admin-ayuda-meta-row">
+            <div className="admin-ayuda-meta-inline">
+              <CalendarDays size={14} />
+              <span className="admin-ayuda-meta-inline-label">Schedule</span>
+              <span className="admin-ayuda-meta-inline-value">{ayuda.schedule || "Not specified"}</span>
+            </div>
+            <div className="admin-ayuda-meta-inline">
+              <Users size={14} />
+              <span className="admin-ayuda-meta-inline-label">Applicants</span>
+              <span className="admin-ayuda-meta-inline-value admin-ayuda-meta-mono">{ayuda.applicants?.length || 0}</span>
+            </div>
+            <div className="admin-ayuda-meta-inline">
+              <Users size={14} />
+              <span className="admin-ayuda-meta-inline-label">Beneficiaries</span>
+              <span className="admin-ayuda-meta-inline-value admin-ayuda-meta-mono">{ayuda.beneficiaries?.length || 0}</span>
             </div>
           </div>
 
-          <div className="detail-row">
-            <div className="detail-icon"><Calendar size={24} /></div>
-            <div className="detail-content">
-              <h4>Schedule</h4>
-              <p>{ayuda.schedule || "Not specified"}</p>
-            </div>
-          </div>
-
-          <div className="detail-row">
-            <div className="detail-icon"><Info size={24} /></div>
-            <div className="detail-content">
-              <h4>Requirements</h4>
-              <p>{ayuda.requirements || "None"}</p>
-            </div>
-          </div>
-
-          <div className="detail-row">
-            <div className="detail-icon"><Package size={24} /></div>
-            <div className="detail-content">
-              <h4>Description</h4>
-              <p>{ayuda.description}</p>
-            </div>
+          <div className="admin-ayuda-requirements">
+            <p className="admin-ayuda-requirements-label">
+              <Info size={14} />
+              Requirements
+            </p>
+            <p className="admin-ayuda-requirements-text">{ayuda.requirements || "None"}</p>
+            <p className="admin-ayuda-requirements-text admin-ayuda-address">{ayuda.address || "No address specified"}</p>
           </div>
 
           <div className="button-group">
@@ -218,14 +248,23 @@ const [modalList, setModalList] = useState([]); // Will store [{displayName, uui
               Update
             </button>
             <button className="admin-btn" onClick={() => navigate(`/admin/scan?mode=add-applicant&ayudaId=${ayuda.id}`)}>
-              ➕ Add via QR
+              <UserPlus size={16} />
+              Add via QR
             </button>
             <button className="admin-btn" onClick={() => navigate(`/admin/scan?mode=claiming&ayudaId=${ayuda.id}`)}>
-              🏷️ Claiming Scanner
+              <ScanLine size={16} />
+              Claiming Scanner
             </button>
           </div>
         </div>
       ))}
+      {filteredAyudas.length === 0 && (
+        <div className="admin-empty-state">
+          <Package size={44} />
+          <h3>No ayudas found</h3>
+          <p>Try a different search term or create a new ayuda program.</p>
+        </div>
+      )}
 
       {/* LIST MODAL */}
       {modalOpen && (
