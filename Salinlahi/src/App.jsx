@@ -1,46 +1,131 @@
-import { Routes, Route, Link, Navigate } from "react-router-dom";
-import Register from "./pages/Register";
+import { Routes, Route, Navigate } from "react-router-dom";
 import Login from "./pages/Login";
 import logo from "./assets/Logo_Black.png";
+import { ThemeToggle } from "./components/ThemeToggle";
 import AdminLayout from "./layouts/AdminLayout";
+import StaffLayout from "./layouts/StaffLayout";
 import AdminScanner from "./pages/AdminScan";
 import AdminCreateAyuda from "./pages/AdminCreateAyuda";
 import AdminCurrentAyuda from "./pages/AdminCurrentAyuda";
+import AdminAyudaDetail from "./pages/AdminAyudaDetail";
 import AdminHome from "./pages/AdminHome";
-import Settings from "./pages/Settings";
+import AdminManageStaff from "./pages/AdminManageStaff";
+import AdminManageCitizens from "./pages/AdminManageCitizens";
+import { ProtectedRoute, RequireAdmin, RequireSuperAdmin } from "./components/ProtectedRoute";
 import UserLayout from "./layouts/UserLayout";
 import UserHome from "./pages/UserHome";
 import ForgotPassword from "./pages/ForgotPassword";
 import UserCurrentAyuda from "./pages/UserCurrentAyuda";
-{/*import CurrentAyuda from "./pages/CurrentAyuda";*/}
+import SuperAdminStaffAdmin from "./pages/SuperAdminStaffAdmin";
+import SuperAdminLayout from "./layouts/SuperAdminLayout";
 
 function App() {
   return (
     <div>
-      {/* Top Banner */}
       <header className="header-banner">
-        <img src={logo} style={{maxWidth: '200px', height: 'auto', filter: 'drop-shadow(0 4px 12px rgba(56, 189, 248, 0.3))'}} alt="Salinlahi Logo" />
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          <img src={logo} className="header-banner__logo" alt="Salinlahi Logo" />
+          <div id="global-header-title"></div>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }} id="global-header-actions">
+          <ThemeToggle />
+        </div>
       </header>
 
-      {/* Page Content */}
       <div>
         <Routes>
-          <Route path="/" element={<Navigate to="/register" />} />
-          <Route path="/register" element={<Register />} />
+          <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route path="/register" element={<Navigate to="/login" replace />} />
           <Route path="/login" element={<Login />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/user" element={<UserLayout/>}>
+
+          <Route
+            path="/user"
+            element={
+              <ProtectedRoute allowedRoles={["citizen"]}>
+                <UserLayout />
+              </ProtectedRoute>
+            }
+          >
             <Route index element={<UserHome />} />
-            <Route path="currentayuda" element={<UserCurrentAyuda />} />
-            <Route path="settings" element={<Settings />} />
+            <Route path="history" element={<UserCurrentAyuda />} />
           </Route>
-          <Route path="/admin" element={<AdminLayout/>}>
-            <Route path="/admin/AdminHome" element={<AdminHome />} />
-            <Route path="/admin/CreateAyuda" element={<AdminCreateAyuda />} />
-            <Route path="/admin/scan" element={<AdminScanner />} />
-            <Route path="/admin/CurrentAyuda" element={<AdminCurrentAyuda />} />
-            <Route path="/admin/Settings" element={<Settings />} />
+
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute allowedRoles={["admin"]}>
+                <AdminLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<Navigate to="dashboard" replace />} />
+            <Route path="dashboard" element={<AdminHome />} />
+            <Route
+              path="create-event"
+              element={
+                <RequireAdmin>
+                  <AdminCreateAyuda />
+                </RequireAdmin>
+              }
+            />
+            <Route path="scan" element={<AdminScanner />} />
+            <Route path="events" element={<AdminCurrentAyuda />} />
+            <Route path="ayuda/:ayudaId" element={<AdminAyudaDetail />} />
+            <Route
+              path="manage-staff"
+              element={
+                <RequireAdmin>
+                  <AdminManageStaff />
+                </RequireAdmin>
+              }
+            />
+            <Route
+              path="manage-citizens"
+              element={
+                <RequireAdmin>
+                  <AdminManageCitizens />
+                </RequireAdmin>
+              }
+            />
           </Route>
+
+          <Route
+            path="/staff"
+            element={
+              <ProtectedRoute allowedRoles={["staff"]}>
+                <StaffLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<Navigate to="dashboard" replace />} />
+            <Route path="dashboard" element={<AdminHome />} />
+            <Route path="scan" element={<AdminScanner />} />
+            <Route path="events" element={<AdminCurrentAyuda />} />
+            <Route path="ayuda/:ayudaId" element={<AdminAyudaDetail />} />
+            <Route path="manage-citizens" element={<AdminManageCitizens />} />
+          </Route>
+
+          <Route
+            path="/super-admin"
+            element={
+              <ProtectedRoute allowedRoles={["super_admin"]}>
+                <SuperAdminLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<Navigate to="staff-admin" replace />} />
+            <Route
+              path="staff-admin"
+              element={
+                <RequireSuperAdmin>
+                  <SuperAdminStaffAdmin />
+                </RequireSuperAdmin>
+              }
+            />
+          </Route>
+
+          <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </div>
     </div>

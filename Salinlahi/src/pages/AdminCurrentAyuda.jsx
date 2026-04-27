@@ -1,14 +1,54 @@
-import { useEffect, useState } from "react";
-import { Package, MapPin, Calendar, Info } from "lucide-react";
-import { useNavigate } from "react-router-dom";
-import { collection, getDocs, doc, getDoc, updateDoc, arrayUnion, arrayRemove, query, where } from "firebase/firestore";
+import { useCallback, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { Users2, UserCheck2, Archive } from "lucide-react";
+import {
+  collection,
+  getDocs,
+  doc,
+  getDoc,
+  updateDoc,
+  deleteDoc,
+  arrayUnion,
+  arrayRemove,
+  writeBatch,
+} from "firebase/firestore";
 import { db } from "../firebase";
+import { useAuth } from "../context/AuthContext";
+import { useActiveAyuda } from "../context/ActiveAyudaContext";
+import AyudaDetailContent from "../components/AyudaDetailContent";
+
+const formatTime = (time24) => {
+  if (!time24) return "";
+  const [hour, min] = time24.split(":");
+  const h = parseInt(hour, 10);
+  const ampm = h >= 12 ? "PM" : "AM";
+  const formattedH = h % 12 || 12;
+  return `${formattedH}:${min} ${ampm}`;
+};
+
+function useWideLayout() {
+  const [wide, setWide] = useState(
+    () => typeof window !== "undefined" && window.innerWidth > 1024
+  );
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 1025px)");
+    const fn = () => setWide(mq.matches);
+    mq.addEventListener("change", fn);
+    fn();
+    return () => mq.removeEventListener("change", fn);
+  }, []);
+  return wide;
+}
 
 function AdminCurrentAyuda() {
   const navigate = useNavigate();
+  const { isAdmin, isStaff, isStaffOrAdmin } = useAuth();
+  const { setActiveAyuda } = useActiveAyuda();
+
   const [ayudas, setAyudas] = useState([]);
   const [modalOpen, setModalOpen] = useState(false);
-const [modalList, setModalList] = useState([]); // Will store [{displayName, uuid}]
+  const [modalList, setModalList] = useState([]);
   const [modalTitle, setModalTitle] = useState("");
 
   const [updateModal, setUpdateModal] = useState(false);
@@ -16,92 +56,105 @@ const [modalList, setModalList] = useState([]); // Will store [{displayName, uui
 
   const [formData, setFormData] = useState({});
   const [searchTerm, setSearchTerm] = useState("");
+  const [deleteModalAyuda, setDeleteModalAyuda] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [viewMode, setViewMode] = useState("active");
+  const [feedbackModalMessage, setFeedbackModalMessage] = useState("");
+  const [rejectConfirmTarget, setRejectConfirmTarget] = useState(null);
 
-  useEffect(() => {
-    const fetchAyudas = async () => {
-      const querySnapshot = await getDocs(collection(db, "ayudas"));
-
-      const data = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-
-      setAyudas(data);
-    };
-
-    fetchAyudas();
+  const fetchAyudas = useCallback(async () => {
+    const querySnapshot = await getDocs(collection(db, "ayudas"));
+    const data = querySnapshot.docs.map((d) => ({
+      id: d.id,
+      ...d.data(),
+    }));
+    setAyudas(data);
   }, []);
 
+  useEffect(() => {
+    void fetchAyudas();
+  }, [fetchAyudas]);
+
   const approveApplicant = async (applicantObj) => {
-  if (!selectedAyuda || !applicantObj.uuid) return;
-  const applicantId = applicantObj.uuid;
-  const ayudaRef = doc(db, "ayudas", selectedAyuda.id);
+    if (!selectedAyuda || !applicantObj.uuid) return;
+    const applicantId = applicantObj.uuid;
 
-  await updateDoc(ayudaRef, {
-    applicants: arrayRemove(applicantId),
-    beneficiaries: arrayUnion(applicantId)
-  });
+    try {
+      const batch = writeBatch(db);
+      const ayudaRef = doc(db, "ayudas", selectedAyuda.id);
+      batch.update(ayudaRef, {
+        applicants: arrayRemove(applicantId),
+        beneficiaries: arrayUnion(applicantId),
+      });
+      const userRef = doc(db, "users", applicantId);
+      batch.update(userRef, {
+        ayudas_applied: arrayRemove(selectedAyuda.id),
+        ayudas_beneficiary: arrayUnion(selectedAyuda.id),
+      });
+      await batch.commit();
+    } catch (err) {
+      console.error(err);
+      setFeedbackModalMessage(
+        "Could not approve this applicant. Check your connection and Firestore permissions."
+      );
+      return;
+    }
 
-// Update user document - direct getDoc using uuid as doc ID (matching applicants array storage)
-  try {
-    const userRef = doc(db, "users", applicantId);
-    await updateDoc(userRef, {
-      ayudas_applied: arrayRemove(selectedAyuda.id),
-      ayudas_beneficiary: arrayUnion(selectedAyuda.id)
-    });
-    console.log(`Direct updated user doc ${applicantId} for ayuda ${selectedAyuda.id}`);
-  } catch (err) {
-    console.error(`Direct update failed for user ${applicantId}:`, err);
-  }
-
-  setModalList(prev => prev.filter(a => a.uuid !== applicantId));
-  
-  // Refresh main list
-  const querySnapshot = await getDocs(collection(db, "ayudas"));
-  const data = querySnapshot.docs.map(doc => ({
-    id: doc.id,
-    ...doc.data()
-  }));
-  setAyudas(data);
-};
+    setModalList((prev) => prev.filter((a) => a.uuid !== applicantId));
+    await fetchAyudas();
+  };
 
   const rejectApplicant = async (applicantObj) => {
-  if (!selectedAyuda || !applicantObj.uuid) return;
-  const applicantId = applicantObj.uuid;
-  const ayudaRef = doc(db, "ayudas", selectedAyuda.id);
+    if (!selectedAyuda || !applicantObj.uuid) return;
+    const applicantId = applicantObj.uuid;
 
-  await updateDoc(ayudaRef, {
-    applicants: arrayRemove(applicantId)
-  });
+    try {
+      const batch = writeBatch(db);
+      const ayudaRef = doc(db, "ayudas", selectedAyuda.id);
+      batch.update(ayudaRef, {
+        applicants: arrayRemove(applicantId),
+      });
+      const userRef = doc(db, "users", applicantId);
+      batch.update(userRef, {
+        ayudas_applied: arrayRemove(selectedAyuda.id),
+      });
+      await batch.commit();
+    } catch (err) {
+      console.error(err);
+      setFeedbackModalMessage(
+        "Could not reject this applicant. Check your connection and Firestore permissions."
+      );
+      return;
+    }
 
-  setModalList(prev => prev.filter(a => a.uuid !== applicantId));
-  
-  // Refresh main list
-  const querySnapshot = await getDocs(collection(db, "ayudas"));
-  const data = querySnapshot.docs.map(doc => ({
-    id: doc.id,
-    ...doc.data()
-  }));
-  setAyudas(data);
-};
+    setModalList((prev) => prev.filter((a) => a.uuid !== applicantId));
+    await fetchAyudas();
+  };
+
   const openListModal = async (title, list, ayuda) => {
     setModalTitle(title);
     setSelectedAyuda(ayuda);
     setModalOpen(true);
-    
-    // Load user names + UUIDs for applicant list
+
     const applicantObjects = [];
     for (const applicantId of list || []) {
       try {
-        const userDoc = await getDoc(doc(db, 'users', applicantId));
+        const userDoc = await getDoc(doc(db, "users", applicantId));
         let displayName = applicantId;
         if (userDoc.exists()) {
           const userData = userDoc.data();
-          displayName = `${userData.first_name || ''} ${userData.last_name || ''}`.trim() || applicantId;
+          displayName =
+            `${userData.first_name || ""} ${userData.last_name || ""}`.trim() ||
+            applicantId;
         }
-        applicantObjects.push({ uuid: applicantId, displayName });
-      } catch (err) {
-        applicantObjects.push({ uuid: applicantId, displayName: applicantId });
+        applicantObjects.push({
+          uuid: applicantId,
+          displayName,
+          profile: userDoc.exists() ? userDoc.data() : null,
+        });
+      } catch {
+        applicantObjects.push({ uuid: applicantId, displayName: applicantId, profile: null });
       }
     }
     setModalList(applicantObjects);
@@ -116,7 +169,7 @@ const [modalList, setModalList] = useState([]); // Will store [{displayName, uui
   const handleChange = (e) => {
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [e.target.name]: e.target.value,
     });
   };
 
@@ -127,201 +180,621 @@ const [modalList, setModalList] = useState([]); // Will store [{displayName, uui
       title: formData.title,
       description: formData.description,
       amount: Number(formData.amount),
+      programType: formData.programType || "ONE_TIME",
+      ayudaType: formData.ayudaType || "STANDARD",
+      aidKind:
+        (formData.programType || "ONE_TIME") === "ONE_TIME"
+          ? formData.aidKind || "RELIEF_GOODS"
+          : null,
+      requiredDays:
+        (formData.programType || "ONE_TIME") === "SERVICE"
+          ? Math.max(1, Number(formData.requiredDays || 1))
+          : null,
       address: formData.address,
       barangay: formData.barangay,
       city: formData.city,
       requirements: formData.requirements,
-      schedule: formData.schedule
+      schedule: formData.schedule,
+      timeStart: formData.timeStart || "",
+      timeEnd: formData.timeEnd || "",
     });
 
     setUpdateModal(false);
-
-    // refresh data
-    const querySnapshot = await getDocs(collection(db, "ayudas"));
-    const data = querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }));
-
-    setAyudas(data);
+    await fetchAyudas();
   };
 
+  const deleteAyuda = async () => {
+    if (!deleteModalAyuda) return;
+    setIsDeleting(true);
+    try {
+      await deleteDoc(doc(db, "ayudas", deleteModalAyuda.id));
+      setAyudas((prev) => prev.filter((a) => a.id !== deleteModalAyuda.id));
+      setDeleteModalAyuda(null);
+    } catch (err) {
+      console.error("Error deleting Ayuda:", err);
+      setFeedbackModalMessage("Failed to delete Ayuda.");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const goClaiming = (ayuda) => {
+    setActiveAyuda(ayuda.id, ayuda.title || "");
+    navigate(isAdmin ? "/admin/scan" : "/staff/scan");
+  };
+
+  const statusFiltered = ayudas.filter((ayuda) => {
+    if (viewMode === "completed") return ayuda.status === "COMPLETED";
+    return ayuda.status === "ONGOING" || !ayuda.status;
+  });
+
+  const filtered = statusFiltered.filter((ayuda) =>
+    String(ayuda.title || "")
+      .toLowerCase()
+      .includes(searchTerm)
+  );
+
   return (
-    <div className="app-container">
-      <div className="search-container">
-        <input 
-          className="input-field" 
-          type="text" 
-          placeholder="🔍 Search Ayudas by name..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value.toLowerCase())}
-        />
-      </div>
-      <div className="admin-grid">
-        {ayudas.filter(ayuda => 
-          ayuda.title.toLowerCase().includes(searchTerm)
-        ).map((ayuda) => (
-        <div key={ayuda.id} className="base-card">
-          <h3 className="auth-title">{ayuda.title}</h3>
-
-          <div className="detail-row">
-            <div className="detail-icon"><Package size={24} /></div>
-            <div className="detail-content">
-              <h4>Amount</h4>
-              <p>₱{ayuda.amount?.toLocaleString()}</p>
-            </div>
-          </div>
-
-          <div className="detail-row">
-            <div className="detail-icon"><MapPin size={24} /></div>
-            <div className="detail-content">
-              <h4>Location</h4>
-              <p>{ayuda.barangay}, {ayuda.city}</p>
-              <p style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>{ayuda.address || "N/A"}</p>
-            </div>
-          </div>
-
-          <div className="detail-row">
-            <div className="detail-icon"><Calendar size={24} /></div>
-            <div className="detail-content">
-              <h4>Schedule</h4>
-              <p>{ayuda.schedule || "Not specified"}</p>
-            </div>
-          </div>
-
-          <div className="detail-row">
-            <div className="detail-icon"><Info size={24} /></div>
-            <div className="detail-content">
-              <h4>Requirements</h4>
-              <p>{ayuda.requirements || "None"}</p>
-            </div>
-          </div>
-
-          <div className="detail-row">
-            <div className="detail-icon"><Package size={24} /></div>
-            <div className="detail-content">
-              <h4>Description</h4>
-              <p>{ayuda.description}</p>
-            </div>
-          </div>
-
-          <div className="button-group">
-            <button className="admin-btn" onClick={() => openListModal("Applicants", ayuda.applicants, ayuda)}>
-              Applicants ({ayuda.applicants?.length || 0})
-            </button>
-
-            <button className="admin-btn" onClick={() => openListModal("Beneficiaries", ayuda.beneficiaries, ayuda)}>
-              Beneficiaries ({ayuda.beneficiaries?.length || 0})
-            </button>
-
-            <button className="admin-btn update-btn" onClick={() => openUpdateModal(ayuda)}>
-              Update
-            </button>
-            <button className="admin-btn" onClick={() => navigate(`/admin/scan?mode=add-applicant&ayudaId=${ayuda.id}`)}>
-              ➕ Add via QR
-            </button>
-            <button className="admin-btn" onClick={() => navigate(`/admin/scan?mode=claiming&ayudaId=${ayuda.id}`)}>
-              🏷️ Claiming Scanner
-            </button>
-          </div>
+    <div
+      className="admin-current-ayuda-root"
+      style={{ paddingBottom: "2rem" }}
+    >
+      <div className="admin-current-ayuda-main">
+        <div style={{ marginBottom: "2.5rem" }}>
+          <h1
+            className="auth-title"
+            style={{ textAlign: "left", marginBottom: "0.5rem" }}
+          >
+            {viewMode === "completed" ? "Completed Ayuda" : "Active Ayuda"}
+          </h1>
+          <p className="settings-text" style={{ textAlign: "left" }}>
+            {viewMode === "completed"
+              ? "Archived events are read-only. Click Details to review historical data."
+              : isAdmin
+                ? "Manage distributions, update details, or accept and reject applicants."
+                : isStaff
+                  ? "View ongoing events, accept or reject applicants, and set the active event for scanning."
+                  : "View ongoing events, open details, and set the active event for scanning."}
+          </p>
         </div>
-      ))}
 
-      {/* LIST MODAL */}
-      {modalOpen && (
-        <div className="modal-overlay">
-          <div className="base-card modal-card">
-            <h2 className="auth-title">{modalTitle}</h2>
+        {/* View Mode Toggle */}
+        <div className="ayuda-view-toggle" style={{ marginBottom: "1.5rem" }}>
+          <button
+            type="button"
+            className={`ayuda-view-toggle__btn ${viewMode === "active" ? "ayuda-view-toggle__btn--active" : ""}`}
+            onClick={() => setViewMode("active")}
+          >
+            Active Programs
+          </button>
+          <button
+            type="button"
+            className={`ayuda-view-toggle__btn ${viewMode === "completed" ? "ayuda-view-toggle__btn--active" : ""}`}
+            onClick={() => setViewMode("completed")}
+          >
+            <Archive size={14} />
+            Completed Programs
+          </button>
+        </div>
 
-            {modalList.length === 0 ? (
-              <p className="settings-text">No data found</p>
-            ) : (
-              modalList.map((item, index) => (
-                <div key={index} className="modal-list-row">
-                  <span>{item.displayName}</span>
+        <div
+          className="search-container ayuda-search-bar"
+          style={{ maxWidth: "640px", margin: "0 0 2rem 0" }}
+        >
+          <input
+            className="input-field"
+            type="text"
+            placeholder="Search by title…"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value.toLowerCase())}
+          />
+        </div>
 
-                  {modalTitle === "Applicants" && (
-                    <div className="row-buttons">
-                      <button className="approve-btn" onClick={() => approveApplicant(item)}>
-                        Approve
+        <div className="data-table-container data-table-container--ayuda">
+          <table className="data-table data-table--ayuda">
+            <thead>
+              <tr>
+                <th>Event</th>
+                <th>Location</th>
+                <th>People</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.length === 0 && ayudas.length > 0 && (
+                <tr>
+                  <td colSpan="4" style={{ textAlign: "center", padding: "2rem" }}>
+                    No ayudas match your search.
+                  </td>
+                </tr>
+              )}
+              {filtered.map((ayuda) => {
+                const isArchived = ayuda.status === "COMPLETED";
+                return (
+                <tr key={ayuda.id} style={isArchived ? { opacity: 0.6 } : undefined}>
+                  <td>
+                    <div className="data-table__title-block">
+                      <div className="data-table__title">
+                        {ayuda.title}
+                        {isArchived && <span className="pill-badge archived-badge" style={{ marginLeft: "0.5rem", fontSize: "0.65rem" }}>ARCHIVED</span>}
+                      </div>
+                      <div className="data-table__sub">
+                        {ayuda.schedule || "TBA"}
+                        {ayuda.timeStart && ayuda.timeEnd
+                          ? ` · ${formatTime(ayuda.timeStart)} → ${formatTime(
+                            ayuda.timeEnd
+                          )}`
+                          : ""}
+                        {" · ₱"}
+                        {ayuda.amount?.toLocaleString?.() ?? ayuda.amount}
+                        {" · "}
+                        {(ayuda.programType || "ONE_TIME") === "SERVICE"
+                          ? "SERVICE"
+                          : "ONE_TIME"}
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <div className="data-table__loc-main">
+                      {ayuda.barangay}, {ayuda.city}
+                    </div>
+                    <div className="data-table__loc-sub">
+                      {ayuda.address || "N/A"}
+                    </div>
+                  </td>
+                  <td>
+                    <div className="ayuda-people-actions">
+                      <button
+                        type="button"
+                        className="ayuda-people-btn"
+                        onClick={() =>
+                          openListModal("Applicants", ayuda.applicants, ayuda)
+                        }
+                        aria-label="View applicants list"
+                      >
+                        <span className="ayuda-people-btn__title">
+                          <Users2 size={15} />
+                          Applicants
+                        </span>
+                        <span className="ayuda-people-btn__meta">
+                          {ayuda.applicants?.length || 0} records
+                        </span>
                       </button>
-
-                      <button className="reject-btn" onClick={() => rejectApplicant(item)}>
-                        Reject
+                      <button
+                        type="button"
+                        className="ayuda-people-btn ayuda-people-btn--green"
+                        onClick={() =>
+                          openListModal("Beneficiaries", ayuda.beneficiaries, ayuda)
+                        }
+                        aria-label="View beneficiaries list"
+                      >
+                        <span className="ayuda-people-btn__title">
+                          <UserCheck2 size={15} />
+                          Beneficiaries
+                        </span>
+                        <span className="ayuda-people-btn__meta">
+                          {ayuda.beneficiaries?.length || 0} records
+                        </span>
                       </button>
                     </div>
-                  )}
-                </div>
-              ))
-            )}
-
-            <button className="auth-button close-btn" onClick={() => setModalOpen(false)}>
-              Close
-            </button>
-          </div>
+                  </td>
+                  <td>
+                    <div className="table-actions table-actions--stack">
+                      <Link
+                        className="action-btn"
+                        to={isAdmin ? `/admin/ayuda/${ayuda.id}` : `/staff/ayuda/${ayuda.id}`}
+                      >
+                        Details
+                      </Link>
+                      {!isArchived && isAdmin && (
+                        <button
+                          type="button"
+                          className="action-btn btn-update"
+                          onClick={() => openUpdateModal(ayuda)}
+                        >
+                          Update
+                        </button>
+                      )}
+                      {!isArchived && (
+                        <button
+                          type="button"
+                          className="action-btn"
+                          onClick={() => goClaiming(ayuda)}
+                        >
+                          Scan / claim
+                        </button>
+                      )}
+                      {!isArchived && isAdmin && (
+                        <button
+                          type="button"
+                          className="action-btn action-btn--danger"
+                          onClick={() => setDeleteModalAyuda(ayuda)}
+                        >
+                          Delete
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+                );
+              })}
+              {ayudas.length === 0 && (
+                <tr>
+                  <td colSpan="4" style={{ textAlign: "center", padding: "2rem" }}>
+                    No ayudas found.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
-      )}
-
-      {/* UPDATE MODAL */}
-      {updateModal && (
-        <div className="modal-overlay">
-          <div className="base-card modal-card">
-            <h2 className="auth-title">Update Ayuda</h2>
-
-            <div className="input-group">
-              <label>Title</label>
-              <input className="input-field" name="title" value={formData.title || ""} onChange={handleChange}/>
-            </div>
-
-            <div className="input-group">
-              <label>Description</label>
-              <input className="input-field" name="description" value={formData.description || ""} onChange={handleChange}/>
-            </div>
-
-            <div className="input-group">
-              <label>Amount (₱)</label>
-              <input className="input-field" type="number" name="amount" value={formData.amount || ""} onChange={handleChange}/>
-            </div>
-
-            <div className="input-row">
-              <div className="input-group">
-                <label>Barangay</label>
-                <input className="input-field" name="barangay" value={formData.barangay || ""} onChange={handleChange}/>
-              </div>
-
-              <div className="input-group">
-                <label>City</label>
-                <input className="input-field" name="city" value={formData.city || ""} onChange={handleChange}/>
-              </div>
-            </div>
-
-            <div className="input-group">
-              <label>Address</label>
-              <input className="input-field" name="address" value={formData.address || ""} onChange={handleChange}/>
-            </div>
-
-            <div className="input-group">
-              <label>Requirements</label>
-              <input className="input-field" name="requirements" value={formData.requirements || ""} onChange={handleChange}/>
-            </div>
-
-            <div className="input-group">
-              <label>Schedule</label>
-              <input className="input-field" type="date" name="schedule" value={formData.schedule || ""} onChange={handleChange}/>
-            </div>
-
-            <div className="button-group">
-              <button className="auth-button" onClick={saveUpdate}>
-                Save
-              </button>
-              <button className="auth-button close-btn" onClick={() => setUpdateModal(false)}>
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
       </div>
+
+      {modalOpen &&
+        createPortal(
+          <div className="modal-overlay">
+            <div className="base-card modal-panel">
+              <h2 className="auth-title">{modalTitle}</h2>
+
+              {modalList.length === 0 ? (
+                <p className="settings-text">No data found</p>
+              ) : (
+                modalList.map((item, index) => {
+                  const showApplicantActions =
+                    modalTitle === "Applicants" && isStaffOrAdmin;
+                  return (
+                    <div
+                      key={index}
+                      className={`modal-list-row${!showApplicantActions ? " modal-list-row--interactive" : ""
+                        }`}
+                      onClick={() => setSelectedUser(item)}
+                    >
+                      <span>{item.displayName}</span>
+
+                      {showApplicantActions && (
+                        <div className="row-buttons">
+                          <button
+                            type="button"
+                            className="approve-btn"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              void approveApplicant(item);
+                            }}
+                          >
+                            Approve
+                          </button>
+                          <button
+                            type="button"
+                            className="reject-btn"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setRejectConfirmTarget(item);
+                            }}
+                          >
+                            Reject
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+              )}
+
+              <button
+                type="button"
+                className="auth-button close-btn"
+                onClick={() => setModalOpen(false)}
+              >
+                Close
+              </button>
+            </div>
+          </div>,
+          document.body
+        )}
+
+      {updateModal &&
+        isAdmin &&
+        createPortal(
+          <div className="modal-overlay">
+            <div className="base-card modal-panel">
+              <h2 className="auth-title">Update Ayuda</h2>
+
+              <div className="input-group">
+                <label>Title</label>
+                <input
+                  className="input-field"
+                  name="title"
+                  value={formData.title || ""}
+                  onChange={handleChange}
+                />
+              </div>
+
+              <div className="input-group">
+                <label>Description</label>
+                <input
+                  className="input-field"
+                  name="description"
+                  value={formData.description || ""}
+                  onChange={handleChange}
+                />
+              </div>
+
+              <div className="input-group">
+                <label>Amount (₱)</label>
+                <input
+                  className="input-field"
+                  type="number"
+                  name="amount"
+                  value={formData.amount || ""}
+                  onChange={handleChange}
+                />
+              </div>
+
+              <div className="input-group">
+                <label>Program Type</label>
+                <select
+                  className="input-field"
+                  name="programType"
+                  value={formData.programType || "ONE_TIME"}
+                  onChange={handleChange}
+                >
+                  <option value="ONE_TIME">ONE_TIME</option>
+                  <option value="SERVICE">SERVICE</option>
+                </select>
+              </div>
+              
+              <div className="input-group">
+                <label>Ayuda Type</label>
+                <select
+                  className="input-field"
+                  name="ayudaType"
+                  value={formData.ayudaType || "STANDARD"}
+                  onChange={handleChange}
+                >
+                  <option value="STANDARD">Standard Ayuda</option>
+                  <option value="RAPID">Rapid Ayuda</option>
+                </select>
+              </div>
+
+              {(formData.programType || "ONE_TIME") === "ONE_TIME" ? (
+                <div className="input-group">
+                  <label>Aid Selection</label>
+                  <select
+                    className="input-field"
+                    name="aidKind"
+                    value={formData.aidKind || "RELIEF_GOODS"}
+                    onChange={handleChange}
+                  >
+                    <option value="RELIEF_GOODS">Relief Goods</option>
+                    <option value="CASH">Cash</option>
+                  </select>
+                </div>
+              ) : (
+                <div className="input-group">
+                  <label>Required Days (Attendance)</label>
+                  <input
+                    className="input-field"
+                    type="number"
+                    min="1"
+                    name="requiredDays"
+                    value={formData.requiredDays || ""}
+                    onChange={handleChange}
+                  />
+                </div>
+              )}
+
+              <div className="input-row">
+                <div className="input-group">
+                  <label>Barangay</label>
+                  <input
+                    className="input-field"
+                    name="barangay"
+                    value={formData.barangay || ""}
+                    onChange={handleChange}
+                  />
+                </div>
+
+                <div className="input-group">
+                  <label>City</label>
+                  <input
+                    className="input-field"
+                    name="city"
+                    value={formData.city || ""}
+                    onChange={handleChange}
+                  />
+                </div>
+              </div>
+
+              <div className="input-group">
+                <label>Designation Point (Location)</label>
+                <input
+                  className="input-field"
+                  name="address"
+                  value={formData.address || ""}
+                  onChange={handleChange}
+                />
+              </div>
+
+              <div className="input-group">
+                <label>Requirements</label>
+                <input
+                  className="input-field"
+                  name="requirements"
+                  value={formData.requirements || ""}
+                  onChange={handleChange}
+                />
+              </div>
+
+              <div className="input-row">
+                <div className="input-group">
+                  <label>Schedule (Date)</label>
+                  <input
+                    className="input-field"
+                    type="date"
+                    name="schedule"
+                    value={formData.schedule || ""}
+                    onChange={handleChange}
+                  />
+                </div>
+
+                <div className="input-group">
+                  <label>Time Start</label>
+                  <input
+                    className="input-field"
+                    type="time"
+                    name="timeStart"
+                    value={formData.timeStart || ""}
+                    onChange={handleChange}
+                  />
+                </div>
+
+                <div className="input-group">
+                  <label>Time End</label>
+                  <input
+                    className="input-field"
+                    type="time"
+                    name="timeEnd"
+                    value={formData.timeEnd || ""}
+                    onChange={handleChange}
+                  />
+                </div>
+              </div>
+
+              <div className="button-group">
+                <button type="button" className="auth-button" onClick={saveUpdate}>
+                  Save
+                </button>
+                <button
+                  type="button"
+                  className="auth-button close-btn"
+                  onClick={() => setUpdateModal(false)}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
+      {deleteModalAyuda &&
+        createPortal(
+          <div className="modal-overlay">
+            <div className="base-card modal-panel" style={{ textAlign: "center", padding: "2.5rem" }}>
+              <h2 className="auth-title" style={{ color: "#ef4444", marginBottom: "1rem" }}>
+                Delete Ayuda
+              </h2>
+              <p className="settings-text" style={{ marginBottom: "1.5rem", fontSize: "1.1rem" }}>
+                Are you sure you want to permanently delete <strong>{deleteModalAyuda.title}</strong>?<br />
+                All applicant and beneficiary data for this event will be lost. This action cannot be undone.
+              </p>
+              <div style={{ display: "flex", gap: "1rem", justifyContent: "center" }}>
+                <button
+                  className="auth-button"
+                  style={{ background: "var(--input-bg)", color: "var(--text-primary)" }}
+                  onClick={() => setDeleteModalAyuda(null)}
+                  disabled={isDeleting}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="auth-button"
+                  style={{ background: "#ef4444" }}
+                  onClick={deleteAyuda}
+                  disabled={isDeleting}
+                >
+                  {isDeleting ? "Deleting..." : "Confirm Delete"}
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
+      {selectedUser &&
+        createPortal(
+          <div className="modal-overlay modal-overlay--padded">
+            <div className="base-card modal-panel">
+              <h2 className="auth-title">User Information</h2>
+              <div className="modal-inset-panel" style={{ textAlign: "left" }}>
+                <p><strong>Name:</strong> {selectedUser.displayName}</p>
+                <p><strong>UID:</strong> {selectedUser.uuid}</p>
+                <p><strong>Email:</strong> {selectedUser.profile?.email || "N/A"}</p>
+                <p><strong>Citizen Code:</strong> {selectedUser.profile?.citizenCode || "N/A"}</p>
+                <p><strong>Phone:</strong> {selectedUser.profile?.phone || selectedUser.profile?.contact_number || "N/A"}</p>
+                <p><strong>Birthday:</strong> {selectedUser.profile?.birth_date || "N/A"}</p>
+                <p><strong>Address:</strong> {selectedUser.profile?.address || "N/A"}</p>
+                <p><strong>Barangay:</strong> {selectedUser.profile?.barangay || "N/A"}</p>
+                <p><strong>City:</strong> {selectedUser.profile?.city || "N/A"}</p>
+              </div>
+              <button
+                type="button"
+                className="auth-button close-btn"
+                onClick={() => setSelectedUser(null)}
+              >
+                Close
+              </button>
+            </div>
+          </div>,
+          document.body
+        )}
+      {rejectConfirmTarget &&
+        createPortal(
+          <div className="modal-overlay modal-overlay--padded">
+            <div className="base-card modal-panel" style={{ textAlign: "center", padding: "2.25rem", maxWidth: "460px" }}>
+              <h2 className="auth-title" style={{ color: "#ef4444", marginBottom: "1rem" }}>
+                Reject Applicant?
+              </h2>
+              <p className="settings-text" style={{ marginBottom: "1.5rem" }}>
+                Reject <strong>{rejectConfirmTarget.displayName}</strong>? They will be removed from this ayuda's applicants list.
+              </p>
+              <div style={{ display: "flex", gap: "0.75rem", justifyContent: "center" }}>
+                <button
+                  type="button"
+                  className="auth-button"
+                  style={{ background: "var(--input-bg)", color: "var(--text-primary)" }}
+                  onClick={() => setRejectConfirmTarget(null)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="auth-button"
+                  style={{ background: "#ef4444" }}
+                  onClick={() => {
+                    const target = rejectConfirmTarget;
+                    setRejectConfirmTarget(null);
+                    if (target) {
+                      void rejectApplicant(target);
+                    }
+                  }}
+                >
+                  Confirm Reject
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
+      {feedbackModalMessage &&
+        createPortal(
+          <div className="modal-overlay modal-overlay--padded modal-overlay--scroll-follow">
+            <div className="base-card modal-panel" style={{ textAlign: "center", padding: "2.25rem", maxWidth: "460px" }}>
+              <h2 className="auth-title" style={{ marginBottom: "1rem" }}>
+                Action Failed
+              </h2>
+              <p className="settings-text" style={{ marginBottom: "1.5rem" }}>
+                {feedbackModalMessage}
+              </p>
+              <button
+                type="button"
+                className="auth-button"
+                onClick={() => setFeedbackModalMessage("")}
+              >
+                OK
+              </button>
+            </div>
+          </div>,
+          document.body
+        )}
     </div>
   );
 }

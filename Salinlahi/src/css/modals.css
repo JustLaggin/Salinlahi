@@ -2,52 +2,84 @@
   position: fixed;
   top: 0;
   left: 0;
-  width: 100vw;
+  right: 0;
+  bottom: 0;
   height: 100vh;
-  background: rgba(11, 17, 33, 0.95);
-  backdrop-filter: blur(25px);
+  background: var(--modal-overlay-bg);
+  backdrop-filter: blur(12px);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 3000;
-  animation: modalFadeIn 0.25s ease-out;
+  z-index: 9999;
+  animation: modalFadeIn 0.2s ease-out;
 }
 
-.modal-card {
-  max-width: 550px;
-  max-height: 85vh;
+/* Sizing layer on top of .base-card (gradient border + surface) */
+.base-card.modal-panel {
+  max-width: 750px;
+  max-height: 90vh;
   width: 90vw;
-  background: var(--color-bg-card);
-  border-radius: var(--radius-card);
-  border: 1px solid rgba(255,255,255,0.15);
-  box-shadow: var(--shadow-card), 0 0 40px rgba(0,0,0,0.7);
-  padding: 2.5rem;
   overflow-y: auto;
-  animation: modalZoomIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  overflow-x: hidden;
+  margin: 0; /* Removing any margin-top or bottom pushing it off-center */
+  animation: modalZoomIn 0.22s ease-out;
+}
+
+.modal-overlay--padded {
+  padding: 1rem;
+  z-index: 9999;
+}
+
+.modal-overlay--scroll-follow {
+  align-items: flex-start;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-top: 3rem;
+  padding-bottom: 3rem;
+}
+
+.base-card.modal-panel--scan {
+  min-width: min(400px, 100%);
 }
 
 @keyframes modalFadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes modalZoomIn {
-  0% { transform: scale(0.85) translateY(20px); opacity: 0; }
-  100% { transform: scale(1) translateY(0); opacity: 1; }
+  0% {
+    transform: scale(0.98) translateY(6px);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
 }
 
 .modal-list-row {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
+  gap: 0.75rem 1rem;
   padding: 1.25rem 0;
-  border-bottom: 1px solid rgba(255,255,255,0.08);
-  transition: all 0.2s ease;
+  border-bottom: 1px solid var(--modal-row-border);
+  transition: background 0.2s ease;
+}
+
+/* Read-only rows can stay subtly interactive on hover */
+.modal-list-row--interactive {
   cursor: pointer;
 }
 
-.modal-list-row:hover {
-  background: rgba(255,255,255,0.06);
+.modal-list-row--interactive:hover {
+  background: var(--modal-row-hover);
   border-radius: 12px;
   padding-left: 1rem;
   padding-right: 1rem;
@@ -59,63 +91,76 @@
 }
 
 .modal-list-row span {
-  flex: 1;
-  color: var(--color-text-main);
+  flex: 1 1 auto;
+  min-width: 0;
+  color: var(--text-primary);
   font-weight: 500;
 }
 
 .row-buttons {
   display: flex;
-  gap: 0.75rem;
-  opacity: 0;
-  transition: opacity 0.2s ease;
-}
-
-.modal-list-row:hover .row-buttons {
+  flex-wrap: wrap;
+  gap: 0.5rem 0.75rem;
+  justify-content: flex-end;
+  flex: 0 1 auto;
   opacity: 1;
 }
 
-.approve-btn, .reject-btn {
+@media (max-width: 520px) {
+  .modal-list-row .row-buttons {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .modal-list-row .row-buttons .approve-btn,
+  .modal-list-row .row-buttons .reject-btn {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+.approve-btn,
+.reject-btn {
   padding: 0.625rem 1.25rem;
   border: none;
   border-radius: 10px;
   font-weight: 600;
   font-size: 0.875rem;
+  font-family: inherit;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
   min-width: 85px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
 }
 
 .approve-btn {
   background: linear-gradient(135deg, var(--color-primary-green), #059669);
   color: white;
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+  box-shadow: var(--shadow-sm);
 }
 
 .reject-btn {
   background: linear-gradient(135deg, #ef4444, #dc2626);
   color: white;
-  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+  box-shadow: var(--shadow-sm);
 }
 
 .approve-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.6);
+  box-shadow: var(--shadow-md);
 }
 
 .reject-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(239, 68, 68, 0.6);
+  box-shadow: var(--shadow-md);
 }
 
 .close-btn {
-  background: var(--color-text-muted) !important;
-  opacity: 0.8;
+  background: var(--text-secondary) !important;
+  color: #fff !important;
+  opacity: 0.9;
 }
 
 .close-btn:hover {
   opacity: 1;
-  background: var(--color-text-accent) !important;
+  background: var(--text-tertiary) !important;
 }

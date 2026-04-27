@@ -3,22 +3,21 @@ import { createPortal } from "react-dom";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
-  PlusSquare,
   ScanLine,
   List,
-  UserRoundPlus,
-  UsersRound,
   LogOut,
+  UserRoundPlus,
   Menu,
   X
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 
-function AdminLayout() {
+function StaffLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const path = location.pathname;
-  const { isAdmin, logout } = useAuth();
+
+  const { logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Close mobile menu on route change
@@ -41,7 +40,7 @@ function AdminLayout() {
   return (
     <div className="admin-dashboard">
       {headerTitleNode && createPortal(
-        <span className="admin-mobile-title">Admin</span>,
+        <span className="admin-mobile-title">Staff</span>,
         headerTitleNode
       )}
       {headerActionsNode && createPortal(
@@ -56,37 +55,28 @@ function AdminLayout() {
 
       <aside className={`admin-sidebar ${mobileMenuOpen ? "open" : ""}`}>
         <div className="admin-sidebar-header">
-          <h2>Salinlahi Admin</h2>
+          <h2>Salinlahi Staff</h2>
         </div>
         <nav className="admin-nav" aria-label="Sidebar Navigation">
           <div className="admin-nav-group">
             <span className="admin-nav-group-title">Main</span>
             <NavLink
-              to="/admin/dashboard"
+              to="/staff/dashboard"
               className={({ isActive }) => `admin-nav-item ${isActive ? "active" : ""}`}
               end
             >
               <LayoutDashboard size={20} />
               <span>Dashboard</span>
             </NavLink>
-            {isAdmin && (
-              <NavLink
-                to="/admin/create-event"
-                className={({ isActive }) => `admin-nav-item ${isActive ? "active" : ""}`}
-              >
-                <PlusSquare size={20} />
-                <span>New Event</span>
-              </NavLink>
-            )}
             <NavLink
-              to="/admin/scan"
+              to="/staff/scan"
               className={({ isActive }) => `admin-nav-item ${isActive ? "active" : ""}`}
             >
               <ScanLine size={20} />
               <span>Scan QR</span>
             </NavLink>
             <NavLink
-              to="/admin/events"
+              to="/staff/events"
               className={({ isActive }) => `admin-nav-item ${isActive ? "active" : ""}`}
             >
               <List size={20} />
@@ -94,25 +84,16 @@ function AdminLayout() {
             </NavLink>
           </div>
 
-          {isAdmin && (
-            <div className="admin-nav-group">
-              <span className="admin-nav-group-title">Management</span>
-              <NavLink
-                to="/admin/manage-staff"
-                className={({ isActive }) => `admin-nav-item ${isActive ? "active" : ""}`}
-              >
-                <UsersRound size={20} />
-                <span>Manage Staff</span>
-              </NavLink>
-              <NavLink
-                to="/admin/manage-citizens"
-                className={({ isActive }) => `admin-nav-item ${isActive ? "active" : ""}`}
-              >
-                <UserRoundPlus size={20} />
-                <span>Manage Citizens</span>
-              </NavLink>
-            </div>
-          )}
+          <div className="admin-nav-group">
+            <span className="admin-nav-group-title">Management</span>
+            <NavLink
+              to="/staff/manage-citizens"
+              className={({ isActive }) => `admin-nav-item ${isActive ? "active" : ""}`}
+            >
+              <UserRoundPlus size={20} />
+              <span>Manage Citizens</span>
+            </NavLink>
+          </div>
 
           <div className="admin-nav-spacer"></div>
 
@@ -131,7 +112,7 @@ function AdminLayout() {
       <main className="dashboard-content page-transition" key={path}>
         <Outlet />
       </main>
-      
+
       {/* Mobile Overlay */}
       {mobileMenuOpen && (
         <div className="admin-mobile-overlay" onClick={() => setMobileMenuOpen(false)} />
@@ -140,4 +121,4 @@ function AdminLayout() {
   );
 }
 
-export default AdminLayout;
+export default StaffLayout;
