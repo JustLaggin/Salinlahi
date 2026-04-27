@@ -2,14 +2,14 @@ import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
-// Your web app's Firebase configuration
+// Firebase configuration — values loaded from .env (VITE_ prefix required by Vite)
 const firebaseConfig = {
-  apiKey: "AIzaSyAVovfvqIEKxdRtKbIvHBsZcca90N7qPFY",
-  authDomain: "salinlahi-f291b.firebaseapp.com",
-  projectId: "salinlahi-f291b",
-  storageBucket: "salinlahi-f291b.firebasestorage.app",
-  messagingSenderId: "1015743670459",
-  appId: "1:1015743670459:web:1901640d2129fdd242619e"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
 const app = initializeApp(firebaseConfig);

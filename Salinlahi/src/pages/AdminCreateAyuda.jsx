@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { auth, db } from "../firebase";
+import { useNavigate } from "react-router-dom";
 import { collection, addDoc } from "firebase/firestore";
+import { auth, db } from "../firebase";
 
 function AdminCreateAyuda() {
+  const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
     title: "",
@@ -120,6 +122,9 @@ function AdminCreateAyuda() {
       });
 
       setToast("Ayuda Created Successfully!");
+
+      // Redirect to events list after a short delay so user sees the toast
+      setTimeout(() => navigate("/admin/events"), 1500);
 
       // Reset form
       setFormData({

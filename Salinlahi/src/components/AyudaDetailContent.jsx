@@ -72,7 +72,7 @@ export default function AyudaDetailContent({
   const [loading, setLoading] = useState(true);
   const [tooltipPosition, setTooltipPosition] = useState(null);
   const { isAdmin } = useAuth();
-  const backLink = isAdmin ? "/admin/CurrentAyuda" : "/staff/CurrentAyuda";
+  const backLink = isAdmin ? "/admin/events" : "/staff/events";
 
   const refresh = useCallback(async () => {
     if (!ayudaId) return;
