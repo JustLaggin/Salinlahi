@@ -9,6 +9,7 @@ function AdminCreateAyuda() {
     title: "",
     amount: "",
     programType: "ONE_TIME",
+    ayudaType: "STANDARD",
     aidKind: "RELIEF_GOODS",
     requiredDays: "",
     city: "",
@@ -96,6 +97,7 @@ function AdminCreateAyuda() {
         title: formData.title,
         amount: Number(formData.amount),
         programType: formData.programType,
+        ayudaType: formData.ayudaType || "STANDARD",
         aidKind: formData.programType === "ONE_TIME" ? formData.aidKind : null,
         requiredDays:
           formData.programType === "SERVICE"
@@ -124,6 +126,7 @@ function AdminCreateAyuda() {
         title: "",
         amount: "",
         programType: "ONE_TIME",
+        ayudaType: "STANDARD",
         aidKind: "RELIEF_GOODS",
         requiredDays: "",
         city: "",
@@ -196,6 +199,20 @@ function AdminCreateAyuda() {
             >
               <option value="ONE_TIME">ONE_TIME</option>
               <option value="SERVICE">SERVICE</option>
+            </select>
+          </div>
+
+          <div className="input-group">
+            <label>Ayuda Type</label>
+            <select
+              className="input-field"
+              name="ayudaType"
+              value={formData.ayudaType}
+              onChange={handleChange}
+              required
+            >
+              <option value="STANDARD">Standard Ayuda</option>
+              <option value="RAPID">Rapid Ayuda</option>
             </select>
           </div>
 
@@ -386,6 +403,7 @@ function AdminCreateAyuda() {
             <div className="modal-inset-panel" style={{ textAlign: "left" }}>
               <p><strong>Title:</strong> {formData.title}</p>
               <p><strong>Type:</strong> {formData.programType}</p>
+              <p><strong>Ayuda Mode:</strong> {(formData.ayudaType || "STANDARD").toUpperCase()}</p>
               <p><strong>Amount:</strong> ₱{Number(formData.amount || 0).toLocaleString()}</p>
               <p><strong>Location:</strong> {formData.address}, {formData.barangay}, {formData.city}</p>
               <p><strong>Schedule:</strong> {formData.schedule || "TBA"} {formData.timeStart && formData.timeEnd ? `(${formData.timeStart} - ${formData.timeEnd})` : ""}</p>

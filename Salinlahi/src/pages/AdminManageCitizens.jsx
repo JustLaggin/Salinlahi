@@ -28,6 +28,26 @@ const initialForm = {
   province: "",
 };
 
+function formatBirthdateMMDDYYYY(value) {
+  if (!value) return "-";
+  // Common formats in this app: "YYYY-MM-DD" or a Date-like string.
+  if (/^\d{4}-\d{2}-\d{2}$/.test(String(value))) {
+    const [y, m, d] = String(value).split("-");
+    return `${m}/${d}/${y}`;
+  }
+  const dt = new Date(value);
+  if (Number.isNaN(dt.getTime())) return String(value);
+  const mm = String(dt.getMonth() + 1).padStart(2, "0");
+  const dd = String(dt.getDate()).padStart(2, "0");
+  const yyyy = String(dt.getFullYear());
+  return `${mm}/${dd}/${yyyy}`;
+}
+
+function normalizePhone11(raw) {
+  const digits = String(raw || "").replace(/\D/g, "");
+  return digits;
+}
+
 function AdminManageCitizens() {
   const { firebaseUser, role } = useAuth();
   const isAdmin = role === "admin";
@@ -90,7 +110,12 @@ function AdminManageCitizens() {
   }, [citizens, searchTerm]);
 
   const onChange = (e) => {
-    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    const { name, value } = e.target;
+    if (name === "contact_number") {
+      setForm((prev) => ({ ...prev, [name]: normalizePhone11(value) }));
+      return;
+    }
+    setForm((prev) => ({ ...prev, [name]: value }));
   };
 
   const normalizeRow = (row) => ({
@@ -98,7 +123,7 @@ function AdminManageCitizens() {
     last_name: String(row.last_name || row.LastName || row["Last Name"] || "").trim(),
     middle_name: String(row.middle_name || row.MiddleName || row["Middle Name"] || "").trim(),
     birth_date: String(row.birth_date || row.BirthDate || row["Birth Date"] || "").trim(),
-    contact_number: String(
+    contact_number: normalizePhone11(
       row.contact_number || row.ContactNumber || row["Contact Number"] || ""
     ).trim(),
     address_line: String(
@@ -114,6 +139,7 @@ function AdminManageCitizens() {
     row.last_name &&
     row.birth_date &&
     row.contact_number &&
+    /^\d{11}$/.test(String(row.contact_number || "")) &&
     row.address_line &&
     row.barangay &&
     row.city &&
@@ -134,6 +160,12 @@ function AdminManageCitizens() {
       setError("Please complete all fields.");
       return;
     }
+    
+    const normContact = normalizePhone11(form.contact_number);
+    if (!/^\d{11}$/.test(normContact)) {
+      setError("Contact number must be exactly 11 digits (numbers only).");
+      return;
+    }
 
     setSubmitting(true);
     setError("");
@@ -147,7 +179,7 @@ function AdminManageCitizens() {
         middle_name: form.middle_name.trim(),
         last_name: form.last_name.trim(),
         birth_date: form.birth_date,
-        contact_number: form.contact_number.trim(),
+        contact_number: normContact,
         address_line: form.address_line.trim(),
         barangay: form.barangay.trim(),
         city: form.city.trim(),
@@ -505,7 +537,7 @@ function AdminManageCitizens() {
                           .trim() || "Unnamed"}
                       </div>
                     </td>
-                    <td>{c.birth_date || "-"}</td>
+                    <td>{formatBirthdateMMDDYYYY(c.birth_date)}</td>
                     <td>{c.contact_number || "-"}</td>
                     <td>
                       <div className="data-table__loc-main">{c.address_line || "-"}</div>

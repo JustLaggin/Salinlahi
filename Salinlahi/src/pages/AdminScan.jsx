@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { Html5Qrcode } from "html5-qrcode";
 import {
   arrayUnion,
+  arrayRemove,
   collection,
   doc,
   getDoc,
@@ -52,6 +53,10 @@ function AdminScan() {
   const [manualOpen, setManualOpen] = useState(false);
   const [manualInput, setManualInput] = useState("");
   const [manualReason, setManualReason] = useState(""); // <-- Mitigation 3: Fallback Audit
+  const [nameSearchOpen, setNameSearchOpen] = useState(false);
+  const [nameQuery, setNameQuery] = useState("");
+  const [citizensIndex, setCitizensIndex] = useState([]);
+  const [loadingCitizensIndex, setLoadingCitizensIndex] = useState(false);
   
   const [userUid, setUserUid] = useState(null);
   const [userData, setUserData] = useState(null);
@@ -125,6 +130,23 @@ function AdminScan() {
 
   const isServiceProgram = (activeAyudaMeta?.programType || "ONE_TIME") === "SERVICE";
   const requiredDays = Math.max(1, Number(activeAyudaMeta?.requiredDays || 1));
+  const isRapidAyuda = String(activeAyudaMeta?.ayudaType || "STANDARD").toUpperCase() === "RAPID";
+
+  const ensureCitizensIndex = useCallback(async () => {
+    if (citizensIndex.length > 0 || loadingCitizensIndex) return;
+    setLoadingCitizensIndex(true);
+    try {
+      const snap = await getDocs(collection(db, "users"));
+      const list = snap.docs
+        .map((d) => ({ id: d.id, ...d.data() }))
+        .filter((u) => (u.role || "citizen") === "citizen");
+      setCitizensIndex(list);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoadingCitizensIndex(false);
+    }
+  }, [citizensIndex.length, loadingCitizensIndex]);
 
   const stopScanner = async () => {
     if (scannerRef.current && isRunningRef.current) {
@@ -206,16 +228,12 @@ function AdminScan() {
             isBeneficiary,
           });
           // Fetch existing claim doc so the UI can show real-time claimed/attendance state
-          if (isBeneficiary) {
-            try {
-              const existingClaim = await getDoc(
-                doc(db, "ayudas", activeAyudaId, "claims", uid)
-              );
-              setClaimDoc(existingClaim.exists() ? existingClaim.data() : null);
-            } catch {
-              setClaimDoc(null);
-            }
-          } else {
+          try {
+            const existingClaim = await getDoc(
+              doc(db, "ayudas", activeAyudaId, "claims", uid)
+            );
+            setClaimDoc(existingClaim.exists() ? existingClaim.data() : null);
+          } catch {
             setClaimDoc(null);
           }
         } else {
@@ -233,6 +251,51 @@ function AdminScan() {
       setInfoModalMessage("Lookup failed.");
     }
     setLoadingUser(false);
+  };
+
+  const openConfirmForUser = async (uid, data, method = "name") => {
+    if (!uid || !data) return;
+    setClaimError("");
+    setScanAyudaStatus(null);
+    setClaimDoc(null);
+    setIdVerified(false);
+    setPendingMethod(method);
+    pendingManualReasonRef.current = "";
+    setUserUid(uid);
+    setUserData(data);
+    setLoadingUser(true);
+    try {
+      if (activeAyudaId) {
+        const ayudaSnap = await getDoc(doc(db, "ayudas", activeAyudaId));
+        if (ayudaSnap.exists()) {
+          const d = ayudaSnap.data();
+          const applicants = d.applicants || [];
+          const beneficiaries = d.beneficiaries || [];
+          const isBeneficiary = beneficiaries.includes(uid);
+          setScanAyudaStatus({
+            isApplicant: applicants.includes(uid),
+            isBeneficiary,
+          });
+          try {
+            const existingClaim = await getDoc(
+              doc(db, "ayudas", activeAyudaId, "claims", uid)
+            );
+            setClaimDoc(existingClaim.exists() ? existingClaim.data() : null);
+          } catch {
+            setClaimDoc(null);
+          }
+        } else {
+          setScanAyudaStatus({ isApplicant: false, isBeneficiary: false });
+          setClaimDoc(null);
+        }
+      }
+      setConfirmOpen(true);
+    } catch (e) {
+      console.error(e);
+      setInfoModalMessage("Lookup failed.");
+    } finally {
+      setLoadingUser(false);
+    }
   };
 
   const closeConfirm = async () => {
@@ -255,6 +318,10 @@ function AdminScan() {
   /** Gate / registration: add scanned citizen to this Ayuda's applicants (Admin approves later). */
   const registerAsApplicant = async () => {
     if (!activeAyudaId || !userUid || !userData) return;
+    if (isRapidAyuda) {
+      setClaimError("Applicants flow is disabled for Rapid Ayuda.");
+      return;
+    }
     if (!idVerified) {
       setClaimError("You must verify the physical ID before proceeding.");
       return;
@@ -357,6 +424,10 @@ function AdminScan() {
   /** After approval only: log physical distribution (pickup). */
   const recordClaim = async () => {
     if (!activeAyudaId || !userUid || !userData) return;
+    if (isRapidAyuda) {
+      setClaimError("Use Rapid disburse for Rapid Ayuda.");
+      return;
+    }
     if (!idVerified) {
       setClaimError("You must verify the physical ID before proceeding.");
       return;
@@ -476,6 +547,144 @@ function AdminScan() {
     setClaiming(false);
   };
 
+  /** RAPID: add citizen directly to beneficiaries AND create claim immediately. */
+  const rapidAddAndClaim = async () => {
+    if (!activeAyudaId || !userUid || !userData) return;
+    if (!idVerified) {
+      setClaimError("You must verify the physical ID before proceeding.");
+      return;
+    }
+    setClaiming(true);
+    setClaimError("");
+    try {
+      const ayudaRef = doc(db, "ayudas", activeAyudaId);
+      const claimRef = doc(db, "ayudas", activeAyudaId, "claims", userUid);
+      const userRef = doc(db, "users", userUid);
+
+      const displayName =
+        `${userData.first_name || ""} ${userData.last_name || ""}`.trim() ||
+        "Citizen";
+
+      const programType = (activeAyudaMeta?.programType || "ONE_TIME").toUpperCase();
+      const required = Math.max(1, Number(activeAyudaMeta?.requiredDays || 1));
+      const todayKey = new Date().toISOString().slice(0, 10);
+      const now = Timestamp.now();
+      const method = pendingMethod;
+      const reason = pendingManualReasonRef.current;
+
+      await runTransaction(db, async (transaction) => {
+        // Firestore constraint: all reads must happen before any writes.
+        const [ayudaSnap, existing] = await Promise.all([
+          transaction.get(ayudaRef),
+          transaction.get(claimRef),
+        ]);
+        if (!ayudaSnap.exists()) throw new Error("Ayuda not found.");
+
+        const d = ayudaSnap.data();
+        const applicants = d.applicants || [];
+
+        transaction.update(ayudaRef, {
+          beneficiaries: arrayUnion(userUid),
+          ...(applicants.includes(userUid) ? { applicants: arrayRemove(userUid) } : {}),
+        });
+
+        // Keep the citizen's user doc consistent with the Ayuda document.
+        transaction.update(userRef, {
+          ayudas_beneficiary: arrayUnion(activeAyudaId),
+          ...(applicants.includes(userUid) ? { ayudas_applied: arrayRemove(activeAyudaId) } : {}),
+        });
+
+        if (programType === "SERVICE") {
+          const previousAttendance = existing.exists()
+            ? existing.data().attendance || []
+            : [];
+
+          const alreadyToday = previousAttendance.some((a) => a.dateKey === todayKey);
+          const done = previousAttendance.length >= required;
+
+          if (alreadyToday) {
+            // still consider the rapid add successful; don't double-log the day
+            return;
+          }
+          if (done) {
+            // same: nothing to add
+            return;
+          }
+
+          const nextAttendance = [
+            ...previousAttendance,
+            { dateKey: todayKey, checkedAt: now, method, manualReason: reason || null },
+          ];
+
+          transaction.set(claimRef, {
+            displayName,
+            citizenCode: userData.citizenCode || null,
+            programType: "SERVICE",
+            requiredDays: required,
+            attendance: nextAttendance,
+            completed: nextAttendance.length >= required,
+            lastCheckInAt: now,
+          });
+
+          transaction.update(userRef, {
+            claim_history: arrayUnion({
+              ayudaId: activeAyudaId,
+              claimedAt: now,
+              type: "SERVICE_ATTENDANCE",
+              attendanceDay: nextAttendance.length,
+              requiredDays: required,
+            }),
+          });
+          return;
+        }
+
+        if (existing.exists()) {
+          // already claimed
+          return;
+        }
+
+        transaction.set(claimRef, {
+          claimedAt: now,
+          method,
+          manualReason: reason || null,
+          displayName,
+          citizenCode: userData.citizenCode || null,
+          programType: "ONE_TIME",
+        });
+
+        transaction.update(userRef, {
+          claim_history: arrayUnion({
+            ayudaId: activeAyudaId,
+            claimedAt: now,
+            type: "ONE_TIME_CLAIM",
+          }),
+        });
+      });
+
+      await stopScanner();
+      setConfirmOpen(false);
+      setManualOpen(false);
+      setNameSearchOpen(false);
+      setNameQuery("");
+      setManualInput("");
+      setManualReason("");
+      setUserUid(null);
+      setUserData(null);
+      setScanAyudaStatus(null);
+      setSuccessOverlay({
+        type: isServiceProgram ? "attendance" : "claim",
+        name: displayName,
+        ayudaTitle: activeAyudaTitle || activeAyudaId,
+      });
+      playSuccessBeep();
+    } catch (e) {
+      console.error(e);
+      setClaimError(e.message || "Could not save rapid claim.");
+    } finally {
+      setClaiming(false);
+    }
+  };
+
   const dismissSuccess = () => setSuccessOverlay(null);
 
   const openManual = () => {
@@ -483,6 +692,13 @@ function AdminScan() {
     setManualReason("");
     setManualOpen(true);
     setPendingMethod("manual");
+  };
+
+  const openNameSearch = async () => {
+    if (!isRapidAyuda) return;
+    setNameQuery("");
+    setNameSearchOpen(true);
+    await ensureCitizensIndex();
   };
 
   const submitManual = async () => {
@@ -600,6 +816,7 @@ function AdminScan() {
               {activeAyudaTitle || activeAyudaId}
             </div>
             <div className="settings-text" style={{ marginTop: "0.3rem" }}>
+              {(isRapidAyuda ? "RAPID" : "STANDARD") + " · "}
               {isServiceProgram
                 ? `SERVICE · ${requiredDays} required attendance day${requiredDays > 1 ? "s" : ""}`
                 : `ONE_TIME · ${(activeAyudaMeta?.aidKind || "RELIEF_GOODS").replaceAll("_", " ")}`}
@@ -638,6 +855,22 @@ function AdminScan() {
           <button type="button" className="auth-button" style={{ flex: 1, minWidth: "140px", background: "var(--bg-elevated)", color: "var(--text-primary)", border: "1px solid var(--border-subtle)" }} onClick={openManual}>
             Manual ID
           </button>
+          {isRapidAyuda && (
+            <button
+              type="button"
+              className="auth-button"
+              style={{
+                flex: 1,
+                minWidth: "170px",
+                background: "var(--bg-elevated)",
+                color: "var(--text-primary)",
+                border: "1px solid var(--border-subtle)",
+              }}
+              onClick={() => void openNameSearch()}
+            >
+              Search by name
+            </button>
+          )}
         </div>
 
         <div id="reader" style={{ minHeight: "350px", width: "100%" }} />
@@ -699,6 +932,92 @@ function AdminScan() {
         document.body
       )}
 
+      {nameSearchOpen && isRapidAyuda && createPortal(
+        <div className="modal-overlay modal-overlay--padded modal-overlay--scroll-follow">
+          <div className="base-card modal-panel modal-panel--scan">
+            <h3 className="auth-title">Search citizen by name (Rapid Ayuda)</h3>
+            <p className="settings-text" style={{ marginBottom: "1rem" }}>
+              Select a citizen to add as beneficiary and create a claim immediately.
+            </p>
+            <input
+              className="input-field"
+              value={nameQuery}
+              onChange={(e) => setNameQuery(e.target.value)}
+              placeholder="Type first or last name…"
+              style={{ marginBottom: "1rem" }}
+              autoFocus
+            />
+            {loadingCitizensIndex ? (
+              <p className="settings-text">Loading citizens…</p>
+            ) : (
+              <div style={{ maxHeight: "320px", overflow: "auto", border: "1px solid var(--border-subtle)", borderRadius: "10px" }}>
+                {(() => {
+                  const q = nameQuery.trim().toLowerCase();
+                  const results = q.length < 2
+                    ? []
+                    : citizensIndex
+                        .map((c) => {
+                          const full = `${c.first_name || ""} ${c.middle_name || ""} ${c.last_name || ""}`.replace(/\s+/g, " ").trim();
+                          return { ...c, _fullName: full };
+                        })
+                        .filter((c) => c._fullName.toLowerCase().includes(q))
+                        .slice(0, 30);
+
+                  if (q.length < 2) {
+                    return (
+                      <div style={{ padding: "0.85rem 1rem" }} className="settings-text">
+                        Type at least 2 letters to search.
+                      </div>
+                    );
+                  }
+                  if (results.length === 0) {
+                    return (
+                      <div style={{ padding: "0.85rem 1rem" }} className="settings-text">
+                        No matches.
+                      </div>
+                    );
+                  }
+                  return results.map((c) => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      className="linklike-btn"
+                      style={{
+                        width: "100%",
+                        textAlign: "left",
+                        padding: "0.85rem 1rem",
+                        borderBottom: "1px solid var(--border-subtle)",
+                      }}
+                      onClick={() => {
+                        setNameSearchOpen(false);
+                        void openConfirmForUser(c.id, c, "name");
+                      }}
+                    >
+                      <div style={{ fontWeight: 700, color: "var(--text-primary)" }}>
+                        {c._fullName || c.id}
+                      </div>
+                      <div className="settings-text" style={{ marginTop: "0.2rem" }}>
+                        {c.citizenCode ? `Code: ${c.citizenCode}` : "No citizen code"}
+                      </div>
+                    </button>
+                  ));
+                })()}
+              </div>
+            )}
+            <div style={{ display: "flex", gap: "0.75rem", marginTop: "1rem" }}>
+              <button
+                type="button"
+                className="auth-button btn-neutral-gradient"
+                onClick={() => setNameSearchOpen(false)}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
       {confirmOpen && userData && createPortal((() => {
         // ── Derived state for this citizen's claim ──────────────────────────
         const alreadyClaimed = !isServiceProgram && claimDoc !== null;
@@ -710,11 +1029,17 @@ function AdminScan() {
 
         // ── Modal title ─────────────────────────────────────────────────────
         let modalTitle = "Add to applicants";
-        if (scanAyudaStatus?.isApplicant)  modalTitle = "Already an applicant";
-        else if (scanAyudaStatus?.isBeneficiary) {
-          if (isServiceProgram)             modalTitle = "Record Today's Attendance";
-          else if (alreadyClaimed)          modalTitle = "Aid Already Disbursed";
-          else                              modalTitle = "Confirm & Disburse Aid";
+        if (isRapidAyuda) {
+          if (isServiceProgram) modalTitle = "Rapid: Add & record attendance";
+          else if (alreadyClaimed) modalTitle = "Aid Already Disbursed";
+          else modalTitle = "Rapid: Add beneficiary & disburse";
+        } else {
+          if (scanAyudaStatus?.isApplicant)  modalTitle = "Already an applicant";
+          else if (scanAyudaStatus?.isBeneficiary) {
+            if (isServiceProgram)             modalTitle = "Record Today's Attendance";
+            else if (alreadyClaimed)          modalTitle = "Aid Already Disbursed";
+            else                              modalTitle = "Confirm & Disburse Aid";
+          }
         }
 
         return (
@@ -780,7 +1105,7 @@ function AdminScan() {
               )}
 
               {/* ── Applicant-only info text ──────────────────────── */}
-              {scanAyudaStatus?.isApplicant && (
+              {!isRapidAyuda && scanAyudaStatus?.isApplicant && (
                 <p className="settings-text" style={{ marginBottom: "1rem" }}>
                   They are already on the <strong>applicant</strong> list for this
                   event. An admin or staff member can <strong>Accept</strong> or{" "}
@@ -789,11 +1114,18 @@ function AdminScan() {
               )}
 
               {/* ── New citizen info text ─────────────────────────── */}
-              {!scanAyudaStatus?.isBeneficiary && !scanAyudaStatus?.isApplicant && (
+              {!isRapidAyuda && !scanAyudaStatus?.isBeneficiary && !scanAyudaStatus?.isApplicant && (
                 <p className="settings-text" style={{ marginBottom: "1rem" }}>
                   Register them as an <strong>applicant</strong> for this Ayuda. They
                   are <strong>not</strong> a beneficiary until someone accepts them in
                   Active Ayuda.
+                </p>
+              )}
+              
+              {isRapidAyuda && (
+                <p className="settings-text" style={{ marginBottom: "1rem" }}>
+                  Rapid Ayuda will <strong>add them directly to beneficiaries</strong> and
+                  <strong> create a claim immediately</strong>.
                 </p>
               )}
 
@@ -831,8 +1163,29 @@ function AdminScan() {
               {/* ── Action Buttons ────────────────────────────────── */}
               <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", width: "100%" }}>
 
+                {/* RAPID — Disburse immediately */}
+                {isRapidAyuda && !(scanAyudaStatus?.isBeneficiary && !isServiceProgram && alreadyClaimed) && (
+                  <button
+                    type="button"
+                    className="auth-button approve-btn"
+                    disabled={claiming || !idVerified || (isServiceProgram && (alreadyToday || quotaHit))}
+                    onClick={() => void rapidAddAndClaim()}
+                    style={{ opacity: (claiming || !idVerified || (isServiceProgram && (alreadyToday || quotaHit))) ? 0.6 : 1, flex: 1, minWidth: "160px" }}
+                  >
+                    {claiming
+                      ? "Saving…"
+                      : isServiceProgram
+                        ? alreadyToday
+                          ? "Already Recorded Today"
+                          : quotaHit
+                            ? "Quota Complete"
+                            : "Confirm Rapid Attendance"
+                        : "Confirm Rapid Disburse"}
+                  </button>
+                )}
+
                 {/* BENEFICIARY — ONE_TIME unclaimed → Disburse */}
-                {scanAyudaStatus?.isBeneficiary && !isServiceProgram && !alreadyClaimed && (
+                {!isRapidAyuda && scanAyudaStatus?.isBeneficiary && !isServiceProgram && !alreadyClaimed && (
                   <button
                     type="button"
                     className="auth-button approve-btn"
@@ -845,7 +1198,7 @@ function AdminScan() {
                 )}
 
                 {/* BENEFICIARY — SERVICE → Record Attendance */}
-                {scanAyudaStatus?.isBeneficiary && isServiceProgram && (
+                {!isRapidAyuda && scanAyudaStatus?.isBeneficiary && isServiceProgram && (
                   <button
                     type="button"
                     className="auth-button approve-btn"
@@ -864,7 +1217,7 @@ function AdminScan() {
                 )}
 
                 {/* NEW CITIZEN → Add to applicants */}
-                {!scanAyudaStatus?.isBeneficiary && !scanAyudaStatus?.isApplicant && (
+                {!isRapidAyuda && !scanAyudaStatus?.isBeneficiary && !scanAyudaStatus?.isApplicant && (
                   <button
                     type="button"
                     className="auth-button approve-btn"

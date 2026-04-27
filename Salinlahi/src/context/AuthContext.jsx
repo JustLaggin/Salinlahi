@@ -16,7 +16,7 @@ const AuthContext = createContext(null);
 const CITIZEN_SESSION_KEY = "citizen_session_uid";
 
 function normalizeRole(raw) {
-  if (raw === "admin" || raw === "staff" || raw === "citizen") return raw;
+  if (raw === "super_admin" || raw === "admin" || raw === "staff" || raw === "citizen") return raw;
   if (raw === "user") return "citizen";
   return "citizen";
 }
@@ -137,7 +137,8 @@ export function AuthProvider({ children }) {
       isCitizen: role === "citizen",
       isStaff: role === "staff",
       isAdmin: role === "admin",
-      isStaffOrAdmin: role === "staff" || role === "admin",
+      isSuperAdmin: role === "super_admin",
+      isStaffOrAdmin: role === "staff" || role === "admin" || role === "super_admin",
     }),
     [firebaseUser, profile, role, loading, loginCitizenByCode, logout]
   );

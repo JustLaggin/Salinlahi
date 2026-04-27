@@ -289,7 +289,7 @@ export default function AdminAyudaDetail() {
   };
 
   if (loading) {
-    return <div className="page-content" style={{ padding: "2rem" }}><p className="settings-text">Loading command center...</p></div>;
+    return <div className="page-content" style={{ padding: "2rem" }}><p className="settings-text">Loading oyuda overview...</p></div>;
   }
 
   if (!ayuda) {
@@ -391,7 +391,7 @@ export default function AdminAyudaDetail() {
           </div>
         )}
 
-        <h1 className="auth-title" style={{ textAlign: "left", marginBottom: "0.25rem", marginTop: 0 }}>Command Center</h1>
+        <h1 className="auth-title" style={{ textAlign: "left", marginBottom: "0.25rem", marginTop: 0 }}>Ayuda Overview</h1>
         <p className="settings-text">Manage operations and monitor analytics for {ayuda.title}.</p>
       </div>
 

@@ -31,6 +31,7 @@ export function ProtectedRoute({ children, allowedRoles }) {
     if (role === "citizen") return <Navigate to="/user" replace />;
     if (role === "staff") return <Navigate to="/staff/dashboard" replace />;
     if (role === "admin") return <Navigate to="/admin/dashboard" replace />;
+    if (role === "super_admin") return <Navigate to="/super-admin/staff-admin" replace />;
     return <Navigate to="/login" replace />;
   }
   return children;
@@ -40,5 +41,12 @@ export function RequireAdmin({ children }) {
   const { role, loading } = useAuth();
   if (loading) return <LoadingScreen />;
   if (role !== "admin") return <Navigate to="/admin/dashboard" replace />;
+  return children;
+}
+
+export function RequireSuperAdmin({ children }) {
+  const { role, loading } = useAuth();
+  if (loading) return <LoadingScreen />;
+  if (role !== "super_admin") return <Navigate to="/login" replace />;
   return children;
 }

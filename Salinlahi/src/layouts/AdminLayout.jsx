@@ -129,9 +129,6 @@ function AdminLayout() {
       </aside>
 
       <main className="dashboard-content page-transition" key={path}>
-        <div className="breadcrumb" aria-label="Breadcrumb">
-          {path.split("/").filter(Boolean).map(s => s.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())).join(" / ")}
-        </div>
         <Outlet />
       </main>
       

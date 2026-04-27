@@ -39,6 +39,9 @@ function AdminManageStaff() {
   const [staffEmail, setStaffEmail] = useState("");
   const [newStaffFirstName, setNewStaffFirstName] = useState("");
   const [newStaffLastName, setNewStaffLastName] = useState("");
+  const [newStaffBarangay, setNewStaffBarangay] = useState("");
+  const [newStaffCity, setNewStaffCity] = useState("");
+  const [newStaffProvince, setNewStaffProvince] = useState("");
   const [creatingStaff, setCreatingStaff] = useState(false);
   const [generatedStaffPassword, setGeneratedStaffPassword] = useState(null);
   const [passwordCopied, setPasswordCopied] = useState(false);
@@ -61,6 +64,7 @@ function AdminManageStaff() {
           role: normalizeRole(u.role),
           city: u.city || "",
           barangay: u.barangay || "",
+          province: u.province || "",
         };
       }).filter(u => u.role === "staff" || u.role === "admin");
 
@@ -132,8 +136,11 @@ function AdminManageStaff() {
     const fName = newStaffFirstName.trim();
     const lName = newStaffLastName.trim();
     const email = staffEmail.trim().toLowerCase();
+    const barangay = newStaffBarangay.trim();
+    const city = newStaffCity.trim();
+    const province = newStaffProvince.trim();
 
-    if (!fName || !lName || !email) {
+    if (!fName || !lName || !email || !barangay || !city || !province) {
       setError("Please fill in all fields to create a staff member.");
       return;
     }
@@ -161,6 +168,9 @@ function AdminManageStaff() {
         first_name: fName,
         last_name: lName,
         email: email,
+        barangay,
+        city,
+        province,
         role: "staff",
         requiresPasswordChange: true,
       };
@@ -191,6 +201,9 @@ function AdminManageStaff() {
     setStaffEmail("");
     setNewStaffFirstName("");
     setNewStaffLastName("");
+    setNewStaffBarangay("");
+    setNewStaffCity("");
+    setNewStaffProvince("");
     setPasswordCopied(false);
   };
 
@@ -266,6 +279,40 @@ function AdminManageStaff() {
             />
           </div>
         </div>
+
+        <div className="input-row">
+          <div className="input-group">
+            <label>Barangay</label>
+            <input
+              type="text"
+              className="input-field"
+              value={newStaffBarangay}
+              onChange={(e) => setNewStaffBarangay(e.target.value)}
+              placeholder="e.g. Pallocan"
+            />
+          </div>
+          <div className="input-group">
+            <label>City</label>
+            <input
+              type="text"
+              className="input-field"
+              value={newStaffCity}
+              onChange={(e) => setNewStaffCity(e.target.value)}
+              placeholder="e.g. Batangas City"
+            />
+          </div>
+          <div className="input-group">
+            <label>Province</label>
+            <input
+              type="text"
+              className="input-field"
+              value={newStaffProvince}
+              onChange={(e) => setNewStaffProvince(e.target.value)}
+              placeholder="e.g. Batangas"
+            />
+          </div>
+        </div>
+        
         <div className="input-row">
           <div className="input-group">
             <label>Email Address</label>
@@ -353,7 +400,9 @@ function AdminManageStaff() {
                       <div className="data-table__loc-main">
                         {user.barangay || "Barangay N/A"}
                       </div>
-                      <div className="data-table__loc-sub">{user.city || "City N/A"}</div>
+                      <div className="data-table__loc-sub">
+                        {[user.city || "City N/A", user.province].filter(Boolean).join(", ")}
+                      </div>
                     </td>
                     <td>
                       <span

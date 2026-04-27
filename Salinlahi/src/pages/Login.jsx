@@ -15,7 +15,7 @@ import { useAuth } from "../context/AuthContext";
 import { normalizeCitizenCodeInput } from "../utils/citizenCode";
 
 function normalizeRole(raw) {
-  if (raw === "admin" || raw === "staff" || raw === "citizen") return raw;
+  if (raw === "super_admin" || raw === "admin" || raw === "staff" || raw === "citizen") return raw;
   if (raw === "user") return "citizen";
   return "citizen";
 }
@@ -31,11 +31,16 @@ function Login() {
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
   const [passwordChanging, setPasswordChanging] = useState(false);
   const navigate = useNavigate();
-  const { firebaseUser, role, loading: authLoading, loginCitizenByCode } = useAuth();
+  const { firebaseUser, role, profile, loading: authLoading, loginCitizenByCode } = useAuth();
 
-  if (!authLoading && firebaseUser && role) {
+  const requiresForcedPasswordChange =
+    !!profile?.requiresPasswordChange && (role === "admin" || role === "staff");
+
+  // Avoid navigation loop: protected pages redirect back to /login while password change is required.
+  if (!authLoading && firebaseUser && role && !requiresForcedPasswordChange && !mustChangePassword) {
     let redirectPath = "/user";
     if (role === "admin") redirectPath = "/admin/dashboard";
+    if (role === "super_admin") redirectPath = "/super-admin/staff-admin";
     if (role === "staff") redirectPath = "/staff/dashboard";
     return <Navigate to={redirectPath} replace />;
   }
@@ -74,6 +79,14 @@ function Login() {
         return;
       }
 
+      // If there is an existing citizen session, clear it so failed staff/admin login
+      // doesn't "fall back" into citizen login via AuthContext.
+      try {
+        localStorage.removeItem("citizen_session_uid");
+      } catch {
+        // ignore
+      }
+
       await setPersistence(
         auth,
         autoLogin ? browserLocalPersistence : browserSessionPersistence
@@ -102,6 +115,8 @@ function Login() {
 
         if (r === "admin") {
           navigate("/admin/dashboard");
+        } else if (r === "super_admin") {
+          navigate("/super-admin/staff-admin");
         } else if (r === "staff") {
           navigate("/staff/dashboard");
         } else {

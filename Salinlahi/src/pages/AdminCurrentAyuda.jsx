@@ -181,6 +181,7 @@ function AdminCurrentAyuda() {
       description: formData.description,
       amount: Number(formData.amount),
       programType: formData.programType || "ONE_TIME",
+      ayudaType: formData.ayudaType || "STANDARD",
       aidKind:
         (formData.programType || "ONE_TIME") === "ONE_TIME"
           ? formData.aidKind || "RELIEF_GOODS"
@@ -539,6 +540,19 @@ function AdminCurrentAyuda() {
                 >
                   <option value="ONE_TIME">ONE_TIME</option>
                   <option value="SERVICE">SERVICE</option>
+                </select>
+              </div>
+              
+              <div className="input-group">
+                <label>Ayuda Type</label>
+                <select
+                  className="input-field"
+                  name="ayudaType"
+                  value={formData.ayudaType || "STANDARD"}
+                  onChange={handleChange}
+                >
+                  <option value="STANDARD">Standard Ayuda</option>
+                  <option value="RAPID">Rapid Ayuda</option>
                 </select>
               </div>
 

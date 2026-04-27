@@ -11,11 +11,13 @@ import AdminAyudaDetail from "./pages/AdminAyudaDetail";
 import AdminHome from "./pages/AdminHome";
 import AdminManageStaff from "./pages/AdminManageStaff";
 import AdminManageCitizens from "./pages/AdminManageCitizens";
-import { ProtectedRoute, RequireAdmin } from "./components/ProtectedRoute";
+import { ProtectedRoute, RequireAdmin, RequireSuperAdmin } from "./components/ProtectedRoute";
 import UserLayout from "./layouts/UserLayout";
 import UserHome from "./pages/UserHome";
 import ForgotPassword from "./pages/ForgotPassword";
 import UserCurrentAyuda from "./pages/UserCurrentAyuda";
+import SuperAdminStaffAdmin from "./pages/SuperAdminStaffAdmin";
+import SuperAdminLayout from "./layouts/SuperAdminLayout";
 
 function App() {
   return (
@@ -102,6 +104,25 @@ function App() {
             <Route path="events" element={<AdminCurrentAyuda />} />
             <Route path="ayuda/:ayudaId" element={<AdminAyudaDetail />} />
             <Route path="manage-citizens" element={<AdminManageCitizens />} />
+          </Route>
+
+          <Route
+            path="/super-admin"
+            element={
+              <ProtectedRoute allowedRoles={["super_admin"]}>
+                <SuperAdminLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<Navigate to="staff-admin" replace />} />
+            <Route
+              path="staff-admin"
+              element={
+                <RequireSuperAdmin>
+                  <SuperAdminStaffAdmin />
+                </RequireSuperAdmin>
+              }
+            />
           </Route>
 
           <Route path="*" element={<Navigate to="/login" replace />} />
