@@ -311,111 +311,111 @@ function AdminCurrentAyuda() {
               {filtered.map((ayuda) => {
                 const isArchived = ayuda.status === "COMPLETED";
                 return (
-                <tr key={ayuda.id} style={isArchived ? { opacity: 0.6 } : undefined}>
-                  <td>
-                    <div className="data-table__title-block">
-                      <div className="data-table__title">
-                        {ayuda.title}
-                        {isArchived && <span className="pill-badge archived-badge" style={{ marginLeft: "0.5rem", fontSize: "0.65rem" }}>ARCHIVED</span>}
+                  <tr key={ayuda.id} style={isArchived ? { opacity: 0.6 } : undefined}>
+                    <td>
+                      <div className="data-table__title-block">
+                        <div className="data-table__title">
+                          {ayuda.title}
+                          {isArchived && <span className="pill-badge archived-badge" style={{ marginLeft: "0.5rem", fontSize: "0.65rem" }}>ARCHIVED</span>}
+                        </div>
+                        <div className="data-table__sub">
+                          {ayuda.schedule || "TBA"}
+                          {ayuda.timeStart && ayuda.timeEnd
+                            ? ` · ${formatTime(ayuda.timeStart)} → ${formatTime(
+                              ayuda.timeEnd
+                            )}`
+                            : ""}
+                          {" · ₱"}
+                          {ayuda.amount?.toLocaleString?.() ?? ayuda.amount}
+                          {" · "}
+                          {(ayuda.programType || "ONE_TIME") === "SERVICE"
+                            ? "SERVICE"
+                            : "ONE_TIME"}
+                        </div>
                       </div>
-                      <div className="data-table__sub">
-                        {ayuda.schedule || "TBA"}
-                        {ayuda.timeStart && ayuda.timeEnd
-                          ? ` · ${formatTime(ayuda.timeStart)} → ${formatTime(
-                            ayuda.timeEnd
-                          )}`
-                          : ""}
-                        {" · ₱"}
-                        {ayuda.amount?.toLocaleString?.() ?? ayuda.amount}
-                        {" · "}
-                        {(ayuda.programType || "ONE_TIME") === "SERVICE"
-                          ? "SERVICE"
-                          : "ONE_TIME"}
+                    </td>
+                    <td>
+                      <div className="data-table__loc-main">
+                        {ayuda.barangay}, {ayuda.city}
                       </div>
-                    </div>
-                  </td>
-                  <td>
-                    <div className="data-table__loc-main">
-                      {ayuda.barangay}, {ayuda.city}
-                    </div>
-                    <div className="data-table__loc-sub">
-                      {ayuda.address || "N/A"}
-                    </div>
-                  </td>
-                  <td>
-                    <div className="ayuda-people-actions">
-                      <button
-                        type="button"
-                        className="ayuda-people-btn"
-                        onClick={() =>
-                          openListModal("Applicants", ayuda.applicants, ayuda)
-                        }
-                        aria-label="View applicants list"
-                      >
-                        <span className="ayuda-people-btn__title">
-                          <Users2 size={15} />
-                          Applicants
-                        </span>
-                        <span className="ayuda-people-btn__meta">
-                          {ayuda.applicants?.length || 0} records
-                        </span>
-                      </button>
-                      <button
-                        type="button"
-                        className="ayuda-people-btn ayuda-people-btn--green"
-                        onClick={() =>
-                          openListModal("Beneficiaries", ayuda.beneficiaries, ayuda)
-                        }
-                        aria-label="View beneficiaries list"
-                      >
-                        <span className="ayuda-people-btn__title">
-                          <UserCheck2 size={15} />
-                          Beneficiaries
-                        </span>
-                        <span className="ayuda-people-btn__meta">
-                          {ayuda.beneficiaries?.length || 0} records
-                        </span>
-                      </button>
-                    </div>
-                  </td>
-                  <td>
-                    <div className="table-actions table-actions--stack">
-                      <Link
-                        className="action-btn"
-                        to={isAdmin ? `/admin/ayuda/${ayuda.id}` : `/staff/ayuda/${ayuda.id}`}
-                      >
-                        Details
-                      </Link>
-                      {!isArchived && isAdmin && (
+                      <div className="data-table__loc-sub">
+                        {ayuda.address || "N/A"}
+                      </div>
+                    </td>
+                    <td>
+                      <div className="ayuda-people-actions">
                         <button
                           type="button"
-                          className="action-btn btn-update"
-                          onClick={() => openUpdateModal(ayuda)}
+                          className="ayuda-people-btn"
+                          onClick={() =>
+                            openListModal("Applicants", ayuda.applicants, ayuda)
+                          }
+                          aria-label="View applicants list"
                         >
-                          Update
+                          <span className="ayuda-people-btn__title">
+                            <Users2 size={15} />
+                            Applicants
+                          </span>
+                          <span className="ayuda-people-btn__meta">
+                            {ayuda.applicants?.length || 0} records
+                          </span>
                         </button>
-                      )}
-                      {!isArchived && (
                         <button
                           type="button"
+                          className="ayuda-people-btn ayuda-people-btn--green"
+                          onClick={() =>
+                            openListModal("Beneficiaries", ayuda.beneficiaries, ayuda)
+                          }
+                          aria-label="View beneficiaries list"
+                        >
+                          <span className="ayuda-people-btn__title">
+                            <UserCheck2 size={15} />
+                            Beneficiaries
+                          </span>
+                          <span className="ayuda-people-btn__meta">
+                            {ayuda.beneficiaries?.length || 0} records
+                          </span>
+                        </button>
+                      </div>
+                    </td>
+                    <td>
+                      <div className="table-actions table-actions--stack">
+                        <Link
                           className="action-btn"
-                          onClick={() => goClaiming(ayuda)}
+                          to={isAdmin ? `/admin/ayuda/${ayuda.id}` : `/staff/ayuda/${ayuda.id}`}
                         >
-                          Scan / claim
-                        </button>
-                      )}
-                      {!isArchived && isAdmin && (
-                        <button
-                          type="button"
-                          className="action-btn action-btn--danger"
-                          onClick={() => setDeleteModalAyuda(ayuda)}
-                        >
-                          Delete
-                        </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
+                          Details
+                        </Link>
+                        {!isArchived && isAdmin && (
+                          <button
+                            type="button"
+                            className="action-btn btn-update"
+                            onClick={() => openUpdateModal(ayuda)}
+                          >
+                            Update
+                          </button>
+                        )}
+                        {!isArchived && (
+                          <button
+                            type="button"
+                            className="action-btn"
+                            onClick={() => goClaiming(ayuda)}
+                          >
+                            Scan / claim
+                          </button>
+                        )}
+                        {!isArchived && isAdmin && (
+                          <button
+                            type="button"
+                            className="action-btn action-btn--danger"
+                            onClick={() => setDeleteModalAyuda(ayuda)}
+                          >
+                            Delete
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
                 );
               })}
               {ayudas.length === 0 && (
@@ -542,7 +542,7 @@ function AdminCurrentAyuda() {
                   <option value="SERVICE">SERVICE</option>
                 </select>
               </div>
-              
+
               <div className="input-group">
                 <label>Ayuda Type</label>
                 <select

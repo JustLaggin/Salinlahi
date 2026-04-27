@@ -23,11 +23,9 @@ html[data-theme="dark"] {
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
   --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.35);
   --logo-filter: brightness(0) invert(1);
-  --backdrop-mesh: radial-gradient(
-    ellipse 80% 50% at 50% -20%,
-    rgba(56, 189, 248, 0.06),
-    transparent 50%
-  );
+  --backdrop-mesh: radial-gradient(ellipse 80% 50% at 50% -20%,
+      rgba(56, 189, 248, 0.06),
+      transparent 50%);
   --modal-overlay-bg: rgba(15, 23, 42, 0.72);
   --modal-row-hover: rgba(255, 255, 255, 0.05);
   --modal-row-border: rgba(255, 255, 255, 0.08);
@@ -50,11 +48,9 @@ html[data-theme="light"] {
   --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
   --shadow-md: 0 4px 20px rgba(15, 23, 42, 0.08);
   --logo-filter: none;
-  --backdrop-mesh: radial-gradient(
-    ellipse 80% 50% at 50% -20%,
-    rgba(2, 132, 199, 0.05),
-    transparent 50%
-  );
+  --backdrop-mesh: radial-gradient(ellipse 80% 50% at 50% -20%,
+      rgba(2, 132, 199, 0.05),
+      transparent 50%);
   --modal-overlay-bg: rgba(15, 23, 42, 0.45);
   --modal-row-hover: rgba(15, 23, 42, 0.04);
   --modal-row-border: rgba(15, 23, 42, 0.08);
@@ -190,6 +186,7 @@ body {
     opacity: 0;
     transform: translateY(8px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -201,6 +198,7 @@ body {
     opacity: 0;
     transform: translateX(100px);
   }
+
   to {
     opacity: 1;
     transform: translateX(0);
@@ -475,6 +473,7 @@ button.nav-item.nav-item--button {
 }
 
 @media (prefers-reduced-motion: reduce) {
+
   *,
   *::before,
   *::after {
@@ -559,9 +558,12 @@ button.nav-item.nav-item--button {
   .admin-dashboard {
     grid-template-columns: 80px 1fr;
   }
-  .admin-sidebar-header h2, .admin-nav-item span {
+
+  .admin-sidebar-header h2,
+  .admin-nav-item span {
     display: none;
   }
+
   .admin-nav-item {
     justify-content: center;
     padding: 1rem;
@@ -657,6 +659,7 @@ button.nav-item.nav-item--button {
   font-weight: 700;
   margin-right: 0.5rem;
 }
+
 .pill-badge.green {
   background: rgba(52, 211, 153, 0.1);
   color: var(--accent-green);
@@ -1220,11 +1223,9 @@ html[data-theme="light"] .ayuda-view-toggle__btn:not(.ayuda-view-toggle__btn--ac
 }
 
 html[data-theme="dark"] .claim-success-card {
-  background: linear-gradient(
-    165deg,
-    rgba(22, 163, 74, 0.28),
-    var(--bg-elevated)
-  );
+  background: linear-gradient(165deg,
+      rgba(22, 163, 74, 0.28),
+      var(--bg-elevated));
 }
 
 .claim-success-icon {
@@ -1655,7 +1656,8 @@ html[data-theme="dark"] .claim-success-card {
   background-clip: text;
   -webkit-text-fill-color: transparent;
   margin: 0;
-  display: none; /* hidden on desktop */
+  display: none;
+  /* hidden on desktop */
 }
 
 .admin-mobile-topbar h2 {
@@ -1674,7 +1676,8 @@ html[data-theme="dark"] .claim-success-card {
   color: var(--text-primary);
   cursor: pointer;
   padding: 0.25rem;
-  display: none; /* hidden on desktop */
+  display: none;
+  /* hidden on desktop */
   align-items: center;
   justify-content: center;
 }
@@ -1807,7 +1810,7 @@ html[data-theme="dark"] .claim-success-card {
   .admin-mobile-topbar {
     display: flex;
   }
-  
+
   .admin-mobile-toggle {
     display: flex;
   }
@@ -1815,12 +1818,13 @@ html[data-theme="dark"] .claim-success-card {
   .admin-mobile-title {
     display: block;
   }
-  
+
   .admin-dashboard {
     grid-template-columns: 1fr;
-    display: block; /* Stack instead of grid on mobile */
+    display: block;
+    /* Stack instead of grid on mobile */
   }
-  
+
   .admin-sidebar {
     position: fixed;
     top: 0;
@@ -1832,19 +1836,20 @@ html[data-theme="dark"] .claim-success-card {
     z-index: 50;
     box-shadow: var(--shadow-md);
   }
-  
+
   .admin-sidebar.open {
     transform: translateX(0);
   }
-  
-  .admin-sidebar.open + main + .admin-mobile-overlay {
+
+  .admin-sidebar.open+main+.admin-mobile-overlay {
     display: block;
   }
-  
-  .admin-sidebar-header h2, .admin-nav-item span {
+
+  .admin-sidebar-header h2,
+  .admin-nav-item span {
     display: inline;
   }
-  
+
   .admin-nav-item {
     justify-content: flex-start;
   }
@@ -1854,6 +1859,7 @@ html[data-theme="dark"] .claim-success-card {
   .ayuda-detail-top-grid {
     grid-template-columns: 1fr;
   }
+
   .table-actions {
     flex-direction: column;
     align-items: stretch;
@@ -1907,11 +1913,11 @@ html[data-theme="dark"] .claim-success-card {
     transform: translateX(-100%);
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
-  
+
   .admin-sidebar.open {
     transform: translateX(0);
   }
-  
+
   .admin-mobile-overlay {
     position: fixed;
     top: 0;
@@ -1924,4 +1930,3 @@ html[data-theme="dark"] .claim-success-card {
     transition: opacity 0.3s ease;
   }
 }
-
