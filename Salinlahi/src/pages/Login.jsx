@@ -5,7 +5,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { Eye, EyeOff, AlertCircle } from 'lucide-react';
-import logo from '../assets/Logo_Black.png';
+import logo from '../assets/Logo_White.png';
 import '../css/auth.css';
 
 function Login() {
@@ -54,116 +54,135 @@ function Login() {
   };
 
   return (
-    <div className="auth-container login-shell">
-      <div className="auth-wrapper login-shell-wrapper">
-        <section className="login-form-column">
-          {/* Header */}
-          <div className="auth-header">
-            <div className="auth-logo">
-              <img src={logo} alt="Salinlahi" />
-            </div>
-            <h1 className="auth-title">Welcome Back</h1>
-            <p className="auth-subtitle">Sign in to your account to continue</p>
+    <div className="sb-login-page">
+      {/* Left Panel - Form */}
+      <div className="sb-login-left">
+        {/* Logo */}
+        <div className="sb-login-logo">
+          <img src={logo} alt="Salinlahi" />
+        </div>
+
+        {/* Form Area */}
+        <div className="sb-login-form-area">
+          {/* Heading */}
+          <div className="sb-login-heading">
+            <h1>Welcome back</h1>
+            <p>Sign in to your account</p>
           </div>
 
-          {/* Login Form */}
-          <div className="auth-card">
-            {error && (
-              <div className="alert alert-error">
-                <AlertCircle size={20} />
-                <div>
-                  <div className="alert-title">Login Error</div>
-                  <div className="alert-message">{error}</div>
-                </div>
-              </div>
-            )}
+          {/* Divider */}
+          <div className="sb-login-divider">
+            <span className="sb-login-divider-line"></span>
+            <span className="sb-login-divider-line"></span>
+          </div>
 
-            <form onSubmit={handleLogin} className="auth-form">
-              {/* Email Field */}
-              <div className="form-group">
-                <label className="form-label required">Email Address</label>
-                <input
-                  type="email"
-                  className="input-field"
-                  placeholder="Enter your email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  disabled={loading}
-                />
-              </div>
+          {/* Error Alert */}
+          {error && (
+            <div className="sb-login-alert">
+              <AlertCircle size={16} />
+              <span>{error}</span>
+            </div>
+          )}
 
-              {/* Password Field */}
-              <div className="form-group">
-                <label className="form-label required">Password</label>
-                <div className="password-input-wrapper">
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    className="input-field"
-                    placeholder="Enter your password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    disabled={loading}
-                  />
-                  <button
-                    type="button"
-                    className="password-toggle-btn"
-                    onClick={() => setShowPassword(!showPassword)}
-                    tabIndex="-1"
-                  >
-                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                  </button>
-                </div>
-              </div>
+          {/* Form */}
+          <form onSubmit={handleLogin} className="sb-login-form">
+            {/* Email */}
+            <div className="sb-form-group">
+              <label className="sb-form-label">Email</label>
+              <input
+                type="email"
+                className="sb-form-input"
+                placeholder="you@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                disabled={loading}
+                id="login-email"
+              />
+            </div>
 
-              {/* Forgot Password Link */}
-              <div className="auth-forgot-wrapper">
-                <Link to="/forgot-password" className="auth-link">
+            {/* Password */}
+            <div className="sb-form-group">
+              <div className="sb-form-label-row">
+                <label className="sb-form-label">Password</label>
+                <Link to="/forgot-password" className="sb-forgot-link">
                   Forgot password?
                 </Link>
               </div>
-
-              {/* Login Button */}
-              <button
-                type="submit"
-                className="btn btn-primary btn-full btn-lg"
-                disabled={loading}
-              >
-                {loading ? (
-                  <>
-                    <span className="spinner spinner-sm"></span>
-                    Signing in...
-                  </>
-                ) : (
-                  'Sign In'
-                )}
-              </button>
-
-              {/* Register Link */}
-              <div className="auth-footer">
-                <p>Don't have an account? <Link to="/register" className="auth-link auth-link-bold">Create one</Link></p>
+              <div className="sb-password-wrapper">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  className="sb-form-input"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  disabled={loading}
+                  id="login-password"
+                />
+                <button
+                  type="button"
+                  className="sb-password-toggle"
+                  onClick={() => setShowPassword(!showPassword)}
+                  tabIndex="-1"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
               </div>
-            </form>
-          </div>
+            </div>
 
-          {/* Footer */}
-          <div className="auth-card-footer">
-            <p className="text-tertiary" style={{ fontSize: '0.875rem', textAlign: 'center' }}>
-              This is a secure government assistance distribution system.
+            {/* Sign In Button */}
+            <button
+              type="submit"
+              className="sb-sign-in-btn"
+              disabled={loading}
+              id="login-submit"
+            >
+              {loading ? (
+                <>
+                  <span className="sb-spinner"></span>
+                  Signing in...
+                </>
+              ) : (
+                'Sign in'
+              )}
+            </button>
+          </form>
+
+          {/* Sign Up Link */}
+          <div className="sb-signup-link">
+            <p>
+              Don't have an account?{' '}
+              <Link to="/register">Sign up</Link>
             </p>
           </div>
-        </section>
+        </div>
 
-        <aside className="login-showcase" aria-hidden="true">
-          <div className="login-showcase-badge">Salinlahi Secure Portal</div>
-          <blockquote className="login-showcase-quote">
-            Fast, transparent, and accountable aid operations.
-          </blockquote>
-          <p className="login-showcase-meta">
-            Built for residents, administrators, and future government scale.
+        {/* Footer */}
+        <div className="sb-login-footer">
+          <p>
+            By continuing, you agree to Salinlahi's{' '}
+            <a href="#">Terms of Service</a> and{' '}
+            <a href="#">Privacy Policy</a>, and to receive periodic emails with updates.
           </p>
-        </aside>
+        </div>
+      </div>
+
+      {/* Right Panel - Testimonial */}
+      <div className="sb-login-right">
+        <div className="sb-testimonial">
+          <div className="sb-quote-mark">"</div>
+          <blockquote className="sb-quote-text">
+            Salinlahi made distributing government aid seamless. Fast, transparent, and accountable — exactly what our barangay needed.
+          </blockquote>
+          <div className="sb-quote-author">
+            <div className="sb-author-avatar">
+              <span>JR</span>
+            </div>
+            <span className="sb-author-name">@barangay_admin</span>
+          </div>
+        </div>
       </div>
     </div>
   );
