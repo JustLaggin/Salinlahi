@@ -243,15 +243,6 @@ function AdminManageStaff() {
               <p className="admin-staff-stat-card__value">{staffCount}</p>
             </div>
           </div>
-          <div className="admin-staff-stat-card">
-            <UserMinus size={18} />
-            <div>
-              <p className="admin-staff-stat-card__label">Citizens</p>
-              <p className="admin-staff-stat-card__value">
-                {users.length - adminCount - staffCount}
-              </p>
-            </div>
-          </div>
         </div>
 
         <h3 className="settings-text" style={{ fontWeight: 600, marginTop: "1.5rem", color: "var(--text-primary)" }}>
