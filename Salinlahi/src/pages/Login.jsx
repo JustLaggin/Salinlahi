@@ -152,7 +152,7 @@ function Login() {
       setMustChangePassword(false);
       setNewPassword("");
       setConfirmNewPassword("");
-      navigate(updatedRole === "admin" ? "/admin/dashboard" : "/staff/dashboard");
+      window.location.href = updatedRole === "admin" ? "/admin/dashboard" : "/staff/dashboard";
     } catch (error) {
       alert(error.message || "Failed to update password.");
     } finally {

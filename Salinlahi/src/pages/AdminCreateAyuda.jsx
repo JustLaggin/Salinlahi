@@ -202,7 +202,7 @@ function AdminCreateAyuda() {
               onChange={handleChange}
               required
             >
-              <option value="ONE_TIME">ONE_TIME</option>
+              <option value="ONE_TIME">ONE TIME</option>
               <option value="SERVICE">SERVICE</option>
             </select>
           </div>
